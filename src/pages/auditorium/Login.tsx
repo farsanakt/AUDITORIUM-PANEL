@@ -14,6 +14,7 @@ const LoginPage: React.FC = () => {
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault()
     console.log("Login with:", username, password, "Remember me:", rememberMe)
+    navigate('/dashboard')
   }
 
   const handleForgotPassword = () => {
