@@ -2,7 +2,21 @@ import { Route,Routes } from "react-router-dom";
 
 import LoginPage from "../auditorium/Login";
 import SignupPage from "../auditorium/Signup";
-import AuditoriumDashboard from "../auditorium/Dashboard";
+
+// import VenueForm from "../auditorium/Venue";
+// import BookingCalendar from "../auditorium/BookingCalender";
+import VenueManagement from "../auditorium/Venue";
+
+import Dashboard from "../../component/auditorium/Dashboard";
+import AuditoriumBooking from "../auditorium/BookingCalender";
+// import SlotManagement from "../auditorium/Slot";
+import SlotManagementCalendar from "../auditorium/Slot";
+
+import DetailsForm from "../auditorium/details";
+
+import BookingPayment from "../auditorium/Payment";
+import PaymentDetails from "../auditorium/Payment";
+
 
 function AuditoriumRoute() {
   return (
@@ -10,7 +24,12 @@ function AuditoriumRoute() {
       <Routes>
         <Route path='/' element={<LoginPage/>} />
         <Route path='/signup' element={<SignupPage/>} />
-        <Route path="/dashboard" element={<AuditoriumDashboard/>}/>
+        <Route path="/dashboard" element={<Dashboard/>}/>
+        <Route path='/venue' element={<VenueManagement/>}/>
+        <Route path='/bookings' element={<AuditoriumBooking/>} />
+        <Route path='/slot' element={<SlotManagementCalendar/>}/>
+        <Route path='/details' element={<DetailsForm/>}/>
+        <Route path='payment' element={<PaymentDetails/>}/>
       </Routes>
     </div>
   )

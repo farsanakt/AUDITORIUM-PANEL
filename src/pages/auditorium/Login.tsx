@@ -4,6 +4,8 @@ import type React from "react"
 import { useState } from "react"
 import tk from '../../assets/Rectangle 50.png'
 import { useNavigate } from "react-router-dom"
+import Header from "../../component/user/Header"
+// import vector from '../../assets/lines.png'
 
 const LoginPage: React.FC = () => {
   const [username, setUsername] = useState("")
@@ -28,16 +30,23 @@ const LoginPage: React.FC = () => {
   }
 
   return (
-    <div className="fixed inset-0 bg-[#FDF8F1] flex items-center justify-center">
+    <div className="fixed inset-0 bg-[#FDF8F1] flex items-center mt-10 justify-center">
+      <Header/>
+      
       <div className="flex flex-col md:flex-row bg-white shadow-2xl rounded-2xl overflow-hidden max-w-5xl w-full">
+   
         {/* Left Content Section */}
         <div className="md:w-1/2 relative hidden md:block">
           <div className="relative h-full">
+
+
+
             <img
               src={tk}
               alt="Platform Preview"
               className="w-full h-full object-cover absolute inset-0"
             />
+            
             <div className="absolute inset-0 bg-opacity-40">
               <div className="p-8 h-full flex flex-col justify-between">
                 {/* Top section with logo and heading */}
@@ -100,7 +109,7 @@ const LoginPage: React.FC = () => {
                   <input
                     type="text"
                     id="username"
-                    className="w-full pl-4 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ED695A] focus:border-transparent transition-all duration-200"
+                    className="w-full pl-4 pr-10 py-3 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553] focus:border-transparent transition-all duration-200"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     placeholder="Enter your username"
@@ -109,7 +118,7 @@ const LoginPage: React.FC = () => {
                   <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5 text-gray-400"
+                      className="h-5 w-5 text-[#b09d94]"
                       viewBox="0 0 20 20"
                       fill="currentColor"
                     >
@@ -131,7 +140,7 @@ const LoginPage: React.FC = () => {
                   <input
                     type="password"
                     id="password"
-                    className="w-full pl-4 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ED695A] focus:border-transparent transition-all duration-200"
+                    className="w-full pl-4 pr-10 py-3 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553] focus:border-transparent transition-all duration-200"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter your password"
@@ -140,7 +149,7 @@ const LoginPage: React.FC = () => {
                   <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5 text-gray-400"
+                      className="h-5 w-5 text-[#b09d94]"
                       viewBox="0 0 20 20"
                       fill="currentColor"
                     >
@@ -160,7 +169,7 @@ const LoginPage: React.FC = () => {
                     id="remember-me"
                     name="remember-me"
                     type="checkbox"
-                    className="h-4 w-4 text-[#ED695A] focus:ring-[#ED695A] border-gray-300 rounded"
+                    className="h-4 w-4 text-[#ED695A] focus:ring-[#ED695A] border-[#b09d94] rounded"
                     checked={rememberMe}
                     onChange={(e) => setRememberMe(e.target.checked)}
                   />
@@ -186,17 +195,17 @@ const LoginPage: React.FC = () => {
 
               <div className="relative my-6">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300"></div>
+                  <div className="w-full border-t border-[#b09d94]"></div>
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-gray-500">Or continue with</span>
+                  <span className="px-2 bg-white text-[#b09d94]">Or continue with</span>
                 </div>
               </div>
 
               <div className="grid grid-cols-3 gap-3">
                 <button
                   type="button"
-                  className="flex justify-center items-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white hover:bg-gray-50 transition-colors"
+                  className="flex justify-center items-center py-2 px-4 border border-[#b09d94] rounded-md shadow-sm bg-white hover:bg-gray-50 transition-colors"
                 >
                   <svg className="h-5 w-5" fill="#4285F4" viewBox="0 0 24 24">
                     <path d="M12.545 10.239v3.821h5.445c-0.712 2.315-2.647 3.972-5.445 3.972-3.332 0-6.033-2.701-6.033-6.032s2.701-6.032 6.033-6.032c1.498 0 2.866 0.549 3.921 1.453l2.814-2.814c-1.79-1.677-4.184-2.702-6.735-2.702-5.522 0-10 4.478-10 10s4.478 10 10 10c8.396 0 10.249-7.85 9.426-11.748l-9.426 0.082z" />
@@ -204,7 +213,7 @@ const LoginPage: React.FC = () => {
                 </button>
                 <button
                   type="button"
-                  className="flex justify-center items-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white hover:bg-gray-50 transition-colors"
+                  className="flex justify-center items-center py-2 px-4 border border-[#b09d94] rounded-md shadow-sm bg-white hover:bg-gray-50 transition-colors"
                 >
                   <svg className="h-5 w-5" fill="#1877F2" viewBox="0 0 24 24">
                     <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385h-3.047v-3.47h3.047v-2.642c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953h-1.514c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385c5.738-.9 10.126-5.864 10.126-11.854z" />
@@ -212,7 +221,7 @@ const LoginPage: React.FC = () => {
                 </button>
                 <button
                   type="button"
-                  className="flex justify-center items-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white hover:bg-gray-50 transition-colors"
+                  className="flex justify-center items-center py-2 px-4 border border-[#b09d94] rounded-md shadow-sm bg-white hover:bg-gray-50 transition-colors"
                 >
                   <svg className="h-5 w-5" fill="#000000" viewBox="0 0 24 24">
                     <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
