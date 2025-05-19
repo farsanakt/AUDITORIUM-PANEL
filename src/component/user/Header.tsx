@@ -1,49 +1,99 @@
-import React from 'react';
-import logo from '../../assets/Logo v6 1.png'
-import logo1 from '../../assets/Logo v6 2.png'
+import React, { useState } from 'react';
+import logo from '../../assets/Logo v6 1.png';
+import logo1 from '../../assets/Logo v6 2.png';
+
 interface HeaderProps {
   onLoginClick?: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ onLoginClick }) => {
+  const [menuOpen, setMenuOpen] = useState(false);
+
   return (
     <>
-      {/* Fixed header with shadow */}
-      <header className="fixed top-0 left-0 right-0 flex items-center justify-between px-6 mx-auto py-5 bg-[#FDF8F1] ">
-      {/* container mx-auto  px-4 max-w-6xl flex justify-between items-center py-5 */}
-        {/* Logo/image on the left */}
-        <div className="flex items-center pl-12 mx-14 ">
-          <img 
-            src={logo} 
-            alt="i Booking Venue" 
-            className="h-10 mr-2"
-          />
-          <img 
-            src={logo1} 
-            alt="i Booking Venue" 
-            className="h-10 mr-2"
-          />
-       
-        </div>
-        
-        {/* Navigation links moved to the right */}
-        <div className="flex items-center space-x-6 mx-17">
-          <a href="#" className="text-gray-600 hover:text-gray-800">Vendor</a>
-          <a href="#" className="text-gray-600 hover:text-gray-800">Auditorium</a>
-          <a href="#" className="text-gray-600 hover:text-gray-800">Admin</a>
-          
-          {/* Login button with enhanced shadow */}
-          <button 
-            onClick={onLoginClick}
-            className="bg-[#ED695A] hover:bg-red-400 text-white px-6 py-2 rounded-lg shadow-lg ml-6 transition-colors"
+      {/* Fixed header */}
+      <header className="fixed top-0 left-0 right-0 bg-[#FDF8F1] shadow-md z-50">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+          {/* Logo */}
+          <div className="flex items-center space-x-2">
+            <img src={logo} alt="i Booking Logo" className="h-8 sm:h-10" />
+            <img src={logo1} alt="i Booking Logo 2" className="h-8 sm:h-10" />
+          </div>
+
+          {/* Desktop Menu */}
+          <nav className="hidden md:flex items-center space-x-6">
+            <a href="#" className="text-gray-600 hover:text-gray-800">
+              Vendor
+            </a>
+            <a href="#" className="text-gray-600 hover:text-gray-800">
+              Auditorium
+            </a>
+            <a href="#" className="text-gray-600 hover:text-gray-800">
+              Admin
+            </a>
+            <button
+              onClick={onLoginClick}
+              className="bg-[#ED695A] hover:bg-red-400 text-white px-4 py-2 rounded-lg shadow transition-colors"
+            >
+              Login
+            </button>
+          </nav>
+
+          {/* Mobile Menu Toggle */}
+          <button
+            className="md:hidden text-gray-800 focus:outline-none"
+            onClick={() => setMenuOpen(!menuOpen)}
           >
-            Login
+            {/* Hamburger icon */}
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              {menuOpen ? (
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              ) : (
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
+              )}
+            </svg>
           </button>
         </div>
+
+        {/* Mobile Menu Content */}
+        {menuOpen && (
+          <div className="md:hidden bg-[#FDF8F1] px-4 pb-4 space-y-3">
+            <a href="#" className="block text-gray-600 hover:text-gray-800">
+              Vendor
+            </a>
+            <a href="#" className="block text-gray-600 hover:text-gray-800">
+              Auditorium
+            </a>
+            <a href="#" className="block text-gray-600 hover:text-gray-800">
+              Admin
+            </a>
+            <button
+              onClick={onLoginClick}
+              className="block w-full text-center bg-[#ED695A] hover:bg-red-400 text-white px-4 py-2 rounded-lg shadow transition-colors"
+            >
+              Login
+            </button>
+          </div>
+        )}
       </header>
-      
-      {/* Spacer div to create gap between header and content */}
-      <div className="h-24"></div>
+
+      {/* Spacer to push content below header */}
+      <div className="h-24 md:h-20"></div>
     </>
   );
 };

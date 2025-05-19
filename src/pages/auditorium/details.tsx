@@ -5,15 +5,28 @@ import { Calendar } from "lucide-react"
 import { cn } from "../../component/lib/utils"
 import vector from '../../assets/lines.png'
 import Header from "../../component/user/Header"
+import { useNavigate } from "react-router-dom"
+
+
 
 type PersonType = "bride" | "groom"
 
 export default function DetailsForm() {
   const [personType, setPersonType] = useState<PersonType>("bride")
+  const navigate=useNavigate()
+  
+  const handleSave=()=>{
+    navigate('/payment')
+  }
+
+  const handleBack=()=>{
+    navigate(-1)
+  }
 
   return (
     <div className="w-full max-w-3xl px-8 py-6 relative bg-[#FDF8F1] mx-auto">
         <Header/>
+        
         
       {/* Background image */}
       <div
@@ -26,8 +39,10 @@ export default function DetailsForm() {
       />
 
       <div className="relative z-10">
+     
         {/* Header and Toggle Row */}
         <div className="flex justify-between items-center mb-8">
+        {/* <Sidebar/> */}
           {/* Heading on left */}
           <h1 className="text-2xl font-serif text-[#9c7c5d]">
             {personType === "bride" ? "Bride Details" : "Groom Details"}
@@ -179,11 +194,11 @@ export default function DetailsForm() {
 
           {/* Buttons */}
           <div className="flex justify-between pt-4">
-            <button type="button" className="px-8 py-2 bg-[#e6ddd3] text-[#9c7c5d] rounded-md font-medium">
-              Skip
+            <button type="button" onClick={handleBack} className="px-8 py-2 bg-[#e6ddd3] text-[#9c7c5d] rounded-md font-medium">
+              Back
             </button>
-            <button type="submit" className="px-8 py-2 bg-[#9c7c5d] text-white rounded-md font-medium">
-              Save
+            <button type="submit" onClick={handleSave} className="px-8 py-2 bg-[#9c7c5d] text-white rounded-md font-medium">
+              Save & Next
             </button>
           </div>
         </form>

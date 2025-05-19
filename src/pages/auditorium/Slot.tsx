@@ -1,10 +1,13 @@
 "use client"
 
+import type React from "react"
+
 import { useState } from "react"
-import { Plus } from "lucide-react"
+import { Plus, ArrowLeft } from "lucide-react"
+
+import { useNavigate } from "react-router-dom"
 import Sidebar from "../../component/auditorium/Sidebar"
 import Header from "../../component/user/Header"
-
 
 interface CalendarDay {
   date: number
@@ -13,13 +16,29 @@ interface CalendarDay {
   hasEvent?: boolean
 }
 
+interface Venue {
+  id: string
+  name: string
+  type: string
+  capacity: number
+}
+
 const SlotManagementCalendar = () => {
+  const navigate = useNavigate()
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth())
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear())
   const [selectedDay, setSelectedDay] = useState<CalendarDay | null>(null)
   const [showModal, setShowModal] = useState(false)
-  const [filterValue, setFilterValue] = useState("all")
-  const [timeFilter, setTimeFilter] = useState("all")
+  const [selectedVenue, setSelectedVenue] = useState("auditorium-1")
+ 
+
+  
+  const venues: Venue[] = [
+    { id: "auditorium-1", name: "Golden Auditorium", type: "AC", capacity: 500 },
+    { id: "hall-1", name: "Silver Hall", type: "Non-AC", capacity: 300 },
+    { id: "theater-1", name: "Main Theater", type: "AC", capacity: 800 },
+    { id: "conference-1", name: "Conference Hall", type: "AC", capacity: 200 },
+  ]
 
   const months = [
     "January",
@@ -37,17 +56,16 @@ const SlotManagementCalendar = () => {
   ]
   const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
-  
   const generateCalendarDays = (): CalendarDay[] => {
     const days: CalendarDay[] = []
 
- 
+    
     const firstDay = new Date(currentYear, currentMonth, 1).getDay()
 
    
     const prevMonthDays = new Date(currentYear, currentMonth, 0).getDate()
 
-
+   
     for (let i = firstDay - 1; i >= 0; i--) {
       days.push({
         date: prevMonthDays - i,
@@ -56,9 +74,10 @@ const SlotManagementCalendar = () => {
       })
     }
 
-
+   
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate()
 
+    
     
     const statuses = ["available", "booked", "waitlist", "maintenance"]
     for (let i = 1; i <= daysInMonth; i++) {
@@ -71,6 +90,7 @@ const SlotManagementCalendar = () => {
       })
     }
 
+    
     const remainingSlots = 35 - days.length 
     for (let i = 1; i <= remainingSlots; i++) {
       days.push({
@@ -147,23 +167,88 @@ const SlotManagementCalendar = () => {
     return day.date === today.getDate() && day.month === today.getMonth() && currentYear === today.getFullYear()
   }
 
+  const handleVenueChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedVenue(e.target.value)
+  }
+
+  const handleGoBack = () => {
+    navigate(-1) 
+  }
+
+  const getCurrentVenue = () => {
+    return venues.find((venue) => venue.id === selectedVenue)
+  }
+
   return (
-    <div className="flex h-screen bg-[#FDF8F1] ">
-      <Sidebar />
+    <div className="flex h-screen bg-[#FDF8F1]">
+      
+      <style
+  dangerouslySetInnerHTML={{
+    __html: `
+      .hide-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      .hide-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+      body.modal-open {
+        overflow: hidden;
+      }
+      .select-container .select-content {
+        width: 100%;
+        max-height: 200px;
+        overflow-y: auto;
+        background-color: white;
+        border-radius: 0.375rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+                    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        z-index: 50;
+      }
+      .select-container .select-item {
+        padding: 0.5rem 1rem;
+        cursor: pointer;
+      }
+      .select-container .select-item:hover {
+        background-color: #f3f4f6;
+      }
+    `,
+  }}
+/>
+
+
+       <div className="w-64 shrink-0  h-[calc(100vh-64px)]  sticky top-25 hidden md:block">
+          <Sidebar />
+        </div>
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* <Header /> */}
-        <Header/>
+        <Header />
+        
 
-        <main className="flex-1 overflow-y-auto p-4">
+
+        <main className="flex-1  p-4">
           <div className="max-w-6xl mx-auto">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
+            {/* Header with title and venue dropdown aligned */}
+            <div className="flex items-center justify-between mb-6">
               <div>
-                <h1 className="text-2xl font-bold text-[#78533F] mb-1">Auditorium Calendar</h1>
-                <p className="text-[#78533F] opacity-80 text-sm">Manage Golden Auditorium's availability</p>
+                <h1 className="text-2xl font-bold text-[#78533F]">Venue Management</h1>
+                <p className="text-[#78533F] opacity-80 text-sm">Manage venue availability and bookings</p>
               </div>
 
-              <div className="flex mt-3 md:mt-0 space-x-2">
+              <div className="flex items-center space-x-4">
+                {/* Smaller dropdown on the right */}
+                <select
+                  value={selectedVenue}
+                  onChange={handleVenueChange}
+                  className="venue-select border border-[#78533F]/20 rounded-md py-1.5 px-3 text-[#78533F] focus:outline-none focus:ring-1 focus:ring-[#78533F]/50 focus:border-[#78533F] text-sm w-48"
+                >
+                  {venues.map((venue) => (
+                    <option key={venue.id} value={venue.id}>
+                      {venue.name}
+                    </option>
+                  ))}
+                </select>
+
                 <button
                   onClick={() => setShowModal(true)}
                   className="px-3 py-1.5 bg-[#78533F] text-white rounded-md hover:bg-[#8a614b] transition-colors flex items-center text-sm"
@@ -173,33 +258,6 @@ const SlotManagementCalendar = () => {
                 </button>
               </div>
             </div>
-
-            {/* Filters */}
-            {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-              <div className="bg-white rounded-full shadow-sm p-1">
-                <select
-                  className="w-full px-3 py-1.5 rounded-full text-[#78533F] focus:outline-none text-sm"
-                  value={filterValue}
-                  onChange={(e) => setFilterValue(e.target.value)}
-                >
-                  <option value="all">All Venues</option>
-                  <option value="ac">AC Halls</option>
-                  <option value="non-ac">Non-AC Halls</option>
-                </select>
-              </div>
-              <div className="bg-white rounded-full shadow-sm p-1">
-                <select
-                  className="w-full px-3 py-1.5 rounded-full text-[#78533F] focus:outline-none text-sm"
-                  value={timeFilter}
-                  onChange={(e) => setTimeFilter(e.target.value)}
-                >
-                  <option value="all">All Times</option>
-                  <option value="morning">Morning (6 AM - 12 PM)</option>
-                  <option value="afternoon">Afternoon (12 PM - 5 PM)</option>
-                  <option value="evening">Evening (5 PM - 10 PM)</option>
-                </select>
-              </div>
-            </div> */}
 
             {/* Calendar */}
             <div className="bg-white rounded-lg shadow-lg overflow-hidden mb-4">
@@ -223,7 +281,7 @@ const SlotManagementCalendar = () => {
                   </button>
 
                   <h2 className="text-lg font-bold">
-                    {months[currentMonth]} {currentYear}
+                    {months[currentMonth]} {currentYear} - {getCurrentVenue()?.name}
                   </h2>
 
                   <button
@@ -260,8 +318,8 @@ const SlotManagementCalendar = () => {
                     key={index}
                     onClick={() => handleDayClick(day)}
                     className={`
-                      h-14 p-1 bg-white flex flex-col items-center justify-center
-                      ${day.status !== "other-month" ? "cursor-pointer hover:bg-gray-50 transition-colors" : ""}
+                      calendar-day h-14 p-1 bg-white flex flex-col items-center justify-center
+                      ${day.status !== "other-month" ? "cursor-pointer transition-colors" : ""}
                       ${isToday(day) ? "ring-1 ring-[#78533F]" : ""}
                     `}
                   >
@@ -297,14 +355,25 @@ const SlotManagementCalendar = () => {
                 </div>
               </div>
             </div>
+
+            {/* Back Button */}
+            <div className="mb-6">
+              <button
+                onClick={handleGoBack}
+                className="flex items-center px-4 py-2 text-[#78533F] hover:bg-[#78533F]/10 rounded-md transition-colors"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back 
+              </button>
+            </div>
           </div>
         </main>
       </div>
 
-      {/* Day Detail Modal */}
+      
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-4 w-full max-w-md">
+        <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-4 w-full max-w-md shadow-xl">
             <div className="flex justify-between items-center mb-3">
               <h3 className="text-lg font-semibold text-[#78533F]">
                 {selectedDay ? `${months[selectedDay.month]} ${selectedDay.date}, ${currentYear}` : "Add New Slot"}
@@ -329,10 +398,16 @@ const SlotManagementCalendar = () => {
             <div className="space-y-3">
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Venue</label>
-                <select className="w-full px-3 py-1.5 border rounded-md text-sm">
-                  <option>Golden Auditorium - AC</option>
-                  <option>Silver Hall - Non-AC</option>
-                  <option>Bronze Hall - AC</option>
+                <select
+                  className="w-full px-3 py-1.5 border rounded-md text-sm"
+                  value={selectedVenue}
+                  onChange={handleVenueChange}
+                >
+                  {venues.map((venue) => (
+                    <option key={venue.id} value={venue.id}>
+                      {venue.name} - {venue.type}
+                    </option>
+                  ))}
                 </select>
               </div>
 

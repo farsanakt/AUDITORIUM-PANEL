@@ -1,21 +1,13 @@
 import { Route,Routes } from "react-router-dom";
-
 import LoginPage from "../auditorium/Login";
 import SignupPage from "../auditorium/Signup";
-
-// import VenueForm from "../auditorium/Venue";
-// import BookingCalendar from "../auditorium/BookingCalender";
 import VenueManagement from "../auditorium/Venue";
-
 import Dashboard from "../../component/auditorium/Dashboard";
 import AuditoriumBooking from "../auditorium/BookingCalender";
-// import SlotManagement from "../auditorium/Slot";
 import SlotManagementCalendar from "../auditorium/Slot";
-
 import DetailsForm from "../auditorium/details";
-
-import BookingPayment from "../auditorium/Payment";
 import PaymentDetails from "../auditorium/Payment";
+import BookingConfirmation from "../auditorium/BookingsDetails";
 
 
 function AuditoriumRoute() {
@@ -30,6 +22,7 @@ function AuditoriumRoute() {
         <Route path='/slot' element={<SlotManagementCalendar/>}/>
         <Route path='/details' element={<DetailsForm/>}/>
         <Route path='payment' element={<PaymentDetails/>}/>
+        <Route path='Bookingconfirmation' element={<BookingConfirmation/>}/>
       </Routes>
     </div>
   )

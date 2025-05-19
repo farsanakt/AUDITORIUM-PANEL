@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-// import Header from "../../component/auditorium/Header"
+
 import Header from "../../component/user/Header"
 
 // Sample data for dashboard

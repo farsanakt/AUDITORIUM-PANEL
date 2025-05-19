@@ -19,9 +19,11 @@ import {
   ChevronDown,
   ChevronRight,
   X,
+  ArrowLeft,
 } from "lucide-react"
 import Header from "../../component/user/Header"
 import Sidebar from "../../component/auditorium/Sidebar"
+import { useNavigate } from "react-router-dom"
 
 // Define types
 interface Tariff {
@@ -197,6 +199,8 @@ export default function VenueManagement() {
     altPhone: "",
   })
 
+  const navigate=useNavigate()
+
   const toggleVenueExpand = (id: number) => {
     setExpandedVenue(expandedVenue === id ? null : id)
   }
@@ -307,6 +311,9 @@ export default function VenueManagement() {
       }
     }
   }
+  const handleGoBack = () => {
+    navigate(-1) 
+  }
 
   const handleSelectChange = (value: string, name: string, isNewVenue = false) => {
     if (isNewVenue) {
@@ -340,10 +347,12 @@ export default function VenueManagement() {
     <div className="flex flex-col h-screen bg-[#FDF8F1] mt-5">
       <Header />
 
-      <div className="min-h-screen w-full flex bg-[#FDF8F1]">
-        <Sidebar />
+      <div className="min-h-screen w-full flex mt-10 bg-[#FDF8F1]">
+      <div className="w-64 shrink-0  h-[calc(100vh-64px)]  sticky top-16 hidden md:block">
+          <Sidebar />
+        </div>
 
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col mt-5">
           <div className="md:hidden flex bg-white shadow-md w-full">
             <button className="flex-1 py-3 text-center text-[#ED695A] border-b-2 border-[#ED695A]">Venues</button>
           </div>
@@ -354,8 +363,8 @@ export default function VenueManagement() {
             <div className="bg-white shadow-sm p-4 rounded-lg mb-4">
               <div className="max-w-7xl mx-auto flex justify-between items-center">
                 <div>
-                  <h1 className="text-2xl font-bold">Auditorium Management</h1>
-                  <p className="text-[#78533F] font-medium">Manage all your venues in one place</p>
+                  <h1 className="text-2xl text-[#78533F] font-bold">Auditorium Management</h1>
+                  <p className="text-[#796458] font-medium">Manage all your venues in one place</p>
                 </div>
                 <div className="flex items-center space-x-4">
                   <button
@@ -373,13 +382,13 @@ export default function VenueManagement() {
               {/* Venue List */}
               <div className="bg-white rounded-lg shadow-sm mb-4 p-4">
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-lg font-medium">Venues</h2>
+                  <h2 className="text-lg  font-medium">Venues</h2>
                   <div className="flex items-center space-x-2">
                     <div className="relative">
                       <input
                         type="text"
                         placeholder="Search venues..."
-                        className="w-full pl-9 pr-3 py-2 border rounded-md bg-gray-50 focus:outline-none focus:ring-1 focus:ring-[#ED695A]"
+                        className="w-full pl-9 pr-3 py-2 border border-[#b09d94] rounded-md bg-gray-50 focus:outline-none focus:ring-1 focus:ring-[#ED695A]"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                       />
@@ -387,7 +396,7 @@ export default function VenueManagement() {
                     </div>
 
                     <select
-                      className="border rounded-md px-3 py-2 bg-white"
+                      className="border border-[#b09d94] rounded-md px-3 py-2 bg-white"
                       value={venueTypeFilter}
                       onChange={(e) => setVenueTypeFilter(e.target.value)}
                     >
@@ -397,7 +406,7 @@ export default function VenueManagement() {
                     </select>
 
                     <select
-                      className="border rounded-md px-3 py-2 bg-white"
+                      className="border border-[#b09d94] rounded-md px-3 py-2 bg-white"
                       value={cityFilter}
                       onChange={(e) => setCityFilter(e.target.value)}
                     >
@@ -411,16 +420,16 @@ export default function VenueManagement() {
                   </div>
                 </div>
 
-                <div className="divide-y">
+                <div className="divide-y divide-[#b09d94] ">
                   {filteredVenues.length === 0 ? (
-                    <div className="py-8 text-center text-gray-500">No venues match your search criteria</div>
+                    <div className="py-8 text-center  text-gray-500">No venues match your search criteria</div>
                   ) : (
                     filteredVenues.map((venue) => (
-                      <div key={venue.id} className="py-3">
-                        <div className="flex items-center justify-between">
+                      <div key={venue.id} className="py-3 ">
+                        <div className="flex items-center  justify-between">
                           <div className="flex items-center cursor-pointer" onClick={() => toggleVenueExpand(venue.id)}>
                             {expandedVenue === venue.id ? (
-                              <ChevronDown size={18} className="text-gray-500 mr-2" />
+                              <ChevronDown size={18} className="text-gray-500 mr-2 " />
                             ) : (
                               <ChevronRight size={18} className="text-gray-500 mr-2" />
                             )}
@@ -456,7 +465,7 @@ export default function VenueManagement() {
                                 e.stopPropagation()
                                 deleteVenue(venue.id)
                               }}
-                              className="p-1.5 rounded-md hover:bg-gray-100"
+                              className="p-1.5  rounded-md hover:bg-gray-100"
                             >
                               <Trash size={16} className="text-gray-500" />
                             </button>
@@ -572,6 +581,15 @@ export default function VenueManagement() {
                 </div>
               </div>
             </div>
+             <div className="mb-6">
+                          <button
+                            onClick={handleGoBack}
+                            className="flex items-center px-4 py-2 text-[#78533F] hover:bg-[#78533F]/10 rounded-md transition-colors"
+                          >
+                            <ArrowLeft className="h-4 w-4 mr-2" />
+                            Back 
+                          </button>
+                        </div>
           </div>
         </div>
       </div>
@@ -579,7 +597,7 @@ export default function VenueManagement() {
       {/* Add Venue Modal */}
       {isAddModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-[600px] max-h-[90vh] overflow-y-auto w-full">
+          <div className="bg-white rounded-lg p-6 max-w-[600px] max-h-[90vh]  w-full">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-medium">Add New Venue</h2>
               <button onClick={() => setIsAddModalOpen(false)} className="text-gray-500 hover:text-gray-700">
@@ -623,7 +641,7 @@ export default function VenueManagement() {
                       value={newVenue.name}
                       onChange={(e) => handleInputChange(e, true)}
                       placeholder="Enter venue name"
-                      className="w-full px-3 py-2 border rounded-md"
+                      className="w-full px-3 py-2 border  border-[#b09d94] rounded-md"
                     />
                   </div>
 
@@ -636,7 +654,7 @@ export default function VenueManagement() {
                       name="acType"
                       value={newVenue.acType}
                       onChange={(e) => handleInputChange(e, true)}
-                      className="w-full px-3 py-2 border rounded-md"
+                      className="w-full px-3 py-2 border border-[#b09d94] rounded-md"
                     >
                       <option value="AC">AC</option>
                       <option value="Non-AC">Non-AC</option>
@@ -655,7 +673,7 @@ export default function VenueManagement() {
                       onChange={(e) => handleInputChange(e, true)}
                       placeholder="Enter full address"
                       rows={2}
-                      className="w-full px-3 py-2 border rounded-md"
+                      className="w-full px-3 py-2 border border-[#b09d94] rounded-md"
                     />
                   </div>
 
@@ -669,7 +687,7 @@ export default function VenueManagement() {
                       value={newVenue.phone || ""}
                       onChange={(e) => handleInputChange(e, true)}
                       placeholder="Enter phone number"
-                      className="w-full px-3 py-2 border rounded-md"
+                      className="w-full px-3 py-2 border border-[#b09d94] rounded-md"
                     />
                   </div>
 
@@ -683,7 +701,7 @@ export default function VenueManagement() {
                       value={newVenue.altPhone || ""}
                       onChange={(e) => handleInputChange(e, true)}
                       placeholder="Enter alternative phone (optional)"
-                      className="w-full px-3 py-2 border rounded-md"
+                      className="w-full px-3 py-2 border border-[#b09d94] rounded-md"
                     />
                   </div>
 
@@ -698,7 +716,7 @@ export default function VenueManagement() {
                       value={newVenue.email || ""}
                       onChange={(e) => handleInputChange(e, true)}
                       placeholder="Enter email address"
-                      className="w-full px-3 py-2 border rounded-md"
+                      className="w-full px-3 py-2 border border-[#b09d94] rounded-md"
                     />
                   </div>
 
@@ -712,7 +730,7 @@ export default function VenueManagement() {
                       value={newVenue.pincode || ""}
                       onChange={(e) => handleInputChange(e, true)}
                       placeholder="Enter pincode"
-                      className="w-full px-3 py-2 border rounded-md"
+                      className="w-full px-3 py-2 border border-[#b09d94] rounded-md"
                     />
                   </div>
                 </div>
@@ -733,7 +751,7 @@ export default function VenueManagement() {
                       value={newVenue.seatingCapacity || ""}
                       onChange={(e) => handleInputChange(e, true)}
                       placeholder="Enter seating capacity"
-                      className="w-full px-3 py-2 border rounded-md"
+                      className="w-full px-3 py-2 border border-[#b09d94] rounded-md"
                     />
                   </div>
 
@@ -748,7 +766,7 @@ export default function VenueManagement() {
                       value={newVenue.diningCapacity || ""}
                       onChange={(e) => handleInputChange(e, true)}
                       placeholder="Enter dining capacity"
-                      className="w-full px-3 py-2 border rounded-md"
+                      className="w-full px-3 py-2 border border-[#b09d94] rounded-md"
                     />
                   </div>
 
@@ -763,7 +781,7 @@ export default function VenueManagement() {
                       value={newVenue.parkingSlots || ""}
                       onChange={(e) => handleInputChange(e, true)}
                       placeholder="Enter parking slots"
-                      className="w-full px-3 py-2 border rounded-md"
+                      className="w-full px-3 py-2 border border-[#b09d94] rounded-md"
                     />
                   </div>
 
@@ -778,7 +796,7 @@ export default function VenueManagement() {
                       value={newVenue.changingRooms || ""}
                       onChange={(e) => handleInputChange(e, true)}
                       placeholder="Enter number of changing rooms"
-                      className="w-full px-3 py-2 border rounded-md"
+                      className="w-full px-3 py-2 border border-[#b09d94] rounded-md"
                     />
                   </div>
 
@@ -792,7 +810,7 @@ export default function VenueManagement() {
                       value={newVenue.stageSize || ""}
                       onChange={(e) => handleInputChange(e, true)}
                       placeholder="Enter stage size (e.g., 30ft x 20ft)"
-                      className="w-full px-3 py-2 border rounded-md"
+                      className="w-full px-3 py-2 border border-[#b09d94] rounded-md"
                     />
                   </div>
 
@@ -816,7 +834,7 @@ export default function VenueManagement() {
                       }}
                       placeholder="Enter amenities separated by commas (e.g., WiFi, Generator Backup, Sound System)"
                       rows={2}
-                      className="w-full px-3 py-2 border rounded-md"
+                      className="w-full px-3 py-2 border border-[#b09d94] rounded-md"
                     />
                   </div>
                 </div>
@@ -836,7 +854,7 @@ export default function VenueManagement() {
                       value={newVenue.tariff?.wedding || ""}
                       onChange={(e) => handleInputChange(e, true)}
                       placeholder="Enter wedding tariff (e.g., ₹50,000)"
-                      className="w-full px-3 py-2 border rounded-md"
+                      className="w-full px-3 py-2 border border-[#b09d94] rounded-md"
                     />
                   </div>
 
@@ -850,7 +868,7 @@ export default function VenueManagement() {
                       value={newVenue.tariff?.reception || ""}
                       onChange={(e) => handleInputChange(e, true)}
                       placeholder="Enter reception tariff (e.g., ₹40,000)"
-                      className="w-full px-3 py-2 border rounded-md"
+                      className="w-full px-3 py-2 border border-[#b09d94] rounded-md"
                     />
                   </div>
 
@@ -864,7 +882,7 @@ export default function VenueManagement() {
                       value={newVenue.cancellationPolicy || ""}
                       onChange={(e) => handleInputChange(e, true)}
                       placeholder="Enter cancellation policy"
-                      className="w-full px-3 py-2 border rounded-md"
+                      className="w-full px-3 py-2 border border-[#b09d94] rounded-md"
                     />
                   </div>
 
@@ -879,7 +897,7 @@ export default function VenueManagement() {
                       onChange={(e) => handleInputChange(e, true)}
                       placeholder="Enter food policy"
                       rows={2}
-                      className="w-full px-3 py-2 border rounded-md"
+                      className="w-full px-3 py-2 border border-[#b09d94] rounded-md"
                     />
                   </div>
 
@@ -894,7 +912,7 @@ export default function VenueManagement() {
                       onChange={(e) => handleInputChange(e, true)}
                       placeholder="Enter decoration policy"
                       rows={2}
-                      className="w-full px-3 py-2 border rounded-md"
+                      className="w-full px-3 py-2 border border-[#b09d94] rounded-md"
                     />
                   </div>
 
