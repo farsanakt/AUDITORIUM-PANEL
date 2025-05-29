@@ -20,6 +20,8 @@ import {
   ChevronRight,
   X,
   ArrowLeft,
+  Clock,
+  Upload,
 } from "lucide-react"
 import Header from "../../component/user/Header"
 import Sidebar from "../../component/auditorium/Sidebar"
@@ -29,6 +31,14 @@ import { useNavigate } from "react-router-dom"
 interface Tariff {
   wedding: string
   reception: string
+}
+
+interface TimeSlot {
+  id: string
+  label: string
+  startTime: string
+  endTime: string
+  isCustom?: boolean
 }
 
 interface Venue {
@@ -53,6 +63,7 @@ interface Venue {
   decorPolicy: string
   hasLetterhead: boolean
   images: string[]
+  timeSlots: TimeSlot[]
 }
 
 // Sample data
@@ -82,6 +93,10 @@ const sampleVenues: Venue[] = [
     decorPolicy: "Only in-house decorators",
     hasLetterhead: true,
     images: ["/placeholder.svg?height=250&width=400", "/placeholder.svg?height=250&width=400"],
+    timeSlots: [
+      { id: "morning", label: "Morning", startTime: "06:00", endTime: "12:00" },
+      { id: "afternoon", label: "Afternoon", startTime: "12:00", endTime: "18:00" },
+    ],
   },
   {
     id: 2,
@@ -108,6 +123,7 @@ const sampleVenues: Venue[] = [
     decorPolicy: "Both in-house and outside decorators allowed",
     hasLetterhead: true,
     images: ["/placeholder.svg?height=250&width=400", "/placeholder.svg?height=250&width=400"],
+    timeSlots: [{ id: "evening", label: "Evening", startTime: "18:00", endTime: "23:00" }],
   },
   {
     id: 3,
@@ -134,12 +150,38 @@ const sampleVenues: Venue[] = [
     decorPolicy: "Only in-house decorators",
     hasLetterhead: false,
     images: ["/placeholder.svg?height=250&width=400"],
+    timeSlots: [
+      { id: "morning", label: "Morning", startTime: "06:00", endTime: "12:00" },
+      { id: "afternoon", label: "Afternoon", startTime: "12:00", endTime: "18:00" },
+      { id: "evening", label: "Evening", startTime: "18:00", endTime: "23:00" },
+    ],
   },
 ]
 
+// Available cities
+const availableCities = [
+  "Trivandrum",
+  "Kollam",
+  "Attingal",
+  "Kochi",
+  "Kozhikode",
+  "Thrissur",
+  "Alappuzha",
+  "Kottayam",
+  "Palakkad",
+  "Malappuram",
+  "Kannur",
+  "Kasaragod",
+]
+
+// Fixed time slots
+const fixedTimeSlots: TimeSlot[] = [
+  { id: "morning", label: "Morning", startTime: "06:00", endTime: "12:00" },
+  { id: "afternoon", label: "Afternoon", startTime: "12:00", endTime: "18:00" },
+  { id: "evening", label: "Evening", startTime: "18:00", endTime: "23:00" },
+]
 
 export default function VenueManagement() {
-
   const [selectedVenue, setSelectedVenue] = useState<Venue | null>(null)
   const [expandedVenue, setExpandedVenue] = useState<number | null>(null)
   const [venues, setVenues] = useState<Venue[]>(sampleVenues)
@@ -149,6 +191,17 @@ export default function VenueManagement() {
   const [venueTypeFilter, setVenueTypeFilter] = useState<string>("all")
   const [cityFilter, setCityFilter] = useState<string>("all")
   const [activeModalTab, setActiveModalTab] = useState<string>("basic")
+  const [modalStep, setModalStep] = useState<number>(1) // 1: Basic Info, 2: Facilities, 3: Policies & Time Slots
+  const [selectedCities, setSelectedCities] = useState<string[]>([])
+  const [selectedTimeSlots, setSelectedTimeSlots] = useState<TimeSlot[]>([])
+  const [customTimeSlots, setCustomTimeSlots] = useState<TimeSlot[]>([])
+  const [newCustomSlot, setNewCustomSlot] = useState<{ label: string; startTime: string; endTime: string }>({
+    label: "",
+    startTime: "",
+    endTime: "",
+  })
+  const [uploadedImages, setUploadedImages] = useState<string[]>([])
+
   const [newVenue, setNewVenue] = useState<{
     name: string
     address: string
@@ -173,6 +226,7 @@ export default function VenueManagement() {
     hasLetterhead: boolean
     images: string[]
     altPhone?: string
+    timeSlots: TimeSlot[]
   }>({
     name: "",
     address: "",
@@ -197,9 +251,10 @@ export default function VenueManagement() {
     hasLetterhead: false,
     images: [],
     altPhone: "",
+    timeSlots: [],
   })
 
-  const navigate=useNavigate()
+  const navigate = useNavigate()
 
   const toggleVenueExpand = (id: number) => {
     setExpandedVenue(expandedVenue === id ? null : id)
@@ -218,24 +273,13 @@ export default function VenueManagement() {
     }
   }
 
-  const handleAddVenue = () => {
-    const newId = Math.max(...venues.map((v) => v.id)) + 1
-    const venueToAdd: Venue = {
-      ...newVenue,
-      id: newId,
-      cities: newVenue.cities || [],
-      amenities: newVenue.amenities || [],
-      images: newVenue.images || [],
-      tariff: newVenue.tariff || { wedding: "", reception: "" },
-      changingRooms: newVenue.changingRooms || 0,
-      seatingCapacity: newVenue.seatingCapacity || 0,
-      parkingSlots: newVenue.parkingSlots || 0,
-      diningCapacity: newVenue.diningCapacity || 0,
-      hasLetterhead: newVenue.hasLetterhead || false,
-    }
-
-    setVenues([...venues, venueToAdd])
-    setIsAddModalOpen(false)
+  const resetAddModal = () => {
+    setModalStep(1)
+    setSelectedCities([])
+    setSelectedTimeSlots([])
+    setCustomTimeSlots([])
+    setUploadedImages([])
+    setNewCustomSlot({ label: "", startTime: "", endTime: "" })
     setNewVenue({
       name: "",
       address: "",
@@ -260,7 +304,32 @@ export default function VenueManagement() {
       hasLetterhead: false,
       images: [],
       altPhone: "",
+      timeSlots: [],
     })
+  }
+
+  const handleAddVenue = () => {
+    const newId = Math.max(...venues.map((v) => v.id)) + 1
+    const allTimeSlots = [...selectedTimeSlots, ...customTimeSlots]
+
+    const venueToAdd: Venue = {
+      ...newVenue,
+      id: newId,
+      cities: selectedCities,
+      images: uploadedImages,
+      timeSlots: allTimeSlots,
+      amenities: newVenue.amenities || [],
+      tariff: newVenue.tariff || { wedding: "", reception: "" },
+      changingRooms: newVenue.changingRooms || 0,
+      seatingCapacity: newVenue.seatingCapacity || 0,
+      parkingSlots: newVenue.parkingSlots || 0,
+      diningCapacity: newVenue.diningCapacity || 0,
+      hasLetterhead: newVenue.hasLetterhead || false,
+    }
+
+    setVenues([...venues, venueToAdd])
+    setIsAddModalOpen(false)
+    resetAddModal()
   }
 
   const handleUpdateVenue = () => {
@@ -311,8 +380,9 @@ export default function VenueManagement() {
       }
     }
   }
+
   const handleGoBack = () => {
-    navigate(-1) 
+    navigate(-1)
   }
 
   const handleSelectChange = (value: string, name: string, isNewVenue = false) => {
@@ -326,6 +396,77 @@ export default function VenueManagement() {
         ...selectedVenue,
         [name]: value,
       })
+    }
+  }
+
+  const handleCityToggle = (city: string) => {
+    setSelectedCities((prev) => (prev.includes(city) ? prev.filter((c) => c !== city) : [...prev, city]))
+  }
+
+  const handleTimeSlotToggle = (timeSlot: TimeSlot) => {
+    setSelectedTimeSlots((prev) => {
+      const exists = prev.find((slot) => slot.id === timeSlot.id)
+      if (exists) {
+        return prev.filter((slot) => slot.id !== timeSlot.id)
+      } else {
+        return [...prev, timeSlot]
+      }
+    })
+  }
+
+  const handleAddCustomTimeSlot = () => {
+    if (newCustomSlot.label && newCustomSlot.startTime && newCustomSlot.endTime) {
+      const customSlot: TimeSlot = {
+        id: `custom-${Date.now()}`,
+        label: newCustomSlot.label,
+        startTime: newCustomSlot.startTime,
+        endTime: newCustomSlot.endTime,
+        isCustom: true,
+      }
+      setCustomTimeSlots((prev) => [...prev, customSlot])
+      setNewCustomSlot({ label: "", startTime: "", endTime: "" })
+    }
+  }
+
+  const handleRemoveCustomTimeSlot = (id: string) => {
+    setCustomTimeSlots((prev) => prev.filter((slot) => slot.id !== id))
+  }
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (files) {
+      // In a real application, you would upload these files to a server
+      // For now, we'll create placeholder URLs
+      const newImages = Array.from(files).map(
+        (file, index) => `/placeholder.svg?height=250&width=400&text=${file.name}`,
+      )
+      setUploadedImages((prev) => [...prev, ...newImages])
+    }
+  }
+
+  const handleRemoveImage = (index: number) => {
+    setUploadedImages((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const canProceedToNextStep = () => {
+    if (modalStep === 1) {
+      return newVenue.name && newVenue.address && newVenue.phone && newVenue.email && selectedCities.length > 0
+    }
+    if (modalStep === 2) {
+      return newVenue.seatingCapacity > 0 && newVenue.diningCapacity > 0
+    }
+    return true
+  }
+
+  const handleNextStep = () => {
+    if (canProceedToNextStep() && modalStep < 3) {
+      setModalStep(modalStep + 1)
+    }
+  }
+
+  const handlePrevStep = () => {
+    if (modalStep > 1) {
+      setModalStep(modalStep - 1)
     }
   }
 
@@ -348,7 +489,7 @@ export default function VenueManagement() {
       <Header />
 
       <div className="min-h-screen w-full flex mt-10 bg-[#FDF8F1]">
-      <div className="w-64 shrink-0  h-[calc(100vh-64px)]  sticky top-16 hidden md:block">
+        <div className="w-64 shrink-0 h-[calc(100vh-64px)] sticky top-16 hidden md:block">
           <Sidebar />
         </div>
 
@@ -382,7 +523,7 @@ export default function VenueManagement() {
               {/* Venue List */}
               <div className="bg-white rounded-lg shadow-sm mb-4 p-4">
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-lg  font-medium">Venues</h2>
+                  <h2 className="text-lg font-medium">Venues</h2>
                   <div className="flex items-center space-x-2">
                     <div className="relative">
                       <input
@@ -405,7 +546,7 @@ export default function VenueManagement() {
                       <option value="Non-AC">Non-AC Venues</option>
                     </select>
 
-                    <select
+                    {/* <select
                       className="border border-[#b09d94] rounded-md px-3 py-2 bg-white"
                       value={cityFilter}
                       onChange={(e) => setCityFilter(e.target.value)}
@@ -416,20 +557,20 @@ export default function VenueManagement() {
                           {city}
                         </option>
                       ))}
-                    </select>
+                    </select> */}
                   </div>
                 </div>
 
-                <div className="divide-y divide-[#b09d94] ">
+                <div className="divide-y divide-[#b09d94]">
                   {filteredVenues.length === 0 ? (
-                    <div className="py-8 text-center  text-gray-500">No venues match your search criteria</div>
+                    <div className="py-8 text-center text-gray-500">No venues match your search criteria</div>
                   ) : (
                     filteredVenues.map((venue) => (
-                      <div key={venue.id} className="py-3 ">
-                        <div className="flex items-center  justify-between">
+                      <div key={venue.id} className="py-3">
+                        <div className="flex items-center justify-between">
                           <div className="flex items-center cursor-pointer" onClick={() => toggleVenueExpand(venue.id)}>
                             {expandedVenue === venue.id ? (
-                              <ChevronDown size={18} className="text-gray-500 mr-2 " />
+                              <ChevronDown size={18} className="text-gray-500 mr-2" />
                             ) : (
                               <ChevronRight size={18} className="text-gray-500 mr-2" />
                             )}
@@ -465,7 +606,7 @@ export default function VenueManagement() {
                                 e.stopPropagation()
                                 deleteVenue(venue.id)
                               }}
-                              className="p-1.5  rounded-md hover:bg-gray-100"
+                              className="p-1.5 rounded-md hover:bg-gray-100"
                             >
                               <Trash size={16} className="text-gray-500" />
                             </button>
@@ -494,6 +635,14 @@ export default function VenueManagement() {
                                 </div>
 
                                 <div className="flex items-start">
+                                  <MapPin size={16} className="text-gray-500 mr-2 mt-0.5" />
+                                  <div>
+                                    <p className="text-sm font-medium">Cities</p>
+                                    <p className="text-sm">{venue.cities.join(", ")}</p>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-start">
                                   <Users size={16} className="text-gray-500 mr-2 mt-0.5" />
                                   <div>
                                     <p className="text-sm font-medium">Capacity</p>
@@ -517,6 +666,18 @@ export default function VenueManagement() {
                                   <div>
                                     <p className="text-sm font-medium">Amenities</p>
                                     <p className="text-sm">{venue.amenities.join(", ")}</p>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-start">
+                                  <Clock size={16} className="text-gray-500 mr-2 mt-0.5" />
+                                  <div>
+                                    <p className="text-sm font-medium">Time Slots</p>
+                                    {venue.timeSlots.map((slot) => (
+                                      <p key={slot.id} className="text-sm">
+                                        {slot.label}: {slot.startTime} - {slot.endTime}
+                                      </p>
+                                    ))}
                                   </div>
                                 </div>
 
@@ -581,15 +742,15 @@ export default function VenueManagement() {
                 </div>
               </div>
             </div>
-             <div className="mb-6">
-                          <button
-                            onClick={handleGoBack}
-                            className="flex items-center px-4 py-2 text-[#78533F] hover:bg-[#78533F]/10 rounded-md transition-colors"
-                          >
-                            <ArrowLeft className="h-4 w-4 mr-2" />
-                            Back 
-                          </button>
-                        </div>
+            <div className="mb-6">
+              <button
+                onClick={handleGoBack}
+                className="flex items-center px-4 py-2 text-[#78533F] hover:bg-[#78533F]/10 rounded-md transition-colors"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -597,43 +758,54 @@ export default function VenueManagement() {
       {/* Add Venue Modal */}
       {isAddModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-[600px] max-h-[90vh]  w-full">
+          <div className="bg-white rounded-lg p-6 max-w-[700px] max-h-[90vh] overflow-y-auto w-full">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-medium">Add New Venue</h2>
-              <button onClick={() => setIsAddModalOpen(false)} className="text-gray-500 hover:text-gray-700">
+              <div>
+                <h2 className="text-lg font-medium">Add New Venue</h2>
+                <div className="flex items-center mt-2 space-x-2">
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${modalStep >= 1 ? "bg-[#ED695A] text-white" : "bg-gray-200 text-gray-600"}`}
+                  >
+                    1
+                  </div>
+                  <div className={`w-16 h-1 ${modalStep >= 2 ? "bg-[#ED695A]" : "bg-gray-200"}`}></div>
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${modalStep >= 2 ? "bg-[#ED695A] text-white" : "bg-gray-200 text-gray-600"}`}
+                  >
+                    2
+                  </div>
+                  <div className={`w-16 h-1 ${modalStep >= 3 ? "bg-[#ED695A]" : "bg-gray-200"}`}></div>
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${modalStep >= 3 ? "bg-[#ED695A] text-white" : "bg-gray-200 text-gray-600"}`}
+                  >
+                    3
+                  </div>
+                </div>
+                <div className="flex items-center mt-1 space-x-2 text-xs text-gray-600">
+                  <span className="w-8 text-center">Basic</span>
+                  <span className="w-16 text-center">Facilities</span>
+                  <span className="w-8 text-center">Policies</span>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setIsAddModalOpen(false)
+                  resetAddModal()
+                }}
+                className="text-gray-500 hover:text-gray-700"
+              >
                 <X size={20} />
               </button>
             </div>
 
-            <div className="mb-4">
-              <div className="flex border-b">
-                <button
-                  className={`px-4 py-2 ${activeModalTab === "basic" ? "border-b-2 border-[#ED695A] text-[#ED695A]" : "text-gray-500"}`}
-                  onClick={() => setActiveModalTab("basic")}
-                >
-                  Basic Info
-                </button>
-                <button
-                  className={`px-4 py-2 ${activeModalTab === "facilities" ? "border-b-2 border-[#ED695A] text-[#ED695A]" : "text-gray-500"}`}
-                  onClick={() => setActiveModalTab("facilities")}
-                >
-                  Facilities
-                </button>
-                <button
-                  className={`px-4 py-2 ${activeModalTab === "policies" ? "border-b-2 border-[#ED695A] text-[#ED695A]" : "text-gray-500"}`}
-                  onClick={() => setActiveModalTab("policies")}
-                >
-                  Policies & Pricing
-                </button>
-              </div>
-            </div>
-
-            {activeModalTab === "basic" && (
+            {/* Step 1: Basic Info */}
+            {modalStep === 1 && (
               <div className="space-y-4">
+                <h3 className="text-md font-medium text-gray-800 mb-4">Basic Information</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                      Venue Name
+                      Venue Name *
                     </label>
                     <input
                       id="name"
@@ -641,13 +813,14 @@ export default function VenueManagement() {
                       value={newVenue.name}
                       onChange={(e) => handleInputChange(e, true)}
                       placeholder="Enter venue name"
-                      className="w-full px-3 py-2 border  border-[#b09d94] rounded-md"
+                      className="w-full px-3 py-2 border border-[#b09d94] rounded-md"
+                      required
                     />
                   </div>
 
                   <div className="space-y-2">
                     <label htmlFor="acType" className="block text-sm font-medium text-gray-700">
-                      Venue Type
+                      Venue Type *
                     </label>
                     <select
                       id="acType"
@@ -664,7 +837,7 @@ export default function VenueManagement() {
 
                   <div className="space-y-2 col-span-2">
                     <label htmlFor="address" className="block text-sm font-medium text-gray-700">
-                      Address
+                      Address *
                     </label>
                     <textarea
                       id="address"
@@ -674,12 +847,13 @@ export default function VenueManagement() {
                       placeholder="Enter full address"
                       rows={2}
                       className="w-full px-3 py-2 border border-[#b09d94] rounded-md"
+                      required
                     />
                   </div>
 
                   <div className="space-y-2">
                     <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-                      Phone Number
+                      Phone Number *
                     </label>
                     <input
                       id="phone"
@@ -688,6 +862,7 @@ export default function VenueManagement() {
                       onChange={(e) => handleInputChange(e, true)}
                       placeholder="Enter phone number"
                       className="w-full px-3 py-2 border border-[#b09d94] rounded-md"
+                      required
                     />
                   </div>
 
@@ -707,7 +882,7 @@ export default function VenueManagement() {
 
                   <div className="space-y-2">
                     <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                      Email
+                      Email *
                     </label>
                     <input
                       id="email"
@@ -717,6 +892,7 @@ export default function VenueManagement() {
                       onChange={(e) => handleInputChange(e, true)}
                       placeholder="Enter email address"
                       className="w-full px-3 py-2 border border-[#b09d94] rounded-md"
+                      required
                     />
                   </div>
 
@@ -733,16 +909,40 @@ export default function VenueManagement() {
                       className="w-full px-3 py-2 border border-[#b09d94] rounded-md"
                     />
                   </div>
+
+                  <div className="space-y-2 col-span-2">
+                    <label className="block text-sm font-medium text-gray-700">Cities * (Select at least one)</label>
+                    <div className="grid grid-cols-3 gap-2 max-h-32 overflow-y-auto border border-[#b09d94] rounded-md p-3">
+                      {availableCities.map((city) => (
+                        <label key={city} className="flex items-center space-x-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={selectedCities.includes(city)}
+                            onChange={() => handleCityToggle(city)}
+                            className="h-4 w-4 rounded border-gray-300 text-[#ED695A] focus:ring-[#ED695A]"
+                          />
+                          <span className="text-sm">{city}</span>
+                        </label>
+                      ))}
+                    </div>
+                    {selectedCities.length > 0 && (
+                      <div className="mt-2">
+                        <p className="text-sm text-gray-600">Selected: {selectedCities.join(", ")}</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
 
-            {activeModalTab === "facilities" && (
+            {/* Step 2: Facilities */}
+            {modalStep === 2 && (
               <div className="space-y-4">
+                <h3 className="text-md font-medium text-gray-800 mb-4">Facilities & Images</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label htmlFor="seatingCapacity" className="block text-sm font-medium text-gray-700">
-                      Seating Capacity
+                      Seating Capacity *
                     </label>
                     <input
                       id="seatingCapacity"
@@ -752,12 +952,13 @@ export default function VenueManagement() {
                       onChange={(e) => handleInputChange(e, true)}
                       placeholder="Enter seating capacity"
                       className="w-full px-3 py-2 border border-[#b09d94] rounded-md"
+                      required
                     />
                   </div>
 
                   <div className="space-y-2">
                     <label htmlFor="diningCapacity" className="block text-sm font-medium text-gray-700">
-                      Dining Capacity
+                      Dining Capacity *
                     </label>
                     <input
                       id="diningCapacity"
@@ -767,6 +968,7 @@ export default function VenueManagement() {
                       onChange={(e) => handleInputChange(e, true)}
                       placeholder="Enter dining capacity"
                       className="w-full px-3 py-2 border border-[#b09d94] rounded-md"
+                      required
                     />
                   </div>
 
@@ -837,12 +1039,251 @@ export default function VenueManagement() {
                       className="w-full px-3 py-2 border border-[#b09d94] rounded-md"
                     />
                   </div>
+
+                  <div className="space-y-2 col-span-2">
+                    <label className="block text-sm font-medium text-gray-700">Venue Images</label>
+                    <div className="border-2 border-dashed border-gray-300 rounded-md p-4">
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        className="hidden"
+                        id="image-upload"
+                      />
+                      <label
+                        htmlFor="image-upload"
+                        className="cursor-pointer flex flex-col items-center justify-center space-y-2"
+                      >
+                        <Upload size={24} className="text-gray-400" />
+                        <span className="text-sm text-gray-600">Click to upload images</span>
+                        <span className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</span>
+                      </label>
+                    </div>
+                    {uploadedImages.length > 0 && (
+                      <div className="mt-3">
+                        <p className="text-sm font-medium text-gray-700 mb-2">Uploaded Images:</p>
+                        <div className="grid grid-cols-3 gap-2">
+                          {uploadedImages.map((img, index) => (
+                            <div key={index} className="relative">
+                              <img
+                                src={img || "/placeholder.svg"}
+                                alt={`Upload ${index + 1}`}
+                                className="w-full h-20 object-cover rounded-md"
+                              />
+                              <button
+                                onClick={() => handleRemoveImage(index)}
+                                className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                              >
+                                <X size={12} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
 
-            {activeModalTab === "policies" && (
+            {/* Step 3: Policies & Time Slots */}
+            {modalStep === 3 && (
               <div className="space-y-4">
+                <h3 className="text-md font-medium text-gray-800 mb-4">Policies & Time Slots</h3>
+
+                {/* Time Slots Section */}
+                <div className="space-y-4 border-b border-gray-200 pb-6">
+                  <h4 className="text-sm font-medium text-gray-700 mb-3">Available Time Slots</h4>
+
+                  {/* Fixed Time Slots - Horizontal Layout */}
+                  <div className="space-y-3">
+                    <label className="block text-sm font-medium text-gray-600">
+                      Select Time Slots (Multiple selection allowed)
+                    </label>
+                    <div className="flex flex-wrap items-center gap-3">
+                      {fixedTimeSlots.map((slot) => {
+                        const isSelected = selectedTimeSlots.some((s) => s.id === slot.id)
+                        return (
+                          <button
+                            key={slot.id}
+                            type="button"
+                            onClick={() => handleTimeSlotToggle(slot)}
+                            className={`relative flex items-center space-x-3 px-4 py-3 rounded-lg border-2 transition-all duration-200 hover:shadow-md ${
+                              isSelected
+                                ? "border-[#ED695A] bg-[#ED695A]/10 shadow-sm"
+                                : "border-gray-200 bg-white hover:border-gray-300"
+                            }`}
+                          >
+                            {/* Custom Circle Checkbox */}
+                            <div className="relative">
+                              <div
+                                className={`w-5 h-5 rounded-full border-2 transition-all duration-200 ${
+                                  isSelected ? "border-[#ED695A] bg-[#ED695A]" : "border-gray-300 bg-white"
+                                }`}
+                              >
+                                {isSelected && (
+                                  <div className="absolute inset-0 flex items-center justify-center">
+                                    <div className="w-2 h-2 bg-white rounded-full"></div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="text-left">
+                              <div className={`font-medium text-sm ${isSelected ? "text-[#ED695A]" : "text-gray-700"}`}>
+                                {slot.label}
+                              </div>
+                              <div className={`text-xs ${isSelected ? "text-[#ED695A]/80" : "text-gray-500"}`}>
+                                {slot.startTime} - {slot.endTime}
+                              </div>
+                            </div>
+                          </button>
+                        )
+                      })}
+
+                      {/* Custom Time Slot Button */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          // Toggle custom slot form visibility
+                          const customForm = document.getElementById("custom-slot-form")
+                          if (customForm) {
+                            customForm.style.display = customForm.style.display === "none" ? "block" : "none"
+                          }
+                        }}
+                        className="flex items-center space-x-3 px-4 py-3 rounded-lg border-2 border-dashed border-[#ED695A] bg-[#ED695A]/5 hover:bg-[#ED695A]/10 transition-all duration-200 hover:shadow-md"
+                      >
+                        <div className="w-5 h-5 rounded-full border-2 border-[#ED695A] bg-white flex items-center justify-center">
+                          <Plus size={12} className="text-[#ED695A]" />
+                        </div>
+                        <div className="text-left">
+                          <div className="font-medium text-sm text-[#ED695A]">Custom Slot</div>
+                          <div className="text-xs text-[#ED695A]/80">Add your own</div>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Custom Time Slot Form */}
+                  <div id="custom-slot-form" className="space-y-3" style={{ display: "none" }}>
+                    <div className="bg-gray-50 p-4 rounded-lg border">
+                      <label className="block text-sm font-medium text-gray-700 mb-3">Create Custom Time Slot</label>
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">Slot Name</label>
+                          <input
+                            type="text"
+                            placeholder="e.g., Late Night"
+                            value={newCustomSlot.label}
+                            onChange={(e) => setNewCustomSlot({ ...newCustomSlot, label: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#ED695A] focus:border-transparent"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">Start Time</label>
+                          <input
+                            type="time"
+                            value={newCustomSlot.startTime}
+                            onChange={(e) => setNewCustomSlot({ ...newCustomSlot, startTime: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#ED695A] focus:border-transparent"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">End Time</label>
+                          <input
+                            type="time"
+                            value={newCustomSlot.endTime}
+                            onChange={(e) => setNewCustomSlot({ ...newCustomSlot, endTime: e.target.value })}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#ED695A] focus:border-transparent"
+                          />
+                        </div>
+                        <div className="flex items-end">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              handleAddCustomTimeSlot()
+                              // Hide form after adding
+                              const customForm = document.getElementById("custom-slot-form")
+                              if (customForm) {
+                                customForm.style.display = "none"
+                              }
+                            }}
+                            disabled={!newCustomSlot.label || !newCustomSlot.startTime || !newCustomSlot.endTime}
+                            className="w-full px-4 py-2 bg-[#ED695A] text-white rounded-md hover:bg-[#ED695A]/90 disabled:bg-gray-300 disabled:cursor-not-allowed text-sm font-medium transition-colors duration-200"
+                          >
+                            Add Slot
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Display Custom Time Slots */}
+                  {customTimeSlots.length > 0 && (
+                    <div className="space-y-3">
+                      <label className="block text-sm font-medium text-gray-700">Custom Time Slots</label>
+                      <div className="flex flex-wrap gap-2">
+                        {customTimeSlots.map((slot) => (
+                          <div
+                            key={slot.id}
+                            className="flex items-center space-x-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg"
+                          >
+                            <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center">
+                              <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
+                            </div>
+                            <span className="text-sm font-medium text-blue-700">{slot.label}</span>
+                            <span className="text-xs text-blue-600">
+                              ({slot.startTime} - {slot.endTime})
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveCustomTimeSlot(slot.id)}
+                              className="ml-2 text-red-500 hover:text-red-700 transition-colors duration-200"
+                            >
+                              <X size={14} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Selected Time Slots Summary */}
+                  {(selectedTimeSlots.length > 0 || customTimeSlots.length > 0) && (
+                    <div className="space-y-3">
+                      <label className="block text-sm font-medium text-gray-700">Selected Time Slots Summary</label>
+                      <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                          {selectedTimeSlots.map((slot) => (
+                            <div key={slot.id} className="flex items-center space-x-2 text-sm text-green-700">
+                              <Clock size={14} className="text-green-600" />
+                              <span className="font-medium">{slot.label}:</span>
+                              <span>
+                                {slot.startTime} - {slot.endTime}
+                              </span>
+                            </div>
+                          ))}
+                          {customTimeSlots.map((slot) => (
+                            <div key={slot.id} className="flex items-center space-x-2 text-sm text-green-700">
+                              <Clock size={14} className="text-green-600" />
+                              <span className="font-medium">{slot.label}:</span>
+                              <span>
+                                {slot.startTime} - {slot.endTime}
+                              </span>
+                              <span className="text-xs bg-blue-100 text-blue-700 px-1 rounded">Custom</span>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="mt-2 text-xs text-green-600">
+                          Total slots selected: {selectedTimeSlots.length + customTimeSlots.length}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Policies Section */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label htmlFor="tariff.wedding" className="block text-sm font-medium text-gray-700">
@@ -939,25 +1380,57 @@ export default function VenueManagement() {
               </div>
             )}
 
-            <div className="mt-6 flex justify-end space-x-3">
-              <button
-                onClick={() => setIsAddModalOpen(false)}
-                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleAddVenue}
-                className="px-4 py-2 bg-[#ED695A] text-white rounded-md hover:bg-opacity-90"
-              >
-                Add Venue
-              </button>
+            {/* Modal Footer */}
+            <div className="mt-6 flex justify-between">
+              <div>
+                {modalStep > 1 && (
+                  <button
+                    onClick={handlePrevStep}
+                    className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 flex items-center"
+                  >
+                    <ArrowLeft size={16} className="mr-2" />
+                    Previous
+                  </button>
+                )}
+              </div>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => {
+                    setIsAddModalOpen(false)
+                    resetAddModal()
+                  }}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                {modalStep < 3 ? (
+                  <button
+                    onClick={handleNextStep}
+                    disabled={!canProceedToNextStep()}
+                    className={`px-4 py-2 rounded-md flex items-center ${
+                      canProceedToNextStep()
+                        ? "bg-[#ED695A] text-white hover:bg-opacity-90"
+                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    }`}
+                  >
+                    Next
+                    <ChevronRight size={16} className="ml-2" />
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleAddVenue}
+                    className="px-4 py-2 bg-[#ED695A] text-white rounded-md hover:bg-opacity-90"
+                  >
+                    Add Venue
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Edit Venue Modal */}
+      {/* Edit Venue Modal (keeping existing functionality) */}
       {isEditModalOpen && selectedVenue && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-[600px] max-h-[90vh] overflow-y-auto w-full">
@@ -1090,6 +1563,13 @@ export default function VenueManagement() {
                       className="w-full px-3 py-2 border rounded-md"
                     />
                   </div>
+
+                  <div className="space-y-2 col-span-2">
+                    <label className="block text-sm font-medium text-gray-700">Cities</label>
+                    <div className="p-3 border rounded-md bg-gray-50">
+                      <p className="text-sm">{selectedVenue.cities.join(", ")}</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
@@ -1187,6 +1667,27 @@ export default function VenueManagement() {
                       rows={2}
                       className="w-full px-3 py-2 border rounded-md"
                     />
+                  </div>
+
+                  <div className="space-y-2 col-span-2">
+                    <label className="block text-sm font-medium text-gray-700">Time Slots</label>
+                    <div className="p-3 border rounded-md bg-gray-50">
+                      {selectedVenue.timeSlots.length > 0 ? (
+                        <div className="space-y-1">
+                          {selectedVenue.timeSlots.map((slot) => (
+                            <div key={slot.id} className="text-sm flex items-center">
+                              <Clock size={14} className="mr-2" />
+                              {slot.label}: {slot.startTime} - {slot.endTime}
+                              {slot.isCustom && (
+                                <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-1 rounded">Custom</span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-500">No time slots configured</p>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>

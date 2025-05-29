@@ -188,17 +188,12 @@ const DashboardOverview = () => {
         <div className="border-b border-gray-200">
           <div className="flex">
             <button
-              className={`flex-1 py-4 text-center font-medium ${activeSection === "upcoming" ? "text-[#ED695A] border-b-2 border-[#ED695A]" : "text-gray-500"}`}
+              className={`flex-1 py-4 text-center text-left ml-7 font-medium ${activeSection === "upcoming" ? "text-[#ED695A] border-b-2 border-[#ED695A]" : "text-gray-500"}`}
               onClick={() => setActiveSection("upcoming")}
             >
               Upcoming Events
             </button>
-            <button
-              className={`flex-1 py-4 text-center font-medium ${activeSection === "pending" ? "text-[#ED695A] border-b-2 border-[#ED695A]" : "text-gray-500"}`}
-              onClick={() => setActiveSection("pending")}
-            >
-              Pending Requests
-            </button>
+           
           </div>
         </div>
 
@@ -252,58 +247,7 @@ const DashboardOverview = () => {
         )}
 
         {/* Pending Requests Content */}
-        {activeSection === "pending" && (
-          <div className="p-6">
-            {dashboardData.pendingRequests.length > 0 ? (
-              <div className="space-y-4">
-                {dashboardData.pendingRequests.map((request) => (
-                  <div
-                    key={request.id}
-                    className="flex items-center justify-between border-b border-gray-100 pb-4 last:border-b-0 last:pb-0"
-                  >
-                    <div className="flex items-center space-x-4">
-                      <div className="w-12 h-12 rounded-lg bg-amber-100 flex items-center justify-center">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-6 w-6 text-amber-500"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                          />
-                        </svg>
-                      </div>
-                      <div>
-                        <h4 className="font-medium text-gray-800">{request.name}</h4>
-                        <p className="text-sm text-gray-500">Client: {request.client}</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-medium text-gray-800">{request.date}</div>
-                      <div className="flex space-x-2 mt-2">
-                        <button className="px-3 py-1 text-xs rounded bg-[#ED695A] text-white hover:bg-[#d85c4e] transition-colors">
-                          Accept
-                        </button>
-                        <button className="px-3 py-1 text-xs rounded border border-gray-300 text-gray-700 hover:bg-gray-100 transition-colors">
-                          Decline
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <p className="text-gray-500">No pending requests.</p>
-              </div>
-            )}
-          </div>
-        )}
+    
       </div>
     </div>
   )

@@ -8,6 +8,8 @@ import SlotManagementCalendar from "../auditorium/Slot";
 import DetailsForm from "../auditorium/details";
 import PaymentDetails from "../auditorium/Payment";
 import BookingConfirmation from "../auditorium/BookingsDetails";
+import AuditoriumDetails from "../user/AuditoriumDetails";
+import StaffManagementUI from "../auditorium/Staff";
 
 
 function AuditoriumRoute() {
@@ -23,6 +25,8 @@ function AuditoriumRoute() {
         <Route path='/details' element={<DetailsForm/>}/>
         <Route path='payment' element={<PaymentDetails/>}/>
         <Route path='Bookingconfirmation' element={<BookingConfirmation/>}/>
+        {/* <Route path='/auditoriumdetails' element={<AuditoriumDetails/>} /> */}
+        <Route path='/staff' element={<StaffManagementUI/>}/>
       </Routes>
     </div>
   )

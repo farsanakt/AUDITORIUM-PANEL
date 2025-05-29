@@ -66,8 +66,8 @@ const Sidebar: React.FC = () => {
       ),
     },
     {
-      title: "Finances",
-      path: "/finances",
+      title: "Invoice",
+      path: "#",
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -106,8 +106,8 @@ const Sidebar: React.FC = () => {
       ),
     },
     {
-      title: "Slot",
-      path: "/slot",
+      title: "Staff",
+      path: "/staff",
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -127,7 +127,7 @@ const Sidebar: React.FC = () => {
     },
     {
       title: "Settings",
-      path: "/settings",
+      path: "#",
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
