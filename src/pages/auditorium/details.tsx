@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Calendar } from "lucide-react"
 import { cn } from "../../component/lib/utils"
-import vector from '../../assets/lines.png'
+import Lines from '../../assets/vector.png'
 import Header from "../../component/user/Header"
 import { useNavigate } from "react-router-dom"
 
@@ -24,19 +24,20 @@ export default function DetailsForm() {
   }
 
   return (
-    <div className="w-full max-w-3xl px-8 py-6 relative bg-[#FDF8F1] mx-auto">
+    <div className="w-full max-w-3xl px-8 py-6 ml-50 relative bg-[#FDF8F1]  mx-auton">
+  {/* Background image perfectly aligned to the right */}
+  <img
+    src={Lines}
+    alt="Lines"
+    className="fixed top-0 right-0 h-full object-cover z-0 scale-140"
+    style={{ maxWidth: 'none' }}
+  />
+    
         <Header/>
         
         
       {/* Background image */}
-      <div
-        className="absolute inset-0 z-0 opacity-30"
-        style={{
-            backgroundImage: `url(${vector})`,  
-            backgroundSize: "cover",       
-            backgroundPosition: "center",   
-          }}
-      />
+     
 
       <div className="relative z-10">
      

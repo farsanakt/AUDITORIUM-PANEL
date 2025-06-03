@@ -1,8 +1,17 @@
 
 import Header from '../../component/user/Header'
 import image from '../../assets/image1.png'
+import { useNavigate } from 'react-router-dom';
+
+
 
 const AuditoriumDetails = () => {
+  const navigate=useNavigate()
+
+  const handleBooking=()=>{
+    navigate('/user/bookings')
+
+  }
   return (
     <div className='bg-[#FDF8F1] min-h-screen'>
       <Header />
@@ -45,7 +54,7 @@ const AuditoriumDetails = () => {
             </p>
           </div>
           <div className="flex-shrink-0">
-            <button className="bg-[#9c7c5d] hover:bg-orange-600 mt-15 text-white px-6 py-3 rounded-md font-medium transition-colors flex items-center space-x-2">
+            <button onClick={handleBooking} className="bg-[#9c7c5d] hover:bg-[#d85c4e] mt-15 text-white px-6 py-3 rounded-md font-medium transition-colors flex items-center space-x-2">
               <span>Go to Booking</span>
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />

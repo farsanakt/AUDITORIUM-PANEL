@@ -12,7 +12,7 @@ const Header: React.FC<HeaderProps> = ({ onLoginClick }) => {
   return (
     <>
       {/* Fixed header */}
-      <header className="fixed top-0 left-0 right-0 bg-[#FDF8F1] shadow-md z-50">
+      <header className="fixed top-0 left-0 right-0 bg-[#FDF8F1]  z-50">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           {/* Logo */}
           <div className="flex items-center space-x-2">

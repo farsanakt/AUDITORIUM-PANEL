@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { ArrowLeft, ChevronLeft, ChevronRight, X, Eye, EyeOff } from 'lucide-react';
 import Header from '../../component/user/Header';
 import Sidebar from '../../component/auditorium/Sidebar';
+import { useNavigate } from 'react-router-dom';
 
 // Import your existing components
 
@@ -46,6 +47,7 @@ const VenueBookingPage: React.FC = () => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [cancellingDate, setCancellingDate] = useState<number | null>(null);
+  const navigate=useNavigate()
   
   // Add refs for tooltip management
   const hideTimeoutRef = useRef<number | null>(null);
@@ -218,6 +220,7 @@ const VenueBookingPage: React.FC = () => {
 
   const handleConfirmSlot = () => {
     console.log("Proceeding to booking confirmation");
+    navigate('/Bookingconfirmation')
     setShowConfirmation(false);
     setSelectedSlot(null);
   };
