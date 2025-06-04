@@ -359,18 +359,8 @@ const Bookings: React.FC = () => {
                     </div>
                 )}
 
-                {/* Booking Requirements (Optional) */}
-                {/* 
-                <div className="mt-4 p-3 bg-yellow-50 rounded-lg">
-                    <p className="text-sm text-yellow-700 font-medium">Required for booking:</p>
-                    <ul className="text-sm text-yellow-600 mt-1">
-                    <li>✓ Select a date</li>
-                    <li>✓ Choose AC option</li>
-                    <li>✓ Select time slot</li>
-                    <li>✓ Choose hall</li>
-                    </ul>
-                </div> 
-                */}
+             
+                
                 </div>
 
             </div>

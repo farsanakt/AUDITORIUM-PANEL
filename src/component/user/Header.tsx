@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import logo from '../../assets/Logo v6 1.png';
-import logo1 from '../../assets/Logo v6 2.png';
+import React, { useState } from "react";
+import logo from "../../assets/logo-removebg.png";
+import logo1 from "../../assets/iBooking-removebg.png";
 
 interface HeaderProps {
   onLoginClick?: () => void;
@@ -12,28 +12,36 @@ const Header: React.FC<HeaderProps> = ({ onLoginClick }) => {
   return (
     <>
       {/* Fixed header */}
-      <header className="fixed top-0 left-0 right-0 bg-[#FDF8F1]  z-50">
+      <header className="fixed top-0 mt-0 left-0 right-0 bg-[#FDF8F1]  z-50">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           {/* Logo */}
-          <div className="flex items-center space-x-2">
-            <img src={logo} alt="i Booking Logo" className="h-8 sm:h-10" />
-            <img src={logo1} alt="i Booking Logo 2" className="h-8 sm:h-10" />
+          <div className="flex ml-15 items-center space-x-4">
+            <img
+              src={logo}
+              alt="i Booking Logo"
+              className="h-10 w-auto scale-130"
+            />
+            <img
+              src={logo1}
+              alt="i Booking Logo 2"
+              className="h-6 w-auto ml-15 scale-800"
+            />
           </div>
 
           {/* Desktop Menu */}
           <nav className="hidden md:flex items-center space-x-6">
-            <a href="#" className="text-gray-600 hover:text-gray-800">
+            <a href="#" className="text-[#825F4C] hover:text-gray-800">
               Vendor
             </a>
-            <a href="#" className="text-gray-600 hover:text-gray-800">
+            <a href="#" className="text-[#825F4C] hover:text-gray-800">
               Auditorium
             </a>
-            <a href="#" className="text-gray-600 hover:text-gray-800">
+            <a href="#" className="text-[#825F4C] hover:text-gray-800">
               Admin
             </a>
             <button
               onClick={onLoginClick}
-              className="bg-[#ED695A] hover:bg-red-400 text-white px-4 py-2 rounded-lg shadow transition-colors"
+              className="bg-[#ED695A] hover:bg-red-400 text-white px-4 py-2 rounded-lg shadow-xl transition-colors"
             >
               Login
             </button>
@@ -84,7 +92,7 @@ const Header: React.FC<HeaderProps> = ({ onLoginClick }) => {
             </a>
             <button
               onClick={onLoginClick}
-              className="block w-full text-center bg-[#ED695A] hover:bg-red-400 text-white px-4 py-2 rounded-lg shadow transition-colors"
+              className="block w-full text-center bg-[#ED695A] hover:bg-red-400 text-white px-4 py-2 rounded-lg shadow shadow-2xl transition-colors"
             >
               Login
             </button>
