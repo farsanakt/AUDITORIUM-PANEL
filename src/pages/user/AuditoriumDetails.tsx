@@ -1,31 +1,75 @@
+import React, { useState } from "react";
 import Header from "../../component/user/Header";
 import image from "../../assets/image1.png";
 import { useNavigate } from "react-router-dom";
 import Lines from "../../assets/Group 52 (1).png";
 import Bshape from "../../assets/02 2.png";
+import img1 from "../../assets/image 16.png"
+import img2 from "../../assets/Rectangle 30.png"
+import { useEffect } from "react";
 
-const AuditoriumDetails = () => {
+
+const images = [
+  image,
+  img1, 
+  img2, 
+ 
+];
+
+const AuditoriumDetails: React.FC = () => {
   const navigate = useNavigate();
+  // const [current, setCurrent] = useState(0);
 
-  const handleBooking = () => {
-    navigate("/user/bookings");
+  // const handleBooking = () => {
+  //   navigate("/user/bookings");
+  // };
+
+  // const nextSlide = () => {
+  //   setCurrent((prev: number) => (prev + 1) % images.length);
+  // };
+
+  // const prevSlide = () => {
+  //   setCurrent((prev: number) => (prev - 1 + images.length) % images.length);
+  // };
+
+    const [current, setCurrent] = useState(0);
+
+  const nextSlide = () => {
+    setCurrent((prev) => (prev + 1) % images.length);
   };
+
+  const prevSlide = () => {
+    setCurrent((prev) => (prev - 1 + images.length) % images.length);
+  };
+
+  const handleBooking=async()=>{
+
+  }
+
+  // Auto-slide logic
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrent((prev) => (prev + 1) % images.length);
+    }, 3000); // Change image every 3 seconds
+
+    return () => clearInterval(interval); // Cleanup on unmount
+  }, [images.length]);
+
   return (
-    <div className="bg-[#FDF8F1] min-h-screen">
+    <div className="bg-[#FDF8F1]  min-h-screen">
       <img
         src={Lines}
         alt="Lines"
         className="absolute top-0 left-0 h-full object-cover mt-0 z-0 scale-250"
         style={{ maxWidth: "none" }}
       />
-      <div className="relative z-10 p-2 sm:p-4">
+      <div className="relative z-10  p-2 sm:p-4">
         <Header />
 
-        <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8 max-w-6xl">
+        <div className="container mx-auto px-2  sm:px-4 py-4 sm:py-8 max-w-6xl">
           {/* Headline - Left Aligned */}
-
-          <div className="mb-2 sm:mb-4">
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl text-left font-bold text-[#5B4336]">
+          <div className="mb-2  sm:mb-4">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl text-left  font-bold text-[#5B4336]">
               Safa Auditorium
             </h1>
           </div>
@@ -49,15 +93,58 @@ const AuditoriumDetails = () => {
           </div>
 
           {/* Image Card - Left Aligned */}
-          <div className="mb-6 sm:mb-8">
-            <div className="bg-white rounded-lg shadow-lg overflow-hidden max-w-6xl">
+        <div className="mb-6 sm:mb-8">
+      <div className="relative bg-white rounded-lg shadow-lg overflow-hidden max-w-6xl mx-auto">
+        <img
+          src={images[current]}
+          alt={`Slide ${current + 1}`}
+          className="w-full h-60 sm:h-72 md:h-80 lg:h-[400px] object-cover transition-all duration-700 ease-in-out"
+          onError={(e) => {
+            console.error("Error loading image:", images[current]);
+            (e.target as HTMLImageElement).style.display = 'none';
+          }}
+        />
+        {images.length > 1 && (
+          <>
+            <button
+              onClick={prevSlide}
+              className="absolute top-1/2 left-3 transform -translate-y-1/2  bg-opacity-50 hover:bg-opacity-70 text-white p-2 rounded-full z-10"
+              aria-label="Previous image"
+            >
+              
+            </button>
+            <button
+              onClick={nextSlide}
+              className="absolute top-1/2 right-3 transform -translate-y-1/2  bg-opacity-50 hover:bg-opacity-70 text-white p-2 rounded-full z-10"
+              aria-label="Next image"
+            >
+              
+            </button>
+          </>
+        )}
+      </div>
+
+      {images.length > 1 && (
+        <div className="mt-4 flex justify-center items-center gap-3 overflow-x-auto px-4 scrollbar-hide">
+          {images.map((img, index) => (
+            <button
+              key={index}
+              onClick={() => setCurrent(index)}
+              className={`h-16 w-24 rounded-md overflow-hidden border transition-all duration-200 ${
+                index === current ? 'border-[#b09d94] shadow-md' : 'border-gray-200 hover:border-gray-400'
+              }`}
+            >
               <img
-                src={image}
-                alt="Safa Auditorium"
-                className="w-full h-64 sm:h-80 md:h-96 lg:h-[450px] object-cover"
+                src={img}
+                alt={`Thumbnail ${index + 1}`}
+                className="w-full h-full object-cover"
               />
-            </div>
-          </div>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+
 
           {/* About Venue (Left) and Go to Booking Button (Right) */}
           <div className="flex flex-col lg:flex-row justify-between items-start mb-6 sm:mb-8 gap-4 lg:gap-0">
@@ -99,7 +186,7 @@ const AuditoriumDetails = () => {
 
           {/* Contact - Left Aligned */}
           <div className="mb-6 sm:mb-8">
-            <h3 className="text-lg sm:text-xl font-semibold text-left mt-8 sm:mt-20  text-[#49516F] mb-4">
+            <h3 className="text-lg sm:text-xl font-semibold text-left mt-8 sm:mt-20 text-[#49516F] mb-4">
               Contact
             </h3>
             <div className="space-y-2">
@@ -115,7 +202,6 @@ const AuditoriumDetails = () => {
                   +91 9876543210
                 </span>
               </div>
-            
             </div>
           </div>
 
@@ -265,7 +351,7 @@ const AuditoriumDetails = () => {
             <img
               src={Bshape}
               alt="Lines"
-              className="absolute  bottom-0 left-[-80px] h-90% object-cover z-0 "
+              className="absolute bottom-0 left-[-80px] h-90% object-cover z-0"
               style={{ maxWidth: "none" }}
             />
 
@@ -290,7 +376,7 @@ const AuditoriumDetails = () => {
 
                   {/* Lodging */}
                   <div>
-                    <h4 className="font-semibold text-base text-[#2A2929]  sm:text-lg mb-2 text-left">
+                    <h4 className="font-semibold text-base text-[#2A2929] sm:text-lg mb-2 text-left">
                       Lodging
                     </h4>
                     <ul className="list-disc list-inside space-y-1 text-left">
@@ -308,10 +394,10 @@ const AuditoriumDetails = () => {
 
                   {/* Changing Rooms */}
                   <div>
-                    <h4 className="font-semibold text-base text-[#2A2929]  sm:text-lg mb-2 text-left">
+                    <h4 className="font-semibold text-base text-[#2A2929] sm:text-lg mb-2 text-left">
                       Changing Rooms
                     </h4>
-                    <ul className="list-disc list-inside space-y-1  text-left">
+                    <ul className="list-disc list-inside space-y-1 text-left">
                       <li>Changing Rooms Available</li>
                       <li>AC Rooms available</li>
                       <li>
@@ -322,7 +408,7 @@ const AuditoriumDetails = () => {
 
                   {/* Amenities */}
                   <div>
-                    <h4 className="font-semibold text-base text-[#2A2929]  sm:text-lg mb-2 text-left">
+                    <h4 className="font-semibold text-base text-[#2A2929] sm:text-lg mb-2 text-left">
                       Amenities
                     </h4>
                     <ul className="list-disc list-inside space-y-1 text-left">
@@ -338,7 +424,7 @@ const AuditoriumDetails = () => {
 
                   {/* Decoration */}
                   <div>
-                    <h4 className="font-semibold text-base text-[#2A2929]  sm:text-lg mb-2 text-left">
+                    <h4 className="font-semibold text-base text-[#2A2929] sm:text-lg mb-2 text-left">
                       Decoration
                     </h4>
                     <ul className="list-disc list-inside space-y-1 text-left">
@@ -351,7 +437,7 @@ const AuditoriumDetails = () => {
 
               {/* Location Section */}
               <div className="mb-6 sm:mb-8">
-                <h2 className="text-xl sm:text-2xl font-bold text-left text-[#5B4336] mt-8 sm:mt-20  mb-4 sm:mb-6">
+                <h2 className="text-xl sm:text-2xl font-bold text-left text-[#5B4336] mt-8 sm:mt-20 mb-4 sm:mb-6">
                   Location
                 </h2>
                 <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
