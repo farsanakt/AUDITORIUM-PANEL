@@ -5,19 +5,19 @@ import { useState } from "react"
 import tk from '../../assets/Rectangle 50.png'
 import { useNavigate } from "react-router-dom"
 import Header from "../../component/user/Header"
-import { singUpRequest } from "../../api/userApi"
+import { userSingUpRequest } from "../../api/userApi"
 import { toast } from 'react-toastify';
 
 
 
 
-const AuditoriumRegistrationPage: React.FC = () => {
+const UserRegistrationPage: React.FC = () => {
   const navigate = useNavigate()
   const [showOtpModal, setShowOtpModal] = useState(false);
 
   const [formData, setFormData] = useState({
-    auditoriumName: "",
-    ownerName: "",
+    firstName: "",
+    lastName: "",
     email: "",
     phone: "",
     password: "",
@@ -57,7 +57,7 @@ const AuditoriumRegistrationPage: React.FC = () => {
   }
 
 const handleSignup = async () => {
-  const response = await singUpRequest(formData);
+  const response = await userSingUpRequest(formData);
 
   if (response.data.success === false) {
     toast.error(response.data.message || 'Signup failed!');
@@ -173,33 +173,33 @@ const handleSignup = async () => {
                 {/* <h3 className="text-[#78533F] font-semibold mb-3 border-b border-[#b09d94] pb-2">Basic Information</h3> */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label htmlFor="auditoriumName" className="text-left block text-[#78533F] font-medium text-sm">
-                      Auditorium Name*
+                    <label htmlFor="firstName" className="text-left block text-[#78533F] font-medium text-sm">
+                      First Name
                     </label>
                     <input
                       type="text"
-                      id="auditoriumName"
-                      name="auditoriumName"
+                      id="firstName"
+                      name="firstName"
                       className="w-full pl-4 pr-3 py-2 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553]  focus:border-transparent transition-all duration-200"
-                      value={formData.auditoriumName}
+                      value={formData.firstName}
                       onChange={handleChange}
-                      placeholder="Enter auditorium name"
+                      placeholder="Enter first name"
                       required
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <label htmlFor="ownerName" className="text-left block text-[#78533F] font-medium text-sm">
-                      Owner Name*
+                    <label htmlFor="lastName" className="text-left block text-[#78533F] font-medium text-sm">
+                      last Name*
                     </label>
                     <input
                       type="text"
-                      id="ownerName"
-                      name="ownerName"
+                      id="lastName"
+                      name="lastName"
                       className="w-full pl-4 pr-3 py-2 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553]  focus:border-transparent transition-all duration-200"
-                      value={formData.ownerName}
+                      value={formData.lastName}
                       onChange={handleChange}
-                      placeholder="Enter owner name"
+                      placeholder="Enter last name"
                       required
                     />
                   </div>
@@ -330,4 +330,4 @@ const handleSignup = async () => {
   )
 }
 
-export default AuditoriumRegistrationPage
+export default UserRegistrationPage

@@ -5,7 +5,13 @@ import './App.css'
 import AuditoriumRoute from './pages/routes/auditoriumRoute'
 import UserRoute from './pages/routes/userRoute'
 
+
+
+
 function App() {
+   
+
+
   return (
     <div>
      <Routes>

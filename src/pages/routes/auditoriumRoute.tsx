@@ -10,15 +10,20 @@ import PaymentDetails from "../auditorium/Payment";
 import BookingConfirmation from "../auditorium/BookingsDetails";
 import AuditoriumDetails from "../user/AuditoriumDetails";
 import StaffManagementUI from "../auditorium/Staff";
+import InvoicePanel from "../auditorium/Invoice";
+import ProtectedRoute from "../../service/protectedRoute";
+import PublicRoute from "../../service/publicRoutes";
 
 
 function AuditoriumRoute() {
   return (
     <div>
       <Routes>
-        <Route path='/' element={<LoginPage/>} />
-        <Route path='/signup' element={<SignupPage/>} />
-        <Route path="/dashboard" element={<Dashboard/>}/>
+      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>}/>
+
+      <Route path='/' element={<PublicRoute><LoginPage/></PublicRoute>} />
+        <Route path='/signup' element={ <PublicRoute><SignupPage/></PublicRoute>} />
+        {/* <Route path="/" element={<LoginPage/>}/> */}
         <Route path='/venue' element={<VenueManagement/>}/>
         <Route path='/bookings' element={<AuditoriumBooking/>} />
         <Route path='/slot' element={<SlotManagementCalendar/>}/>
@@ -27,6 +32,7 @@ function AuditoriumRoute() {
         <Route path='Bookingconfirmation' element={<BookingConfirmation/>}/>
         {/* <Route path='/auditoriumdetails' element={<AuditoriumDetails/>} /> */}
         <Route path='/staff' element={<StaffManagementUI/>}/>
+        <Route path='/invoice' element={<InvoicePanel/>}/>
       </Routes>
     </div>
   )

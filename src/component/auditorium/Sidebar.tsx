@@ -5,7 +5,6 @@ import { Link, useLocation } from "react-router-dom"
 import type React from "react"
 import { JSX } from "react/jsx-runtime"
 
-
 interface MenuItem {
   title: string
   path: string
@@ -16,7 +15,6 @@ const Sidebar: React.FC = () => {
   const location = useLocation()
   const [activeItem, setActiveItem] = useState<string>("/overview")
 
- 
   useEffect(() => {
     if (location.pathname) {
       setActiveItem(location.pathname)
@@ -67,7 +65,7 @@ const Sidebar: React.FC = () => {
     },
     {
       title: "Invoice",
-      path: "#",
+      path: "/invoice",
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -127,7 +125,7 @@ const Sidebar: React.FC = () => {
     },
     {
       title: "Settings",
-      path: "#",
+      path: "/settings",
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -169,26 +167,26 @@ const Sidebar: React.FC = () => {
   ]
 
   return (
-    <aside className="hidden md:block w-64 bg-white shadow-md min-h-screen p-4 pt-15 flex-shrink-0 mt-8 relative -left-4">
+    <aside className="hidden md:block w-64 bg-gradient-to-b from-gray-50 to-white shadow-lg min-h-screen p-6 flex-shrink-0">
       {/* AUDITORIUM heading */}
-      <div className="mb-4">
-        <h1 className="text-xl font-bold text-[#78533F]">AUDITORIUM</h1>
+      <div className="mb-6">
+        <h1 className="text-2xl font-extrabold text-[#78533F] tracking-tight">AUDITORIUM</h1>
       </div>
 
-      <nav className="mt-6">
-        <ul className="space-y-2">
+      <nav className="mt-4">
+        <ul className="space-y-1">
           {menuItems.map((item) => (
             <li key={item.path}>
               <Link
                 to={item.path}
-                className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
+                className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 ${
                   activeItem === item.path
-                    ? " bg-opacity-10 text-[#ED695A] font-medium"
-                    : "text-gray-600 hover:bg-gray-100"
+                    ? "bg-[#ED695A] text-white font-semibold shadow-md"
+                    : "text-gray-700 hover:bg-gray-100 hover:text-[#78533F]"
                 }`}
                 onClick={() => setActiveItem(item.path)}
               >
-                {item.icon}
+                <span className={activeItem === item.path ? "text-white" : "text-gray-500"}>{item.icon}</span>
                 <span>{item.title}</span>
               </Link>
             </li>

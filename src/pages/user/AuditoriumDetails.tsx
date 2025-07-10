@@ -205,23 +205,23 @@ const AuditoriumDetails: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-[#fef9f5] p-0 rounded-md w-fit">
+          {/* <div className="bg-[#fef9f5] p-0 rounded-md w-fit">
             <p className="text-xs sm:text-sm text-[#49516F] mb-3 text-left">
               Price per plate
             </p>
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4"> */}
               {/* Veg Option */}
-              <div className="flex items-center gap-2 border border-[#b09d94] rounded-md px-3 sm:px-4 py-2">
+              {/* <div className="flex items-center gap-2 border border-[#b09d94] rounded-md px-3 sm:px-4 py-2">
                 <span className="h-2 w-2 sm:h-3 sm:w-3 rounded-full bg-green-500 inline-block"></span>
                 <span className="text-xs sm:text-sm font-medium">Veg</span>
                 <span className="font-bold text-base sm:text-lg">1299/-</span>
                 <span className="text-gray-400 line-through ml-1 text-xs sm:text-sm">
                   1600/-
                 </span>
-              </div>
+              </div> */}
 
               {/* Non Veg Option */}
-              <div className="flex items-center gap-2 border border-[#b09d94] rounded-md px-3 sm:px-4 py-2">
+              {/* <div className="flex items-center gap-2 border border-[#b09d94] rounded-md px-3 sm:px-4 py-2">
                 <span className="h-2 w-2 sm:h-3 sm:w-3 rounded-full bg-red-500 inline-block"></span>
                 <span className="text-xs sm:text-sm font-medium">Non Veg</span>
                 <span className="font-bold text-base sm:text-lg">1499/-</span>
@@ -230,7 +230,7 @@ const AuditoriumDetails: React.FC = () => {
                 </span>
               </div>
             </div>
-          </div>
+          </div> */}
 
           {/* Table - Hall Details */}
           <div className="mb-6 sm:mb-8">
@@ -293,7 +293,10 @@ const AuditoriumDetails: React.FC = () => {
                         Capacity
                       </th>
                       <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-semibold text-gray-800 border border-[#b09d94]">
-                        Price
+                        Ac 
+                      </th>
+                       <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-semibold text-gray-800 border border-[#b09d94]">
+                        Non-Ac
                       </th>
                     </tr>
                   </thead>
@@ -311,6 +314,9 @@ const AuditoriumDetails: React.FC = () => {
                       <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-600 border border-[#b09d94]">
                         ₹25,000
                       </td>
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-600 border border-[#b09d94]">
+                        ₹20,000
+                      </td>
                     </tr>
                     <tr className="hover:bg-gray-50">
                       <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-800 font-medium border border-[#b09d94]">
@@ -325,6 +331,9 @@ const AuditoriumDetails: React.FC = () => {
                       <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-600 border border-[#b09d94]">
                         ₹5,000
                       </td>
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-600 border border-[#b09d94]">
+                        ₹4,500
+                      </td>
                     </tr>
                     <tr className="hover:bg-gray-50">
                       <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-800 font-medium border border-[#b09d94]">
@@ -338,6 +347,9 @@ const AuditoriumDetails: React.FC = () => {
                       </td>
                       <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-600 border border-[#b09d94]">
                         ₹15,000
+                      </td>
+                      <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-600 border border-[#b09d94]">
+                        ₹14,500
                       </td>
                     </tr>
                   </tbody>

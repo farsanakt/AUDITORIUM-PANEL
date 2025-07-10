@@ -2,18 +2,49 @@ import React, { useState } from "react";
 import tk from "../../assets/Rectangle 50.png";
 import { useNavigate } from "react-router-dom";
 import Header from "../../component/user/Header";
+import { userLogin } from "../../api/userApi";
+import { toast } from "react-toastify";
+import { useDispatch } from 'react-redux';
+import { loginFailure, loginStart, loginSuccess } from "../../redux/slices/authSlice";
+
 
 const LoginPage: React.FC = () => {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setemail] = useState("")
+  const [password, setPassword] = useState("")
   const [rememberMe, setRememberMe] = useState(false);
+  const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log("Login with:", username, password, "Remember me:", rememberMe);
-    navigate("/dashboard");
-  };
+const handleLogin = async (e: React.FormEvent) => {
+
+  console.log('jopee')
+  e.preventDefault();
+
+  try {
+    dispatch(loginStart());
+   console.log('hiiiiiii')
+    const response = await userLogin(email, password);
+    console.log(response,'jop')
+
+
+
+    if (response.data.success === false) {
+      dispatch(loginFailure());
+      toast.error(response.data.message);
+    } else {
+      dispatch(loginSuccess({
+        user: response.data.user,
+        accessToken: response.data.accessToken,
+      }));
+
+      toast.success(response.data.message);
+      navigate('/dashboard');
+    }
+  } catch (error: any) {
+    dispatch(loginFailure());
+    toast.error(error.response?.data?.message || 'Login failed');
+  }
+};
 
   const handleForgotPassword = () => {
     console.log("Forgot password clicked");
@@ -83,16 +114,16 @@ const LoginPage: React.FC = () => {
 
             <form onSubmit={handleLogin} className="space-y-5">
               <div className="space-y-1">
-                <label htmlFor="username" className="block text-sm text-[#78533F] font-medium">
-                  Username
+                <label htmlFor="onwername" className="block text-sm text-[#78533F] font-medium">
+                  Email
                 </label>
                 <div className="relative">
                   <input
                     type="text"
-                    id="username"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    placeholder="Enter your username"
+                    id="email"
+                    value={email}
+                    onChange={(e) => setemail(e.target.value)}
+                    placeholder="Enter your email"
                     required
                     className="w-full pl-4 pr-10 py-3 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553] transition-all"
                   />
@@ -221,3 +252,4 @@ const LoginPage: React.FC = () => {
 };
 
 export default LoginPage;
+

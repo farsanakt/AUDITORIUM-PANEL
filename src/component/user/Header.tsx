@@ -1,14 +1,19 @@
 import React, { useState } from "react";
 import logo from "../../assets/logo-removebg.png";
 import logo1 from "../../assets/iBooking-removebg.png";
+import { useNavigate } from "react-router-dom";
 
 interface HeaderProps {
   onLoginClick?: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ onLoginClick }) => {
+const Header: React.FC<HeaderProps> = () => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const navigate=useNavigate()
 
+  const  onLoginClick=()=>{
+   navigate('/')
+  } 
   return (
     <>
       {/* Fixed header */}
