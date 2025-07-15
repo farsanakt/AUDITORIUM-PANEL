@@ -1,4 +1,4 @@
-import { data } from 'react-router-dom';
+
 import  instance  from './axiosInstance';
 // const API_URL = import.meta.env.VITE_USER_API_URL
 
@@ -22,9 +22,11 @@ export const singUpRequest = async (formData: any) => {
   }
 };
 
-export const addVenueAPI=async(data:any)=>{
+export const addVenueAPI=async(formData:FormData)=>{
 
-  const response=await api.post('/addvenue',data)
+
+  console.log(formData,'kkkkkkkkkkk')
+  const response=await api.post('/addvenue',formData)
 
   return response
 

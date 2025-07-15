@@ -4,6 +4,7 @@ import AuditoriumDetails from '../user/AuditoriumDetails'
 import Bookings from '../user/Bookings'
 import DetailsForm from '../auditorium/details'
 import UserRegistrationPage from '../user/Registration'
+import UserLoginPage from '../user/Login'
 // import DetailsForm from '../user/Details'
 
 const UserRoute = () => {
@@ -15,6 +16,7 @@ const UserRoute = () => {
         <Route path ='/bookings' element={<Bookings/>}/>
         <Route path='/details' element={<DetailsForm/>} />
         <Route path='/singup' element={<UserRegistrationPage/>} />
+        <Route path='/login' element={<UserLoginPage/>} />
         </Routes> 
     </div>
   )

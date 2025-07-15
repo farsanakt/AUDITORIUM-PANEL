@@ -20,7 +20,7 @@ const Header: React.FC<HeaderProps> = () => {
       <header className="fixed top-0 mt-0 left-0 right-0 bg-[#FDF8F1]  z-50">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           {/* Logo */}
-          <div className="flex ml-15 items-center space-x-4">
+          <div className="flex ml-26 items-center space-x-4">
             <img
               src={logo}
               alt="i Booking Logo"
@@ -35,10 +35,10 @@ const Header: React.FC<HeaderProps> = () => {
 
           {/* Desktop Menu */}
           <nav className="hidden md:flex items-center space-x-6">
-            <a href="#" className="text-[#825F4C] hover:text-gray-800">
+            <a href="/user/signup" className="text-[#825F4C] hover:text-gray-800">
               Vendor
             </a>
-            <a href="#" className="text-[#825F4C] hover:text-gray-800">
+            <a href="/" className="text-[#825F4C] hover:text-gray-800">
               Auditorium
             </a>
             <a href="#" className="text-[#825F4C] hover:text-gray-800">
