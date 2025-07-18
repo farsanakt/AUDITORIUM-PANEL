@@ -1,58 +1,77 @@
 import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, X } from 'lucide-react';
-import img from '../../assets/Wedding-pana.png';
-import img1 from '../../assets/image1.png';
-import img2 from '../../assets/image 11.png';
+import { FaGoogle, FaFacebookF, FaApple } from 'react-icons/fa';
+
+import img from '../../assets/Beach wedding-pana.png'
+import img1 from '../../assets/Divorce-pana.png'
+import img2 from '../../assets/Honeymoon-pana.png'
+import img3 from '../../assets/Wedding-pana.png'
 import Header from '../../component/user/Header';
+import { useNavigate } from 'react-router-dom';
+
+const images: string[] = [
+  img,
+  img1,
+  img2,
+  img3
+]
 
 const LoginUserPage: React.FC = () => {
-  const [showPassword, setShowPassword] = useState(false);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [isSignUp, setIsSignUp] = useState(true);
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
+  const navigate=useNavigate()
 
-  const images = [img, img1, img2];
+const  handleSignUp =async()=>{
+navigate('/singup')
+
+ }
 
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentImageIndex((prevIndex) => (prevIndex + 1) % images.length);
     }, 3000);
-
     return () => clearInterval(interval);
-  }, [images.length]);
+  }, []);
 
   return (
-    <div className="min-h-screen  flex items-center justify-center p-2 sm:p-4">
-      <Header />
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl overflow-hidden">
-        <div className="flex flex-col sm:flex-row h-full min-h-[400px] sm:min-h-[500px]">
-         
-          <div className="flex-1 bg-[white] p-4 sm:p-6 flex items-center justify-center relative overflow-hidden">
-            <div className="relative w-full h-full flex items-center justify-center">
+    <div className="min-h-screen  flex items-center justify-center px-2 sm:px-4 py-4">
+      <Header/>
+      <div className="bg-white rounded-xl shadow-lg w-full max-w-3xl overflow-hidden">
+        <div className="flex flex-col sm:flex-row">
+          {/* Left image section */}
+          <div className="flex-1 relative bg-white flex flex-col items-center justify-center p-2 sm:p-4">
+            <h1 className="text-2xl sm:text-2xl font-bold text-center text-[#78533F] mb-2">
+              Capture Your Moments
+            </h1>
+
+            <div className="relative w-full h-56 sm:h-64 flex items-center justify-center overflow-hidden">
               {images.map((image, index) => (
                 <div
                   key={index}
-                  className={`absolute w-full h-full flex items-center justify-center transition-all duration-1000 ease-in-out ${
-                    index === currentImageIndex 
-                      ? 'opacity-100 transform translate-x-0' 
-                      : index === (currentImageIndex - 1 + images.length) % images.length
-                      ? 'opacity-0 transform -translate-x-full'
-                      : 'opacity-0 transform translate-x-full'
+                  className={`absolute w-full h-full flex items-center justify-center transition-all duration-1000 ${
+                    index === currentImageIndex
+                      ? 'opacity-100 translate-x-0'
+                      : 'opacity-0 translate-x-full'
                   }`}
                 >
-                  <img 
-                    src={image} 
+                  <img
+                    src={image}
                     alt={`Slide ${index + 1}`}
-                    className="w-48 h-48 sm:w-64 sm:h-64 object-cover rounded-lg shadow-md"
+                    className="w-40 h-40 sm:w-56 sm:h-56 object-cover rounded-lg shadow-md"
                   />
                 </div>
               ))}
             </div>
-           
-            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
+
+            <p className="mt-2 text-xs text-gray-600 text-center">
+              Memories that last forever – log in and make new ones.
+            </p>
+
+            <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-2">
               {images.map((_, index) => (
                 <div
                   key={index}
-                  className={`w-1.5 h-1.5 rounded-full transition-colors ${
+                  className={`w-2 h-2 rounded-full ${
                     index === currentImageIndex ? 'bg-purple-600' : 'bg-gray-300'
                   }`}
                 />
@@ -60,90 +79,83 @@ const LoginUserPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex-1 p-4 sm:p-6 flex flex-col justify-center">
-            <div className="w-full max-w-sm mx-auto">
-           
-              <div className="text-center mb-6">
-                <div className="flex items-center justify-center mb-3">
-                  <X className="w-4 h-4 text-gray-400 ml-auto cursor-pointer" />
-                </div>
-                <h2 className="text-xl font-bold text-[#78533F] mb-2">
-                  Welcome Back..!
-                </h2>
+          {/* Right form section */}
+          <div className="flex-1 p-4 sm:p-6 bg-white flex flex-col justify-center">
+            <div className="w-full max-w-xs mx-auto space-y-4">
+              <div className="text-right">
+                <X className="w-4 h-4 text-gray-400 cursor-pointer" />
               </div>
 
-              
-              <div className="space-y-3">
-                <div>
-                  <input
-                    type="email"
-                    placeholder="JohnTerner.stre@18.design"
-                    className="w-full px-3 py-2 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
-                  />
-                </div>
+              <div className="text-center">
+                <h2 className="text-2xl font-bold text-[#78533F]">Welcome Back</h2>
+                <p className="text-sm text-gray-600 mt-1">Please login to continue</p>
+              </div>
 
+              <div className="space-y-3">
+                {/* Email input */}
+                <input
+                  type="email"
+                  placeholder="Enter your email"
+                  className="w-full px-3 py-2 border border-[#b09d94] rounded-md text-sm focus:ring-2 focus:ring-purple-500"
+                />
+
+                {/* Password input */}
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="••••••••••"
-                    className="w-full px-3 py-2 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm pr-10"
+                    placeholder="Enter your password"
+                    className="w-full px-3 py-2 border border-[#b09d94] rounded-md text-sm pr-10 focus:ring-2 focus:ring-purple-500"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   >
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
 
+                {/* Remember & Forgot */}
+                <div className="flex justify-between text-xs text-gray-600 items-center">
+                  <label className="flex items-center space-x-1">
+                    <input type="checkbox" className="w-3 h-3" />
+                    <span>Remember me</span>
+                  </label>
+                  <button className="text-[#ED695A] hover:underline">Forgot password?</button>
+                </div>
+
+                {/* Login button */}
                 <button
-                  type="submit"
-                  className="w-full bg-[#ED695A] text-white py-2 px-4 rounded-lg font-semibold hover:bg-indigo-700 transition-colors text-sm"
+                  type="button"
+                  className="w-full bg-[#ED695A] text-white py-2 rounded-md font-semibold hover:bg-[#d7584c] transition"
                 >
-                  Login
+                  Sign In
                 </button>
 
-                <div className="text-center">
-                  <button
-                    type="button"
-                    onClick={() => setIsSignUp(!isSignUp)}
-                    className="text-indigo-600 hover:text-indigo-800 font-medium text-sm"
-                  >
-                    <span>didn't have an account? </span>
-                    SIGN IN
+                {/* Divider */}
+                <div className="flex items-center my-3">
+                  <div className="flex-grow h-px bg-gray-300"></div>
+                  <span className="mx-2 text-xs text-gray-500">or continue with</span>
+                  <div className="flex-grow h-px bg-gray-300"></div>
+                </div>
+
+                {/* Social buttons */}
+                <div className="grid grid-cols-3 gap-2">
+                  <button className="flex items-center justify-center border rounded-md h-9 w-full hover:bg-gray-50">
+                    <FaGoogle className="text-red-500" />
+                  </button>
+                  <button className="flex items-center justify-center border rounded-md h-9 w-full hover:bg-gray-50">
+                    <FaFacebookF className="text-blue-600" />
+                  </button>
+                  <button className="flex items-center justify-center border rounded-md h-9 w-full hover:bg-gray-50">
+                    <FaApple className="text-black" />
                   </button>
                 </div>
 
-               
-                <div className="flex items-start space-x-2 text-xs text-gray-600">
-                  <input type="checkbox" className="mt-0.5 w-3 h-3 text-indigo-600" />
-                  <span>
-                    By registering your details, you agree with our{' '}
-                    <a href="#" className="text-indigo-600 hover:underline">
-                      Terms & Conditions
-                    </a>
-                    , and{' '}
-                    <a href="#" className="text-indigo-600 hover:underline">
-                      Privacy and Cookie Policy
-                    </a>
-                    .
-                  </span>
-                </div>
-
-              
-                <div className="flex justify-center space-x-4 mt-4">
-                  <button className="text-blue-600 hover:text-blue-800 font-medium text-sm">
-                    Facebook
-                  </button>
-                  <span className="text-gray-300">|</span>
-                  <button className="text-blue-700 hover:text-blue-900 font-medium text-sm">
-                    LinkedIn
-                  </button>
-                  <span className="text-gray-300">|</span>
-                  <button className="text-red-600 hover:text-red-800 font-medium text-sm">
-                    Google
-                  </button>
+                {/* Sign up text */}
+                <div className="text-center text-xs text-gray-600">
+                  <span>Don't have an account? </span>
+                  <button className="text-[#ED695A] hover:underline" onClick={handleSignUp}>Sign up</button>
                 </div>
               </div>
             </div>

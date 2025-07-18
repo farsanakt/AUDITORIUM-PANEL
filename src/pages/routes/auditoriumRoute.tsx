@@ -21,7 +21,7 @@ function AuditoriumRoute() {
       <Routes>
       <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>}/>
 
-      <Route path='/' element={<PublicRoute><LoginPage/></PublicRoute>} />
+      <Route path='/login' element={<PublicRoute><LoginPage/></PublicRoute>} />
         <Route path='/signup' element={ <PublicRoute><SignupPage/></PublicRoute>} />
         {/* <Route path="/" element={<LoginPage/>}/> */}
         <Route path='/venue' element={<VenueManagement/>}/>

@@ -49,7 +49,7 @@ const AuditoriumRegistrationPage: React.FC = () => {
   }
 
   const handleLogin = () => {
-    navigate('/')
+    navigate('/auditorium/login')
   }
 
   return (

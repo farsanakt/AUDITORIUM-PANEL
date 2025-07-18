@@ -41,7 +41,7 @@ const LoginPage: React.FC = () => {
   };
 
   const handleSignup = () => {
-    navigate("/signup");
+    navigate("/auditorium/signup");
   };
 
   return (

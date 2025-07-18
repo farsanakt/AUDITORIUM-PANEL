@@ -20,7 +20,7 @@ const UserRoute = () => {
         <Route path='/details' element={<DetailsForm/>} />
         <Route path='/singup' element={<UserRegistrationPage/>} />
         <Route path='/login' element={<UserLoginPage/>} />
-        <Route path='/home' element={<HomePage/>}/>
+        <Route path='/' element={<HomePage/>}/>
         <Route path='/auditoriumlist' element={<AuditoriumList/>}/>
         <Route path='/venuelist' element={<VenuePage/>}/>
         </Routes> 

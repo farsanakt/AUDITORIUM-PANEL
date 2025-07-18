@@ -35,10 +35,10 @@ const Header: React.FC<HeaderProps> = () => {
 
           {/* Desktop Menu */}
           <nav className="hidden md:flex items-center space-x-6">
-            <a href="/user/signup" className="text-[#825F4C] hover:text-gray-800">
+            <a href="/login" className="text-[#825F4C] hover:text-gray-800">
               Vendor
             </a>
-            <a href="/" className="text-[#825F4C] hover:text-gray-800">
+            <a href="/auditorium/login" className="text-[#825F4C] hover:text-gray-800">
               Auditorium
             </a>
             <a href="#" className="text-[#825F4C] hover:text-gray-800">

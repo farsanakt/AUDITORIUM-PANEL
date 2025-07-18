@@ -15,8 +15,8 @@ function App() {
   return (
     <div>
      <Routes>
-      <Route path='/*' element={<AuditoriumRoute/>} />
-      <Route path='/user/*' element={<UserRoute/>} />
+      <Route path='/auditorium/*' element={<AuditoriumRoute/>} />
+      <Route path='/*' element={<UserRoute/>} />
      </Routes>
     </div>
   )
