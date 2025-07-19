@@ -213,6 +213,8 @@ const fetchVenues = async () => {
       })
 
       const response = await addVenueAPI(formData)
+
+      console.log(formData,'formeeeeeeeeeeeeee')
       if (response) {
         toast.success("Venue added successfully!")
         resetAddModal()

@@ -28,7 +28,7 @@ const LoginPage: React.FC = () => {
           accessToken: response.data.accessToken,
         }));
         toast.success(response.data.message);
-        navigate('/dashboard');
+        navigate('/auditorium/dashboard');
       }
     } catch (error: any) {
       dispatch(loginFailure());

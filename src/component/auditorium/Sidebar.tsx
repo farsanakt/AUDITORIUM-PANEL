@@ -26,7 +26,7 @@ const Sidebar: React.FC = () => {
   const menuItems: MenuItem[] = [
     {
       title: "Dashboard",
-      path: "/dashboard",
+      path: "/auditorium/dashboard",
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -46,7 +46,7 @@ const Sidebar: React.FC = () => {
     },
     {
       title: "Bookings",
-      path: "/bookings",
+      path: "/auditorium/bookings",
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -66,7 +66,7 @@ const Sidebar: React.FC = () => {
     },
     {
       title: "Venue",
-      path: "/venue",
+      path: "/auditorium/venue",
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -86,7 +86,7 @@ const Sidebar: React.FC = () => {
     },
     {
       title: "Invoice",
-      path: "/invoice",
+      path: "/auditorium/invoice",
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -106,7 +106,7 @@ const Sidebar: React.FC = () => {
     },
     {
       title: "Staff",
-      path: "/staff",
+      path: "/auditorium/staff",
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"

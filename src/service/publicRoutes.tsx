@@ -14,7 +14,7 @@ const PublicRoute: React.FC<PublicRouteProps> = ({ children }) => {
 
   
   if (currentUser) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/auditorium/dashboard" replace />;
   }
 
   
