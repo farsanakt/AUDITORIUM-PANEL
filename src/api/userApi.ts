@@ -22,6 +22,18 @@ export const singUpRequest = async (formData: any) => {
   }
 };
 
+export const AuditoriumLogin =async (email:string,password:string)=>{
+
+  console.log('heooo')
+
+  
+
+  const response=await api.post('/login',{email,password}, { withCredentials: true })
+
+  return response
+
+}
+
 export const addVenueAPI=async(formData:FormData)=>{
 
 
@@ -55,7 +67,7 @@ export const userLogin =async (email:string,password:string)=>{
 
   
 
-  const response=await api.post('/login',{email,password}, { withCredentials: true })
+  const response=await api.post('/signin',{email,password}, { withCredentials: true })
 
   return response
 

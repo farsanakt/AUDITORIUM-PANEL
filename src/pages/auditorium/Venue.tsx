@@ -345,12 +345,12 @@ const fetchVenues = async () => {
           <div className="bg-white p-6 rounded-xl shadow-sm mb-6 border border-orange-100">
             <div className="flex justify-between items-center mb-4">
               <div>
-                <h1 className="text-3xl font-bold text-gray-800 mb-2">Auditorium Management</h1>
-                <p className="text-gray-600">Manage your venues efficiently</p>
+                <h1 className="text-3xl font-bold text-[#78533F] mb-2">Auditorium Management</h1>
+                <p className="text-gray-600 text-left">Manage your venues efficiently</p>
               </div>
               <button
                 onClick={() => setIsAddModalOpen(true)}
-                className="px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg flex items-center hover:from-orange-600 hover:to-red-600 transition-all duration-200 shadow-md hover:shadow-lg"
+                className="px-6 py-3 bg-gradient-to-r bg-[#ED695A]  text-white rounded-lg flex items-center hover:from-[#ED695A] hover:to-[#a94b41] transition-all duration-200 shadow-md hover:shadow-lg"
               >
                 <Plus size={20} className="mr-2" /> Add New Venue
               </button>
@@ -367,14 +367,14 @@ const fetchVenues = async () => {
                     <input
                       type="text"
                       placeholder="Search venues..."
-                      className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      className="pl-10 pr-4 py-2 border border-[#b09d94] rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#876553] focus:border-transparent"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                     />
                     <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
                   </div>
                   <select
-                    className="border border-gray-200 rounded-lg px-4 py-2 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="border border-[#b09d94] rounded-lg px-4 py-2 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#876553]"
                     value={venueTypeFilter}
                     onChange={(e) => setVenueTypeFilter(e.target.value)}
                   >
@@ -557,7 +557,7 @@ const fetchVenues = async () => {
                     name="name"
                     value={newVenue.name || ""}
                     onChange={(e) => handleInputChange(e, true)}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553] focus:border-transparent"
                     placeholder="Enter venue name"
                     required
                   />
@@ -568,7 +568,7 @@ const fetchVenues = async () => {
                     name="acType"
                     value={newVenue.acType || "AC"}
                     onChange={(e) => handleInputChange(e, true)}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-4 py-3 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553]"
                   >
                     <option value="AC">AC</option>
                     <option value="Non-AC">Non-AC</option>
@@ -583,7 +583,7 @@ const fetchVenues = async () => {
                     value={newVenue.address || ""}
                     onChange={(e) => handleInputChange(e, true)}
                     rows={3}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-4 py-3 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553]"
                     placeholder="Enter complete address"
                     required
                   />
@@ -595,7 +595,7 @@ const fetchVenues = async () => {
                     name="phone"
                     value={newVenue.phone || ""}
                     onChange={(e) => handleInputChange(e, true)}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-4 py-3 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553]"
                     placeholder="Enter phone number"
                     required
                   />
@@ -606,7 +606,7 @@ const fetchVenues = async () => {
                     name="altPhone"
                     value={newVenue.altPhone || ""}
                     onChange={(e) => handleInputChange(e, true)}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-4 py-3 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553]"
                     placeholder="Enter alternative phone"
                   />
                 </div>
@@ -618,7 +618,7 @@ const fetchVenues = async () => {
                     type="email"
                     value={newVenue.email || ""}
                     onChange={(e) => handleInputChange(e, true)}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-4 py-3 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553]"
                     placeholder="Enter email address"
                     required
                   />
@@ -629,14 +629,14 @@ const fetchVenues = async () => {
                     name="pincode"
                     value={newVenue.pincode || ""}
                     onChange={(e) => handleInputChange(e, true)}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-4 py-3 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553]"
                     placeholder="Enter pincode"
                   />
                 </div>
 
                 <div className="md:col-span-2">
                   <label className="block text-sm font-semibold text-gray-700 mb-2">Cities *</label>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-h-40 overflow-y-auto border border-gray-200 rounded-lg p-4 bg-gray-50">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-h-40 overflow-y-auto border border-[#b09d94] rounded-lg p-4 bg-gray-50">
                     {availableCities.map((city) => (
                       <label key={city} className="flex items-center space-x-2 cursor-pointer">
                         <input
@@ -658,7 +658,7 @@ const fetchVenues = async () => {
                     type="number"
                     value={newVenue.seatingCapacity || 0}
                     onChange={(e) => handleInputChange(e, true)}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-4 py-3 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553]"
                     placeholder="Enter seating capacity"
                     required
                   />
@@ -670,7 +670,7 @@ const fetchVenues = async () => {
                     type="number"
                     value={newVenue.diningCapacity || 0}
                     onChange={(e) => handleInputChange(e, true)}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-4 py-3 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553]"
                     placeholder="Enter dining capacity"
                     required
                   />
@@ -683,7 +683,7 @@ const fetchVenues = async () => {
                     type="number"
                     value={newVenue.parkingSlots || 0}
                     onChange={(e) => handleInputChange(e, true)}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-4 py-3 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553]"
                     placeholder="Enter parking slots"
                   />
                 </div>
@@ -694,7 +694,7 @@ const fetchVenues = async () => {
                     type="number"
                     value={newVenue.changingRooms || 0}
                     onChange={(e) => handleInputChange(e, true)}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-4 py-3 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553]"
                     placeholder="Enter changing rooms"
                   />
                 </div>
@@ -705,7 +705,7 @@ const fetchVenues = async () => {
                     name="stageSize"
                     value={newVenue.stageSize || ""}
                     onChange={(e) => handleInputChange(e, true)}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-4 py-3 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553]"
                     placeholder="Enter stage size (e.g., 20x15 feet)"
                   />
                 </div>
@@ -725,7 +725,7 @@ const fetchVenues = async () => {
                       })
                     }
                     rows={2}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-4 py-3 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553]"
                     placeholder="Enter amenities separated by commas"
                   />
                 </div>
@@ -736,7 +736,7 @@ const fetchVenues = async () => {
                     name="tariff.wedding"
                     value={newVenue.tariff?.wedding || ""}
                     onChange={(e) => handleInputChange(e, true)}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-4 py-3 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553]"
                     placeholder="Enter wedding tariff"
                   />
                 </div>
@@ -746,7 +746,7 @@ const fetchVenues = async () => {
                     name="tariff.reception"
                     value={newVenue.tariff?.reception || ""}
                     onChange={(e) => handleInputChange(e, true)}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-4 py-3 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553]"
                     placeholder="Enter reception tariff"
                   />
                 </div>
@@ -757,7 +757,7 @@ const fetchVenues = async () => {
                     name="cancellationPolicy"
                     value={newVenue.cancellationPolicy || ""}
                     onChange={(e) => handleInputChange(e, true)}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-4 py-3 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553]"
                     placeholder="Enter cancellation policy"
                   />
                 </div>
@@ -769,7 +769,7 @@ const fetchVenues = async () => {
                     value={newVenue.foodPolicy || ""}
                     onChange={(e) => handleInputChange(e, true)}
                     rows={2}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-4 py-3 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553]"
                     placeholder="Enter food policy"
                   />
                 </div>
@@ -781,7 +781,7 @@ const fetchVenues = async () => {
                     value={newVenue.decorPolicy || ""}
                     onChange={(e) => handleInputChange(e, true)}
                     rows={2}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-4 py-3 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553]"
                     placeholder="Enter decoration policy"
                   />
                 </div>
@@ -859,7 +859,7 @@ const fetchVenues = async () => {
                     </div>
                   </div>
 
-                  <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                  <div className="border border-[#b09d94] rounded-lg p-4 bg-gray-50">
                     <p className="text-sm font-medium text-gray-700 mb-3">Add Custom Time Slot:</p>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3">
                       <input
@@ -867,21 +867,21 @@ const fetchVenues = async () => {
                         placeholder="Label (e.g., Late Night)"
                         value={customTimeSlot.label}
                         onChange={handleCustomTimeSlotChange}
-                        className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        className="px-3 py-2 border border-[#b09d94] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#876553]"
                       />
                       <input
                         name="startTime"
                         type="time"
                         value={customTimeSlot.startTime}
                         onChange={handleCustomTimeSlotChange}
-                        className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        className="px-3 py-2 border border-[#b09d94] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#876553]"
                       />
                       <input
                         name="endTime"
                         type="time"
                         value={customTimeSlot.endTime}
                         onChange={handleCustomTimeSlotChange}
-                        className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        className="px-3 py-2 border border-[#b09d94] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#876553]"
                       />
                       <button
                         type="button"
@@ -973,7 +973,7 @@ const fetchVenues = async () => {
                     name="name"
                     value={selectedVenue.name}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-4 py-3 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553]"
                   />
                 </div>
                 <div>
@@ -982,7 +982,7 @@ const fetchVenues = async () => {
                     name="acType"
                     value={selectedVenue.acType}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-4 py-3 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553]"
                   >
                     <option value="AC">AC</option>
                     <option value="Non-AC">Non-AC</option>
@@ -997,7 +997,7 @@ const fetchVenues = async () => {
                     value={selectedVenue.address}
                     onChange={handleInputChange}
                     rows={3}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-4 py-3 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553]"
                   />
                 </div>
 
@@ -1007,7 +1007,7 @@ const fetchVenues = async () => {
                     name="phone"
                     value={selectedVenue.phone}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-4 py-3 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553]"
                   />
                 </div>
                 <div>
@@ -1016,7 +1016,7 @@ const fetchVenues = async () => {
                     name="altPhone"
                     value={selectedVenue.altPhone || ""}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-4 py-3 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553]"
                   />
                 </div>
 
@@ -1027,7 +1027,7 @@ const fetchVenues = async () => {
                     type="email"
                     value={selectedVenue.email}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-4 py-3 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553]"
                   />
                 </div>
                 <div>
@@ -1036,7 +1036,7 @@ const fetchVenues = async () => {
                     name="pincode"
                     value={selectedVenue.pincode}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-4 py-3 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553]"
                   />
                 </div>
 
@@ -1047,7 +1047,7 @@ const fetchVenues = async () => {
                     type="number"
                     value={selectedVenue.seatingCapacity}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-4 py-3 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553]"
                   />
                 </div>
                 <div>
@@ -1057,7 +1057,7 @@ const fetchVenues = async () => {
                     type="number"
                     value={selectedVenue.diningCapacity}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-4 py-3 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553]"
                   />
                 </div>
 
@@ -1068,7 +1068,7 @@ const fetchVenues = async () => {
                     type="number"
                     value={selectedVenue.parkingSlots}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-4 py-3 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553]"
                   />
                 </div>
                 <div>
@@ -1078,7 +1078,7 @@ const fetchVenues = async () => {
                     type="number"
                     value={selectedVenue.changingRooms}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-4 py-3 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553]"
                   />
                 </div>
 
@@ -1088,7 +1088,7 @@ const fetchVenues = async () => {
                     name="stageSize"
                     value={selectedVenue.stageSize}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-4 py-3 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553]"
                   />
                 </div>
 
@@ -1107,7 +1107,7 @@ const fetchVenues = async () => {
                       })
                     }
                     rows={2}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-4 py-3 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553]"
                   />
                 </div>
 
@@ -1117,7 +1117,7 @@ const fetchVenues = async () => {
                     name="tariff.wedding"
                     value={selectedVenue.tariff.wedding}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-4 py-3 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553]"
                   />
                 </div>
                 <div>
@@ -1126,7 +1126,7 @@ const fetchVenues = async () => {
                     name="tariff.reception"
                     value={selectedVenue.tariff.reception}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-4 py-3 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553]"
                   />
                 </div>
 
@@ -1136,7 +1136,7 @@ const fetchVenues = async () => {
                     name="cancellationPolicy"
                     value={selectedVenue.cancellationPolicy}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-4 py-3 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553]"
                   />
                 </div>
 
@@ -1147,7 +1147,7 @@ const fetchVenues = async () => {
                     value={selectedVenue.foodPolicy}
                     onChange={handleInputChange}
                     rows={2}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-4 py-3 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553]"
                   />
                 </div>
 
@@ -1158,7 +1158,7 @@ const fetchVenues = async () => {
                     value={selectedVenue.decorPolicy}
                     onChange={handleInputChange}
                     rows={2}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-4 py-3 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553]"
                   />
                 </div>
 

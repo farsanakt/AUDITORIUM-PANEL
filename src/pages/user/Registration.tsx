@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState } from "react"
-import tk from '../../assets/Rectangle 50.png'
+import tk from '../../assets/Honeymoon-pana.png'
 import { useNavigate } from "react-router-dom"
 import Header from "../../component/user/Header"
 import { userSingUpRequest } from "../../api/userApi"
@@ -31,7 +31,7 @@ const UserRegistrationPage: React.FC = () => {
 
   const handleOtpModal = async () => {
     setShowOtpModal(false)
-    navigate('/')
+    navigate('/login')
   }
 
   const handleSignup = async () => {
@@ -49,7 +49,7 @@ const UserRegistrationPage: React.FC = () => {
   }
 
   const handleLogin = () => {
-    navigate('/')
+    navigate('/login')
   }
 
   return (
@@ -63,7 +63,7 @@ const UserRegistrationPage: React.FC = () => {
               <div className="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-2">
                 <span className="text-[#ED695A] text-2xl font-bold">TK</span>
               </div>
-              <h2 className="text-[#78533F] text-2xl font-bold mb-2">Register Your Auditorium</h2>
+              <h2 className="text-[#78533F] text-2xl font-bold mb-2">Create New Accound</h2>
               <div className="w-16 h-1 bg-[#ED695A] mx-auto mb-2"></div>
             </div>
             <div className="mb-4">
@@ -98,7 +98,7 @@ const UserRegistrationPage: React.FC = () => {
         <div className="md:w-3/5 p-4 flex justify-center items-start bg-white">
           <div className="w-full max-w-lg py-4">
             <div className="text-center mb-4">
-              <h2 className="text-xl md:text-2xl font-bold text-[#78533F]">AUDITORIUM REGISTRATION</h2>
+              <h2 className="text-xl md:text-2xl font-bold text-[#78533F]">USER REGISTRATION</h2>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-3">

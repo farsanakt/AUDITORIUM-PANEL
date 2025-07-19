@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import tk from "../../assets/Rectangle 50.png";
 import { useNavigate } from "react-router-dom";
 import Header from "../../component/user/Header";
-import { userLogin } from "../../api/userApi";
+import { AuditoriumLogin } from "../../api/userApi";
 import { toast } from "react-toastify";
 import { useDispatch } from 'react-redux';
 import { loginFailure, loginStart, loginSuccess } from "../../redux/slices/authSlice";
@@ -18,7 +18,7 @@ const LoginPage: React.FC = () => {
     e.preventDefault();
     try {
       dispatch(loginStart());
-      const response = await userLogin(email, password);
+      const response = await AuditoriumLogin(email, password);
       if (response.data.success === false) {
         dispatch(loginFailure());
         toast.error(response.data.message);

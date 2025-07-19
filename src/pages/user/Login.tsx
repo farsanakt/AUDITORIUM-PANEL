@@ -2,29 +2,56 @@ import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, X } from 'lucide-react';
 import { FaGoogle, FaFacebookF, FaApple } from 'react-icons/fa';
 
-import img from '../../assets/Beach wedding-pana.png'
-import img1 from '../../assets/Divorce-pana.png'
-import img2 from '../../assets/Honeymoon-pana.png'
-import img3 from '../../assets/Wedding-pana.png'
+import img from '../../assets/Beach wedding-pana.png';
+import img1 from '../../assets/Divorce-pana.png';
+import img2 from '../../assets/Honeymoon-pana.png';
+import img3 from '../../assets/Wedding-pana.png';
+
 import Header from '../../component/user/Header';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { loginFailure, loginStart, loginSuccess } from '../../redux/slices/authSlice';
+import { userLogin } from '../../api/userApi';
+import { toast } from 'react-toastify';
 
-const images: string[] = [
-  img,
-  img1,
-  img2,
-  img3
-]
+const images: string[] = [img, img1, img2, img3];
 
 const LoginUserPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
-  const navigate=useNavigate()
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
 
-const  handleSignUp =async()=>{
-navigate('/singup')
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
 
- }
+  const handleSignUp = () => {
+    navigate('/singup');
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      dispatch(loginStart());
+      const response = await userLogin(email, password);
+      if (response.data.success === false) {
+        dispatch(loginFailure());
+        toast.error(response.data.message);
+      } else {
+        dispatch(
+          loginSuccess({
+            user: response.data.user,
+            accessToken: response.data.accessToken,
+          })
+        );
+        toast.success(response.data.message);
+        navigate('/');
+      }
+    } catch (error: any) {
+      dispatch(loginFailure());
+      toast.error(error.response?.data?.message || 'Login failed');
+    }
+  };
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -34,8 +61,8 @@ navigate('/singup')
   }, []);
 
   return (
-    <div className="min-h-screen  flex items-center justify-center px-2 sm:px-4 py-4">
-      <Header/>
+    <div className="min-h-screen flex items-center justify-center px-2 sm:px-4 py-4">
+      <Header />
       <div className="bg-white rounded-xl shadow-lg w-full max-w-3xl overflow-hidden">
         <div className="flex flex-col sm:flex-row">
           {/* Left image section */}
@@ -91,11 +118,14 @@ navigate('/singup')
                 <p className="text-sm text-gray-600 mt-1">Please login to continue</p>
               </div>
 
-              <div className="space-y-3">
+              <form onSubmit={handleLogin} className="space-y-3">
                 {/* Email input */}
                 <input
                   type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email"
+                  required
                   className="w-full px-3 py-2 border border-[#b09d94] rounded-md text-sm focus:ring-2 focus:ring-purple-500"
                 />
 
@@ -103,7 +133,10 @@ navigate('/singup')
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter your password"
+                    required
                     className="w-full px-3 py-2 border border-[#b09d94] rounded-md text-sm pr-10 focus:ring-2 focus:ring-purple-500"
                   />
                   <button
@@ -121,42 +154,46 @@ navigate('/singup')
                     <input type="checkbox" className="w-3 h-3" />
                     <span>Remember me</span>
                   </label>
-                  <button className="text-[#ED695A] hover:underline">Forgot password?</button>
+                  <button type="button" className="text-[#ED695A] hover:underline">
+                    Forgot password?
+                  </button>
                 </div>
 
                 {/* Login button */}
                 <button
-                  type="button"
+                  type="submit"
                   className="w-full bg-[#ED695A] text-white py-2 rounded-md font-semibold hover:bg-[#d7584c] transition"
                 >
                   Sign In
                 </button>
+              </form>
 
-                {/* Divider */}
-                <div className="flex items-center my-3">
-                  <div className="flex-grow h-px bg-gray-300"></div>
-                  <span className="mx-2 text-xs text-gray-500">or continue with</span>
-                  <div className="flex-grow h-px bg-gray-300"></div>
-                </div>
+              {/* Divider */}
+              <div className="flex items-center my-3">
+                <div className="flex-grow h-px bg-gray-300"></div>
+                <span className="mx-2 text-xs text-gray-500">or continue with</span>
+                <div className="flex-grow h-px bg-gray-300"></div>
+              </div>
 
-                {/* Social buttons */}
-                <div className="grid grid-cols-3 gap-2">
-                  <button className="flex items-center justify-center border rounded-md h-9 w-full hover:bg-gray-50">
-                    <FaGoogle className="text-red-500" />
-                  </button>
-                  <button className="flex items-center justify-center border rounded-md h-9 w-full hover:bg-gray-50">
-                    <FaFacebookF className="text-blue-600" />
-                  </button>
-                  <button className="flex items-center justify-center border rounded-md h-9 w-full hover:bg-gray-50">
-                    <FaApple className="text-black" />
-                  </button>
-                </div>
+              {/* Social buttons */}
+              <div className="grid grid-cols-3 gap-2">
+                <button className="flex items-center justify-center border rounded-md h-9 w-full hover:bg-gray-50">
+                  <FaGoogle className="text-red-500" />
+                </button>
+                <button className="flex items-center justify-center border rounded-md h-9 w-full hover:bg-gray-50">
+                  <FaFacebookF className="text-blue-600" />
+                </button>
+                <button className="flex items-center justify-center border rounded-md h-9 w-full hover:bg-gray-50">
+                  <FaApple className="text-black" />
+                </button>
+              </div>
 
-                {/* Sign up text */}
-                <div className="text-center text-xs text-gray-600">
-                  <span>Don't have an account? </span>
-                  <button className="text-[#ED695A] hover:underline" onClick={handleSignUp}>Sign up</button>
-                </div>
+              {/* Sign up text */}
+              <div className="text-center text-xs text-gray-600">
+                <span>Don't have an account? </span>
+                <button className="text-[#ED695A] hover:underline" onClick={handleSignUp}>
+                  Sign up
+                </button>
               </div>
             </div>
           </div>
