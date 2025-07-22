@@ -3,8 +3,8 @@ import logo from "../../assets/logo-removebg.png";
 import logo1 from "../../assets/iBooking-removebg.png";
 import { useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import { LogOut } from "lucide-react"; // Optional: use any icon library
-import { logout } from "../../redux/slices/authSlice"; // Assume you have a logout action
+import { logout } from "../../redux/slices/authSlice";
+import { User } from "lucide-react";
 
 interface HeaderProps {
   onLoginClick?: () => void;
@@ -20,21 +20,24 @@ const Header: React.FC<HeaderProps> = () => {
 
   const onLoginClick = () => {
     navigate("/login");
+    setMenuOpen(false);
   };
 
   const handleLogout = () => {
-    dispatch(logout()); // dispatch logout action
-    navigate("/"); // redirect to homepage or login
+    dispatch(logout());
+    navigate("/");
+    setMenuOpen(false);
   };
 
   const goToProfile = () => {
     navigate("/profile");
     setDropdownOpen(false);
+    setMenuOpen(false);
   };
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 bg-[#FDF8F1] z-50">
+      <header className="fixed top-0 left-0 right-0 bg-[#FDF8F1] z-50 ">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           {/* Logo */}
           <div className="flex ml-26 items-center space-x-4">
@@ -61,7 +64,7 @@ const Header: React.FC<HeaderProps> = () => {
                   onClick={() => setDropdownOpen(!dropdownOpen)}
                   className="w-10 h-10 rounded-full bg-[#ED695A] text-white flex items-center justify-center hover:bg-red-400 transition"
                 >
-                  👤
+                  <User size={18} />
                 </button>
                 {dropdownOpen && (
                   <div className="absolute right-0 mt-2 w-40 bg-white border rounded-lg shadow-lg text-sm z-50">
@@ -86,7 +89,10 @@ const Header: React.FC<HeaderProps> = () => {
           {/* Mobile Menu Toggle */}
           <button
             className="md:hidden text-gray-800 focus:outline-none"
-            onClick={() => setMenuOpen(!menuOpen)}
+            onClick={() => {
+              setMenuOpen(!menuOpen);
+              setDropdownOpen(false);
+            }}
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               {menuOpen ? (
@@ -99,11 +105,35 @@ const Header: React.FC<HeaderProps> = () => {
         </div>
 
         {/* Mobile Menu Content */}
-        {menuOpen && (
-          <div className="md:hidden bg-[#FDF8F1] px-4 pb-4 space-y-3">
-            <a href="#" className="block text-gray-600 hover:text-gray-800">Vendor</a>
-            <a href="#" className="block text-gray-600 hover:text-gray-800">Auditorium</a>
-            <a href="#" className="block text-gray-600 hover:text-gray-800">Admin</a>
+       {menuOpen && (
+          <div className="md:hidden bg-[#FDF8F1] px-4 pb-4 space-y-3 text-[#825F4C]">
+            <button
+              onClick={() => {
+                navigate("/login");
+                setMenuOpen(false);
+              }}
+              className="block text-left w-full hover:text-gray-800"
+            >
+              Vendor
+            </button>
+            <button
+              onClick={() => {
+                navigate("/auditorium/login");
+                setMenuOpen(false);
+              }}
+              className="block text-left w-full hover:text-gray-800"
+            >
+              Auditorium
+            </button>
+            <button
+              onClick={() => {
+                navigate("/admin");
+                setMenuOpen(false);
+              }}
+              className="block text-left w-full hover:text-gray-800"
+            >
+              Admin
+            </button>
 
             {!currentUser ? (
               <button
@@ -113,16 +143,16 @@ const Header: React.FC<HeaderProps> = () => {
                 Login
               </button>
             ) : (
-              <div className="text-center">
+              <div className="space-y-2">
                 <button
                   onClick={goToProfile}
-                  className="block w-full px-4 py-2 rounded hover:bg-gray-100"
+                  className="block w-full px-4 py-2 rounded hover:bg-gray-100 text-left"
                 >
                   Profile
                 </button>
                 <button
                   onClick={handleLogout}
-                  className="block w-full px-4 py-2 rounded hover:bg-gray-100"
+                  className="block w-full px-4 py-2 rounded hover:bg-gray-100 text-left"
                 >
                   Logout
                 </button>
@@ -130,8 +160,10 @@ const Header: React.FC<HeaderProps> = () => {
             )}
           </div>
         )}
+
       </header>
 
+      {/* Spacer to avoid content hidden behind fixed header */}
       <div className="h-24 md:h-20"></div>
     </>
   );

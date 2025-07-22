@@ -16,7 +16,7 @@ export default function DetailsForm() {
   const navigate=useNavigate()
   
   const handleSave=()=>{
-    navigate('/payment')
+    navigate('/auditorium/payment')
   }
 
   const handleBack=()=>{

@@ -69,7 +69,7 @@ export default function BookingConfirmation() {
     if (formData.partyType === "Wedding") {
       navigate("/details")
     } else {
-      navigate("/payment")
+      navigate("/auditorium/payment")
     }
   }
 

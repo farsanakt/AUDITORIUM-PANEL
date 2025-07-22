@@ -221,7 +221,7 @@ const VenueBookingPage: React.FC = () => {
 
   const handleConfirmSlot = () => {
     console.log("Proceeding to booking confirmation")
-    navigate("/Bookingconfirmation")
+    navigate("/auditorium/Bookingconfirmation")
     setShowConfirmation(false)
     setSelectedSlot(null)
   }
