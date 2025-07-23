@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import { Search, MapPin, Calendar, Users } from "lucide-react";
+import { Search, MapPin, Calendar, Users, Flag } from "lucide-react";
 import Header from "../../component/user/Header";
 import bgImg from '../../assets/vector.png'
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 interface Venue {
   id: number;
@@ -13,9 +14,19 @@ interface Venue {
 }
 
 const VenueSelector: React.FC = () => {
-  const [selectedPlace, setSelectedPlace] = useState<string>("");
-  const [selectedDate, setSelectedDate] = useState<string>("");
-  const [selectedEvent, setSelectedEvent] = useState<string>("");
+ 
+
+const [searchParams] = useSearchParams();
+const navigate = useNavigate();
+
+const [place, setPlace] = useState(searchParams.get("place") || "");
+const [date, setDate] = useState(searchParams.get("date") || "");
+const [event, setEvent] = useState(searchParams.get("event") || "");
+
+const handleSubmit = () => {
+  navigate(`/auditoriumlist?place=${place}&date=${date}&event=${event}`);
+};
+
 
   const venues: Venue[] = [
     {
@@ -141,32 +152,119 @@ const VenueSelector: React.FC = () => {
             </div>
 
             {/* Right Content */}
-            <div className="md:w-1/2 flex flex-col gap-4 items-start">
-              <div className="flex gap-4 w-full flex-wrap md:flex-nowrap">
-                <div className="w-full md:w-1/2">
-                  <select className="w-full p-3 rounded shadow-md border">
-                    <option>Place</option>
-                  </select>
-                </div>
-                <div className="w-full md:w-1/2">
-                  <input
-                    type="date"
-                    className="w-full p-3 rounded shadow-md border"
-                  />
-                </div>
-              </div>
-              <div className="flex gap-4 w-full flex-wrap md:flex-nowrap">
-                <div className="w-full md:w-1/2">
-                  <select className="w-full p-3 rounded shadow-md border">
-                    <option>Event</option>
-                  </select>
-                </div>
-                <button className="bg-[#6e3d2b] text-white px-6 py-3 rounded shadow-md hover:bg-[#5a2f20] w-full md:w-1/2 flex items-center justify-center">
-                  Find Venues
-                  <span className="ml-2">🔍</span>
-                </button>
-              </div>
-            </div>
+<div className="w-full max-w-sm sm:max-w-md space-y-3 sm:space-y-4">
+  {/* Mobile: stacked */}
+  <div className="flex flex-col sm:hidden space-y-3">
+    {/* Place */}
+    <div className="relative">
+      <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
+      <select
+        value={place}
+        onChange={(e) => setPlace(e.target.value)}
+        className="w-full h-10 pl-10 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+      >
+        <option value="">Place</option>
+        <option value="mumbai">Mumbai</option>
+        <option value="delhi">Delhi</option>
+        <option value="bangalore">Bangalore</option>
+        <option value="pune">Pune</option>
+      </select>
+    </div>
+
+    {/* Date */}
+    <div className="relative">
+      <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
+      <input
+        type="date"
+        value={date}
+        onChange={(e) => setDate(e.target.value)}
+        className="w-full h-10 pl-10 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+      />
+    </div>
+
+    {/* Event */}
+    <div className="relative">
+      <Flag className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
+      <select
+        value={event}
+        onChange={(e) => setEvent(e.target.value)}
+        className="w-full h-10 pl-10 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+      >
+        <option value="">Event</option>
+        <option value="wedding">Wedding</option>
+        <option value="engagement">Engagement</option>
+        <option value="reception">Reception</option>
+        <option value="anniversary">Anniversary</option>
+      </select>
+    </div>
+
+    {/* Submit */}
+    <button
+      onClick={handleSubmit}
+      className="h-10 px-4 w-full bg-[#9c7c5d] text-white rounded-md font-medium hover:bg-[#9c7c5d] transition duration-300 flex items-center justify-center gap-2 text-sm"
+    >
+      <span>Find Venues</span>
+      <Search className="w-4 h-4" />
+    </button>
+  </div>
+
+  {/* Desktop: 2×2 Grid */}
+  <div className="hidden sm:grid grid-cols-2 gap-3 sm:gap-4">
+    {/* Place */}
+    <div className="relative">
+      <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4 sm:w-5 sm:h-5" />
+      <select
+        value={place}
+        onChange={(e) => setPlace(e.target.value)}
+        className="w-full h-10 sm:h-12 pl-10 sm:pl-12 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+      >
+        <option value="">Place</option>
+        <option value="mumbai">Mumbai</option>
+        <option value="delhi">Delhi</option>
+        <option value="bangalore">Bangalore</option>
+        <option value="pune">Pune</option>
+      </select>
+    </div>
+
+    {/* Date */}
+    <div className="relative">
+      <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4 sm:w-5 sm:h-5" />
+      <input
+        type="date"
+        value={date}
+        onChange={(e) => setDate(e.target.value)}
+        className="w-full h-10 sm:h-12 pl-10 sm:pl-12 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+      />
+    </div>
+
+    {/* Event */}
+    <div className="relative">
+      <Flag className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4 sm:w-5 sm:h-5" />
+      <select
+        value={event}
+        onChange={(e) => setEvent(e.target.value)}
+        className="w-full h-10 sm:h-12 pl-10 sm:pl-12 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+      >
+        <option value="">Event</option>
+        <option value="wedding">Wedding</option>
+        <option value="engagement">Engagement</option>
+        <option value="reception">Reception</option>
+        <option value="anniversary">Anniversary</option>
+      </select>
+    </div>
+
+    {/* Submit */}
+    <button
+      onClick={handleSubmit}
+      className="h-10 sm:h-12 px-4 w-full bg-[#9c7c5d] text-white rounded-md font-medium bg-[#9c7c5d] transition duration-300 flex items-center justify-center gap-2 text-sm"
+    >
+      <span>Find Venues</span>
+      <Search className="w-4 h-4" />
+    </button>
+  </div>
+</div>
+
+
           </div>
         </section>
 

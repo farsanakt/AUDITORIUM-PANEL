@@ -29,6 +29,7 @@ import venue4 from "../../assets/image 15.png";
 import pjct from "../../assets/image 16.png";
 import pjct1 from "../../assets/Rectangle 30.png";
 import vector from '../../assets/vector.png'
+import { useNavigate } from "react-router-dom";
 
 interface Service {
   id: number;
@@ -69,6 +70,8 @@ const HomePage: React.FC = () => {
     event: "",
   });
 
+  const navigate=useNavigate()
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsVisible(true);
@@ -88,6 +91,8 @@ const HomePage: React.FC = () => {
 
   const handleSubmit = () => {
     console.log("Form submitted:", formData);
+    navigate(`/auditoriumlist?place=${formData.place}&date=${formData.date}&event=${formData.event}`);
+
   };
 
   const services: Service[] = [
