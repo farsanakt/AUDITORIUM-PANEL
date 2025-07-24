@@ -11,8 +11,7 @@ type ProtectedRouteProps = {
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { currentUser, isAuthenticated } = useSelector((state: any) => state.auth);
 
-  console.log(isAuthenticated,'limited')
-
+ 
   
   return isAuthenticated ? <>{children}</> : <Navigate to="/" />;
 };

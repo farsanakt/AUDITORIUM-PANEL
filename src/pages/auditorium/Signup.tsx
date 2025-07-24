@@ -19,22 +19,52 @@ const AuditoriumRegistrationPage: React.FC = () => {
     phone: "",
     password: "",
     confirmPassword: "",
+    events: [] as string[],
+    locations: [] as string[]
   })
 
+  const eventOptions = [
+    { value: "Reception", label: "Reception" },
+    { value: "Engagement", label: "Engagement" },
+    { value: "Anniversary", label: "Anniversary" },
+    { value: "wedding", label: "Wedding" },
+   
+  ]
+
+  const locationOptions = [
+    { value: "Kochi", label: "Kochi" },
+    { value: "Trivandrum", label: "Trivandrum" },
+    { value: "Kannur", label: "Kannur" },
+    { value: "calicut", label: "calicut" }
+  ]
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setFormData({
-      ...formData,
-      [name]: value,
-    })
+    const { name, value, type, checked } = e.target
+    if (type === "checkbox") {
+      setFormData(prev => ({
+        ...prev,
+        [name]: checked
+          ? [...prev[name as keyof typeof prev] as string[], value]
+          : (prev[name as keyof typeof prev] as string[]).filter(item => item !== value)
+      }))
+    } else {
+      setFormData({
+        ...formData,
+        [name]: value
+      })
+    }
   }
 
   const handleOtpModal = () => {
     setShowOtpModal(false)
-    navigate('/')
+    navigate('/login')
   }
 
   const handleSignup = async () => {
+    if (formData.events.length === 0 || formData.locations.length === 0) {
+      toast.error('Select at least one event and location.')
+      return
+    }
     const response = await singUpRequest(formData)
     if (response.data.success === false) {
       toast.error(response.data.message || 'Signup failed!')
@@ -53,204 +83,322 @@ const AuditoriumRegistrationPage: React.FC = () => {
   }
 
   return (
-     <div className="fixed inset-0 bg-[#FDF8F1] flex items-center justify-center min-h-screen">
+    <div className="h-screen bg-[#FDF8F1] relative overflow-hidden flex flex-col">
       <Header />
-      <div className="flex flex-col md:flex-row bg-white shadow-lg rounded-xl overflow-hidden w-full max-w-5xl max-h-[90vh] mt-2">
-        <div className="md:w-2/5 hidden md:block relative">
-          <img src={tk} alt="Auditorium Preview" className="w-full h-full object-cover absolute inset-0" />
-          <div className="absolute inset-0 bg-opacity-40 p-4 flex flex-col justify-between">
-            <div className="text-center mt-4">
-              <div className="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-2">
-                <span className="text-[#ED695A] text-2xl font-bold">TK</span>
-              </div>
-              <h2 className="text-[#78533F] text-2xl font-bold mb-2">Register Your Auditorium</h2>
-              <div className="w-16 h-1 bg-[#ED695A] mx-auto mb-2"></div>
-            </div>
-            <div className="mb-4">
-              <p className="text-[#3C3A39] text-base text-center px-2">
-                Join our platform and start showcasing your auditorium to potential clients today.
-              </p>
-            </div>
-            <div className="bg-opacity-20 p-4 rounded-lg backdrop-blur-sm">
-              <p className="text-[#ED695A] font-bold text-lg mb-2 text-center">Benefits of registering</p>
-              <ul className="text-[#3C3A39] text-sm space-y-2">
-                <li className="flex items-center">
-                  <span className="mr-2 text-[#ED695A]">✦</span>
-                  <span>Reach thousands of potential customers</span>
-                </li>
-                <li className="flex items-center">
-                  <span className="mr-2 text-[#ED695A]">✦</span>
-                  <span>Easy booking management system</span>
-                </li>
-                <li className="flex items-center">
-                  <span className="mr-2 text-[#ED695A]">✦</span>
-                  <span>Get featured in our recommended venues</span>
-                </li>
-                <li className="flex items-center">
-                  <span className="mr-2 text-[#ED695A]">✦</span>
-                  <span>Increase your venue's visibility online</span>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
+      
+      <div className="container mx-auto px-2 py-3 pt-12 max-w-screen-md flex-1">
+        <div className="w-full mx-auto">
+          <div className="bg-white rounded-lg shadow-lg overflow-hidden h-full">
+            <div className="flex flex-col lg:flex-row h-full">
+              
+              {/* Left Side - Image and Benefits */}
+              <div className="lg:w-2/5 relative bg-gradient-to-br from-[#78533F] to-[#5d4032] hidden lg:flex flex-col">
+                <div className="absolute inset-0 opacity-20">
+                  <img src={tk} alt="Auditorium Preview" className="w-full h-full object-cover" />
+                </div>
+                
+                <div className="relative z-10 flex flex-col justify-between h-full p-3">
+                  {/* Header Section */}
+                  <div className="text-center">
+                    <div className="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-2 backdrop-blur-sm border border-white border-opacity-30">
+                      <span className="text-[#FDF8F1] text-xl font-bold">TK</span>
+                    </div>
+                    <h1 className="text-white text-lg font-bold leading-tight mb-1">
+                      Register Auditorium
+                    </h1>
+                    <div className="w-12 h-0.5 bg-[#ED695A] mx-auto rounded-full"></div>
+                  </div>
 
-        <div className="md:w-3/5 p-4 flex justify-center items-start bg-white">
-          <div className="w-full max-w-lg py-4">
-            <div className="text-center mb-4">
-              <h2 className="text-xl md:text-2xl font-bold text-[#78533F]">AUDITORIUM REGISTRATION</h2>
-            </div>
+                  {/* Middle Section */}
+                  <div className="text-center">
+                    <p className="text-white text-xs leading-tight opacity-90">
+                      Showcase your venue to clients.
+                    </p>
+                  </div>
 
-            <form onSubmit={handleSubmit} className="space-y-3">
-              <div className="bg-gray-50 p-3 rounded-lg">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <label htmlFor="auditoriumName" className="text-left block text-[#78533F] font-medium text-sm">
-                      Auditorium Name
-                    </label>
-                    <input
-                      type="text"
-                      id="auditoriumName"
-                      name="auditoriumName"
-                      className="w-full px-3 py-1.5 border border-[#b09d94] rounded-md focus:outline-none focus:ring-2 focus:ring-[#876553] transition-all duration-200 text-sm"
-                      value={formData.auditoriumName}
-                      onChange={handleChange}
-                      placeholder="Enter auditorium name"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label htmlFor="ownerName" className="text-left block text-[#78533F] font-medium text-sm">
-                      Owner Name
-                    </label>
-                    <input
-                      type="text"
-                      id="ownerName"
-                      name="ownerName"
-                      className="w-full px-3 py-1.5 border border-[#b09d94] rounded-md focus:outline-none focus:ring-2 focus:ring-[#876553] transition-all duration-200 text-sm"
-                      value={formData.ownerName}
-                      onChange={handleChange}
-                      placeholder="Enter owner name"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label htmlFor="email" className="text-left block text-[#78533F] font-medium text-sm">
-                      Email Address
-                    </label>
-                    <input
-                      type="email"
-                      id="email"
-                      name="email"
-                      className="w-full px-3 py-1.5 border border-[#b09d94] rounded-md focus:outline-none focus:ring-2 focus:ring-[#876553] transition-all duration-200 text-sm"
-                      value={formData.email}
-                      onChange={handleChange}
-                      placeholder="Enter email address"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label htmlFor="phone" className="text-left block text-[#78533F] font-medium text-sm">
-                      Phone Number
-                    </label>
-                    <input
-                      type="tel"
-                      id="phone"
-                      name="phone"
-                      className="w-full px-3 py-1.5 border border-[#b09d94] rounded-md focus:outline-none focus:ring-2 focus:ring-[#876553] transition-all duration-200 text-sm"
-                      value={formData.phone}
-                      onChange={handleChange}
-                      placeholder="Enter phone number"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label htmlFor="password" className="text-left block text-[#78533F] font-medium text-sm">
-                      Password
-                    </label>
-                    <input
-                      type="password"
-                      id="password"
-                      name="password"
-                      className="w-full px-3 py-1.5 border border-[#b09d94] rounded-md focus:outline-none focus:ring-2 focus:ring-[#876553] transition-all duration-200 text-sm"
-                      value={formData.password}
-                      onChange={handleChange}
-                      placeholder="Create a password"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label htmlFor="confirmPassword" className="text-left block text-[#78533F] font-medium text-sm">
-                      Confirm Password
-                    </label>
-                    <input
-                      type="password"
-                      id="confirmPassword"
-                      name="confirmPassword"
-                      className="w-full px-3 py-1.5 border border-[#b09d94] rounded-md focus:outline-none focus:ring-2 focus:ring-[#876553] transition-all duration-200 text-sm"
-                      value={formData.confirmPassword}
-                      onChange={handleChange}
-                      placeholder="Confirm password"
-                      required
-                    />
+                  {/* Benefits Section */}
+                  <div className="bg-white bg-opacity-10 backdrop-blur-md rounded-lg p-3 border border-white border-opacity-20">
+                    <h3 className="text-[#FDF8F1] font-bold text-sm mb-2 text-center">Why Register?</h3>
+                    <div className="space-y-1">
+                      {[
+                        "Reach many customers",
+                        "Manage bookings easily", 
+                        "Get featured",
+                        "Boost visibility"
+                      ].map((benefit, index) => (
+                        <div key={index} className="flex items-start space-x-1">
+                          <div className="w-4 h-4 bg-[#ED695A] rounded-full flex items-center justify-center flex-shrink-0">
+                            <span className="text-white text-xs font-bold">✓</span>
+                          </div>
+                          <span className="text-white text-xs leading-tight">{benefit}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center">
-                <input
-                  id="terms"
-                  name="terms"
-                  type="checkbox"
-                  className="h-4 w-4 text-[#ED695A] focus:ring-[#876553] border-[#b09d94] rounded"
-                  required
-                />
-                <label htmlFor="terms" className="ml-2 block text-sm text-gray-700">
-                  I agree to the <span className="text-[#ED695A] hover:underline cursor-pointer">Terms of Service</span>{" "}
-                  and <span className="text-[#ED695A] hover:underline cursor-pointer">Privacy Policy</span>
-                </label>
+              {/* Right Side - Registration Form */}
+              <div className="lg:w-3/5 p-3 flex items-start justify-center">
+                <div className="w-full max-w-sm">
+                  
+                  {/* Mobile Header */}
+                  <div className="lg:hidden text-center mb-3">
+                    <div className="w-10 h-10 bg-[#78533F] bg-opacity-10 rounded-full flex items-center justify-center mx-auto mb-1">
+                      <span className="text-[#78533F] text-lg font-bold">TK</span>
+                    </div>
+                    <h2 className="text-sm font-bold text-[#78533F] mb-1">Register Auditorium</h2>
+                    <div className="w-12 h-0.5 bg-[#ED695A] mx-auto rounded-full"></div>
+                  </div>
+
+                  {/* Desktop Header */}
+                  <div className="hidden lg:block text-center mb-3">
+                    <h2 className="text-sm font-bold text-[#78533F] mb-1">REGISTER AUDITORIUM</h2>
+                    <div className="w-12 h-0.5 bg-[#ED695A] mx-auto rounded-full"></div>
+                    <p className="text-[#78533F] opacity-70 mt-1 text-xs">Fill in details</p>
+                  </div>
+
+                  <form onSubmit={handleSubmit} className="space-y-2">
+                    
+                    {/* Personal Information Section */}
+                    <div className="bg-gradient-to-r from-[#FDF8F1] to-white p-2 rounded-lg ">
+                      
+                      
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <label htmlFor="auditoriumName" className="block text-[#78533F] font-semibold text-xs uppercase tracking-tight">
+                            Auditorium *
+                          </label>
+                          <input
+                            type="text"
+                            id="auditoriumName"
+                            name="auditoriumName"
+                            className="w-full px-1 py-0.5 border-2 border-[#b09d94] border-opacity-50 rounded-md focus:outline-none focus:border-[#ED695A] focus:ring-1 focus:ring-[#ED695A] focus:ring-opacity-20 transition-all duration-200 bg-white text-xs"
+                            value={formData.auditoriumName}
+                            onChange={handleChange}
+                            placeholder="Name"
+                            required
+                          />
+                        </div>
+                        
+                        <div className="space-y-1">
+                          <label htmlFor="ownerName" className="block text-[#78533F] font-semibold text-xs uppercase tracking-tight">
+                            Owner *
+                          </label>
+                          <input
+                            type="text"
+                            id="ownerName"
+                            name="ownerName"
+                            className="w-full px-1 py-0.5 border-2 border-[#b09d94] border-opacity-50 rounded-md focus:outline-none focus:border-[#ED695A] focus:ring-1 focus:ring-[#ED695A] focus:ring-opacity-20 transition-all duration-200 bg-white text-xs"
+                            value={formData.ownerName}
+                            onChange={handleChange}
+                            placeholder="Full name"
+                            required
+                          />
+                        </div>
+                        
+                        <div className="space-y-1">
+                          <label htmlFor="email" className="block text-[#78533F] font-semibold text-xs uppercase tracking-tight">
+                            Email *
+                          </label>
+                          <input
+                            type="email"
+                            id="email"
+                            name="email"
+                            className="w-full px-1 py-0.5 border-2 border-[#b09d94] border-opacity-50 rounded-md focus:outline-none focus:border-[#ED695A] focus:ring-1 focus:ring-[#ED695A] focus:ring-opacity-20 transition-all duration-200 bg-white text-xs"
+                            value={formData.email}
+                            onChange={handleChange}
+                            placeholder="Email"
+                            required
+                          />
+                        </div>
+                        
+                        <div className="space-y-1">
+                          <label htmlFor="phone" className="block text-[#78533F] font-semibold text-xs uppercase tracking-tight">
+                            Phone *
+                          </label>
+                          <input
+                            type="tel"
+                            id="phone"
+                            name="phone"
+                            className="w-full px-1 py-0.5 border-2 border-[#b09d94] border-opacity-50 rounded-md focus:outline-none focus:border-[#ED695A] focus:ring-1 focus:ring-[#ED695A] focus:ring-opacity-20 transition-all duration-200 bg-white text-xs"
+                            value={formData.phone}
+                            onChange={handleChange}
+                            placeholder="Phone"
+                            required
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Venue Details Section */}
+                    <div className="bg-gradient-to-r from-white to-[#FDF8F1] p-2 rounded-lg ">
+                      
+                      
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <label className="block text-[#78533F] font-semibold text-xs uppercase tracking-tight">
+                            Events *
+                          </label>
+                          <div className="grid grid-cols-1 gap-0.5">
+                            {eventOptions.map(option => (
+                              <label key={option.value} className="flex items-center space-x-1 p-0.5 rounded-md hover:bg-white hover:shadow-sm transition-all duration-200 cursor-pointer group">
+                                <input
+                                  type="checkbox"
+                                  name="events"
+                                  value={option.value}
+                                  checked={formData.events.includes(option.value)}
+                                  onChange={handleChange}
+                                  className="w-3 h-3 text-[#ED695A] bg-white border-2 border-[#b09d94] rounded focus:ring-[#ED695A] focus:ring-1 transition-all duration-200"
+                                />
+                                <span className="text-[#3C3A39] font-medium text-xs group-hover:text-[#78533F] transition-colors duration-200">{option.label}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-1">
+                          <label className="block text-[#78533F] font-semibold text-xs uppercase tracking-tight">
+                            Locations *
+                          </label>
+                          <div className="grid grid-cols-1 gap-0.5">
+                            {locationOptions.map(option => (
+                              <label key={option.value} className="flex items-center space-x-1 p-0.5 rounded-md hover:bg-white hover:shadow-sm transition-all duration-200 cursor-pointer group">
+                                <input
+                                  type="checkbox"
+                                  name="locations"
+                                  value={option.value}
+                                  checked={formData.locations.includes(option.value)}
+                                  onChange={handleChange}
+                                  className="w-3 h-3 text-[#ED695A] bg-white border-2 border-[#b09d94] rounded focus:ring-[#ED695A] focus:ring-1 transition-all duration-200"
+                                />
+                                <span className="text-[#3C3A39] font-medium text-xs group-hover:text-[#78533F] transition-colors duration-200">{option.label}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Security Section */}
+                    <div className="bg-gradient-to-r from-[#FDF8F1] to-white p-2 rounded-lg ">
+                    
+                      
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <label htmlFor="password" className="block text-[#78533F] font-semibold text-xs uppercase tracking-tight">
+                            Password *
+                          </label>
+                          <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            className="w-full px-1 py-0.5 border-2 border-[#b09d94] border-opacity-50 rounded-md focus:outline-none focus:border-[#ED695A] focus:ring-1 focus:ring-[#ED695A] focus:ring-opacity-20 transition-all duration-200 bg-white text-xs"
+                            value={formData.password}
+                            onChange={handleChange}
+                            placeholder="Password"
+                            required
+                          />
+                        </div>
+                        
+                        <div className="space-y-1">
+                          <label htmlFor="confirmPassword" className="block text-[#78533F] font-semibold text-xs uppercase tracking-tight">
+                            Confirm *
+                          </label>
+                          <input
+                            type="password"
+                            id="confirmPassword"
+                            name="confirmPassword"
+                            className="w-full px-1 py-0.5 border-2 border-[#b09d94] border-opacity-50 rounded-md focus:outline-none focus:border-[#ED695A] focus:ring-1 focus:ring-[#ED695A] focus:ring-opacity-20 transition-all duration-200 bg-white text-xs"
+                            value={formData.confirmPassword}
+                            onChange={handleChange}
+                            placeholder="Confirm"
+                            required
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Terms and Submit */}
+                    <div className="space-y-2">
+                      <div className="flex items-start space-x-1 p-1 bg-[#FDF8F1] rounded-md ">
+                        <input
+                          id="terms"
+                          name="terms"
+                          type="checkbox"
+                          className="w-3 h-3 text-[#ED695A] bg-white rounded focus:ring-[#ED695A] focus:ring-1"
+                          required
+                        />
+                        <label htmlFor="terms" className="text-xs text-[#3C3A39] leading-tight">
+                          I agree to{" "}
+                          <span className="text-[#ED695A] font-semibold hover:underline cursor-pointer">
+                            Terms
+                          </span>{" "}
+                          &{" "}
+                          <span className="text-[#ED695A] font-semibold hover:underline cursor-pointer">
+                            Privacy
+                          </span>
+                        </label>
+                      </div>
+
+                      <button
+                        type="submit"
+                        className="w-full bg-gradient-to-r from-[#ED695A] to-[#d85c4e] text-white font-bold py-1 px-3 rounded-md shadow-md hover:shadow-lg hover:from-[#d85c4e] hover:to-[#c8553e] transform hover:-translate-y-0.5 transition-all duration-200 text-xs uppercase"
+                      >
+                        Register
+                      </button>
+                    </div>
+                  </form>
+
+                  {/* Login Link */}
+                  <div className="text-center mt-2 pt-1 ">
+                    <p className="text-[#3C3A39] text-xs">
+                      Have account?{" "}
+                      <button 
+                        onClick={handleLogin} 
+                        className="text-[#ED695A] font-semibold hover:underline hover:text-[#d85c4e] transition-colors duration-200"
+                      >
+                        Sign In
+                      </button>
+                    </p>
+                  </div>
+                </div>
               </div>
-
-              <button
-                type="submit"
-                className="w-full bg-[#ED695A] text-white font-semibold py-2 rounded-md shadow hover:bg-[#d85c4e] transition-all duration-300"
-              >
-                Register Auditorium
-              </button>
-            </form>
-
-            <div className="text-center mt-4">
-              <p className="text-gray-600 text-sm">
-                Already registered?{" "}
-                <button onClick={handleLogin} className="text-[#ED695A] font-medium hover:underline">
-                  Login
-                </button>
-              </p>
             </div>
           </div>
         </div>
+      </div>
 
-        {showOtpModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-lg p-4 w-full max-w-sm">
-              <h2 className="text-xl font-bold text-[#6D4C41] mb-3">Enter OTP</h2>
+      {/* OTP Modal */}
+      {showOtpModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-2">
+          <div className="bg-white rounded-lg shadow-xl p-3 w-full max-w-[240px] transform transition-all duration-200">
+            <div className="text-center mb-2">
+              <div className="w-8 h-8 bg-[#ED695A] bg-opacity-10 rounded-full flex items-center justify-center mx-auto mb-1">
+                <span className="text-[#ED695A] text-sm font-bold">✓</span>
+              </div>
+              <h2 className="text-sm font-bold text-[#78533F] mb-1">Verify</h2>
+              <p className="text-[#3C3A39] opacity-70 text-xs">Enter OTP</p>
+            </div>
+            
+            <div className="space-y-2">
               <input
                 type="text"
-                placeholder="Enter OTP"
-                className="w-full px-3 py-1.5 border border-[#b09d94] rounded-md focus:outline-none focus:ring-2 focus:ring-[#876553] text-sm"
+                placeholder="6-digit OTP"
+                className="w-full px-1 py-0.5 border-2 border-[#b09d94] border-opacity-50 rounded-md focus:outline-none focus:border-[#ED695A] focus:ring-1 focus:ring-[#ED695A] focus:ring-opacity-20 transition-all duration-200 text-center text-xs tracking-wide"
+                maxLength={6}
               />
-              <div className="mt-3 flex justify-end">
-                <button
-                  className="bg-[#EB5E28] text-white px-3 py-1.5 rounded hover:bg-[#d44f1f]"
-                  onClick={handleOtpModal}
-                >
-                  Submit
-                </button>
-              </div>
+              
+              <button
+                className="w-full bg-gradient-to-r from-[#ED695A] to-[#d85c4e] text-white font-bold py-0.5 px-3 rounded-md shadow-md hover:shadow-lg hover:from-[#d85c4e] hover:to-[#c8553e] transform hover:-translate-y-0.5 transition-all duration-200 text-xs"
+                onClick={handleOtpModal}
+              >
+                Verify
+              </button>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }

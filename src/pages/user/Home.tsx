@@ -340,10 +340,10 @@ const HomePage: React.FC = () => {
                     className="w-full h-10 pl-10 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
                   >
                     <option value="">Place</option>
-                    <option value="mumbai">Mumbai</option>
-                    <option value="delhi">Delhi</option>
-                    <option value="bangalore">Bangalore</option>
-                    <option value="pune">Pune</option>
+                    <option value="Kochi">Kochi</option>
+                    <option value="Trivandrum">Trivandrum</option>
+                    <option value="Kannur">Kannur</option>
+                    <option value="Calicut">Calicut</option>
                   </select>
                 </div>
 
@@ -397,11 +397,11 @@ const HomePage: React.FC = () => {
                     onChange={handleInputChange}
                     className="w-full h-10 sm:h-12 pl-10 sm:pl-12 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
                   >
-                    <option value="">Place</option>
-                    <option value="mumbai">Mumbai</option>
-                    <option value="delhi">Delhi</option>
-                    <option value="bangalore">Bangalore</option>
-                    <option value="pune">Pune</option>
+                     <option value="">Place</option>
+                    <option value="Kochi">Kochi</option>
+                    <option value="Trivandrum">Trivandrum</option>
+                    <option value="Kannur">Kannur</option>
+                    <option value="Calicut">Calicut</option>
                   </select>
                 </div>
 

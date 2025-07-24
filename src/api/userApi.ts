@@ -44,13 +44,18 @@ export const addVenueAPI=async(formData:FormData)=>{
 
 }
 
-export const existingAllVenues=async()=>{
 
-  const response=await api.get('/allvenues')
+export const existingAllVenues = async (id: string) => {
+
+  const response = await api.get(`/allvenues`, {
+
+    params: { audiUserId: id },
+
+  })
 
   return response
-
 }
+
 
 export const updateVenues=async(id:any,data:any)=>{
 
@@ -59,6 +64,17 @@ export const updateVenues=async(id:any,data:any)=>{
   return response
 
 }
+
+export const FindAuidtorium = async (event: string, place: string) => {
+  const response = await api.get('/findauditorium', {
+    params: {
+      event,
+      place
+    }
+  });
+  return response.data;
+};
+
 
 
 export const userLogin =async (email:string,password:string)=>{

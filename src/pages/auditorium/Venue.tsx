@@ -22,6 +22,7 @@ import { addVenueAPI, existingAllVenues, updateVenues } from "../../api/userApi"
 import { toast } from "react-toastify"
 import Header from "../../component/user/Header"
 import Sidebar from "../../component/auditorium/Sidebar"
+import { useSelector } from "react-redux"
 
 
 interface Tariff {
@@ -125,14 +126,19 @@ export default function VenueManagement() {
     endTime: "",
   })
 
+  const {currentUser}=useSelector((state:any)=>state.auth)
+
+  
+
 const fetchVenues = async () => {
-  const response = await existingAllVenues();
+  const response = await existingAllVenues(currentUser.id);
   setVenues(response.data)
  
 };
 
   useEffect(() => {
     fetchVenues()
+    
   }, [])
 
  
@@ -207,6 +213,7 @@ const fetchVenues = async () => {
       formData.append("timeSlots", JSON.stringify(newVenue.timeSlots || []))
       formData.append("amenities", JSON.stringify(newVenue.amenities || []))
       formData.append("tariff", JSON.stringify(newVenue.tariff || { wedding: "", reception: "" }))
+      formData.append("audiUserId",currentUser.id)
 
       selectedImages.forEach((file) => {
         if (file) formData.append("images", file)

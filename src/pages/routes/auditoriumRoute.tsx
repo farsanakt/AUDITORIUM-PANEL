@@ -23,14 +23,14 @@ function AuditoriumRoute() {
 
       <Route path='/login' element={<PublicRoute><LoginPage/></PublicRoute>} />
         <Route path='/signup' element={ <PublicRoute><SignupPage/></PublicRoute>} />
-        {/* <Route path="/" element={<LoginPage/>}/> */}
-        <Route path='/venue' element={<VenueManagement/>}/>
+        
+        <Route path='/venue' element={ <ProtectedRoute><VenueManagement/></ProtectedRoute>}/>
         <Route path='/bookings' element={<AuditoriumBooking/>} />
         <Route path='/slot' element={<SlotManagementCalendar/>}/>
         <Route path='/details' element={<DetailsForm/>}/>
         <Route path='payment' element={<PaymentDetails/>}/>
         <Route path='Bookingconfirmation' element={<BookingConfirmation/>}/>
-        {/* <Route path='/auditoriumdetails' element={<AuditoriumDetails/>} /> */}
+        
         <Route path='/staff' element={<StaffManagementUI/>}/>
         <Route path='/invoice' element={<InvoicePanel/>}/>
       </Routes>
