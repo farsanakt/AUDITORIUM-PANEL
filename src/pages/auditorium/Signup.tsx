@@ -11,6 +11,8 @@ import { toast } from 'react-toastify'
 const AuditoriumRegistrationPage: React.FC = () => {
   const navigate = useNavigate()
   const [showOtpModal, setShowOtpModal] = useState(false)
+  const [showEventsDropdown, setShowEventsDropdown] = useState(false)
+  const [showLocationsDropdown, setShowLocationsDropdown] = useState(false)
 
   const [formData, setFormData] = useState({
     auditoriumName: "",
@@ -28,7 +30,6 @@ const AuditoriumRegistrationPage: React.FC = () => {
     { value: "Engagement", label: "Engagement" },
     { value: "Anniversary", label: "Anniversary" },
     { value: "wedding", label: "Wedding" },
-   
   ]
 
   const locationOptions = [
@@ -161,9 +162,7 @@ const AuditoriumRegistrationPage: React.FC = () => {
                   <form onSubmit={handleSubmit} className="space-y-2">
                     
                     {/* Personal Information Section */}
-                    <div className="bg-gradient-to-r from-[#FDF8F1] to-white p-2 rounded-lg ">
-                      
-                      
+                    <div className="bg-gradient-to-r from-[#FDF8F1] to-white p-2 rounded-lg">
                       <div className="grid grid-cols-2 gap-2">
                         <div className="space-y-1">
                           <label htmlFor="auditoriumName" className="block text-[#78533F] font-semibold text-xs uppercase tracking-tight">
@@ -173,7 +172,7 @@ const AuditoriumRegistrationPage: React.FC = () => {
                             type="text"
                             id="auditoriumName"
                             name="auditoriumName"
-                            className="w-full px-1 py-0.5 border-2 border-[#b09d94] border-opacity-50 rounded-md focus:outline-none focus:border-[#ED695A] focus:ring-1 focus:ring-[#ED695A] focus:ring-opacity-20 transition-all duration-200 bg-white text-xs"
+                            className="w-full px-2 py-1 border-2 border-[#b09d94] border-opacity-50 rounded-md focus:outline-none focus:border-[#ED695A] focus:ring-1 focus:ring-[#ED695A] focus:ring-opacity-20 transition-all duration-200 bg-white text-sm"
                             value={formData.auditoriumName}
                             onChange={handleChange}
                             placeholder="Name"
@@ -189,7 +188,7 @@ const AuditoriumRegistrationPage: React.FC = () => {
                             type="text"
                             id="ownerName"
                             name="ownerName"
-                            className="w-full px-1 py-0.5 border-2 border-[#b09d94] border-opacity-50 rounded-md focus:outline-none focus:border-[#ED695A] focus:ring-1 focus:ring-[#ED695A] focus:ring-opacity-20 transition-all duration-200 bg-white text-xs"
+                            className="w-full px-2 py-1 border-2 border-[#b09d94] border-opacity-50 rounded-md focus:outline-none focus:border-[#ED695A] focus:ring-1 focus:ring-[#ED695A] focus:ring-opacity-20 transition-all duration-200 bg-white text-sm"
                             value={formData.ownerName}
                             onChange={handleChange}
                             placeholder="Full name"
@@ -205,7 +204,7 @@ const AuditoriumRegistrationPage: React.FC = () => {
                             type="email"
                             id="email"
                             name="email"
-                            className="w-full px-1 py-0.5 border-2 border-[#b09d94] border-opacity-50 rounded-md focus:outline-none focus:border-[#ED695A] focus:ring-1 focus:ring-[#ED695A] focus:ring-opacity-20 transition-all duration-200 bg-white text-xs"
+                            className="w-full px-2 py-1 border-2 border-[#b09d94] border-opacity-50 rounded-md focus:outline-none focus:border-[#ED695A] focus:ring-1 focus:ring-[#ED695A] focus:ring-opacity-20 transition-all duration-200 bg-white text-sm"
                             value={formData.email}
                             onChange={handleChange}
                             placeholder="Email"
@@ -221,7 +220,7 @@ const AuditoriumRegistrationPage: React.FC = () => {
                             type="tel"
                             id="phone"
                             name="phone"
-                            className="w-full px-1 py-0.5 border-2 border-[#b09d94] border-opacity-50 rounded-md focus:outline-none focus:border-[#ED695A] focus:ring-1 focus:ring-[#ED695A] focus:ring-opacity-20 transition-all duration-200 bg-white text-xs"
+                            className="w-full px-2 py-1 border-2 border-[#b09d94] border-opacity-50 rounded-md focus:outline-none focus:border-[#ED695A] focus:ring-1 focus:ring-[#ED695A] focus:ring-opacity-20 transition-all duration-200 bg-white text-sm"
                             value={formData.phone}
                             onChange={handleChange}
                             placeholder="Phone"
@@ -232,28 +231,42 @@ const AuditoriumRegistrationPage: React.FC = () => {
                     </div>
 
                     {/* Venue Details Section */}
-                    <div className="bg-gradient-to-r from-white to-[#FDF8F1] p-2 rounded-lg ">
-                      
-                      
+                    <div className="bg-gradient-to-r from-white to-[#FDF8F1] p-2 rounded-lg">
                       <div className="grid grid-cols-2 gap-2">
                         <div className="space-y-1">
                           <label className="block text-[#78533F] font-semibold text-xs uppercase tracking-tight">
                             Events *
                           </label>
-                          <div className="grid grid-cols-1 gap-0.5">
-                            {eventOptions.map(option => (
-                              <label key={option.value} className="flex items-center space-x-1 p-0.5 rounded-md hover:bg-white hover:shadow-sm transition-all duration-200 cursor-pointer group">
-                                <input
-                                  type="checkbox"
-                                  name="events"
-                                  value={option.value}
-                                  checked={formData.events.includes(option.value)}
-                                  onChange={handleChange}
-                                  className="w-3 h-3 text-[#ED695A] bg-white border-2 border-[#b09d94] rounded focus:ring-[#ED695A] focus:ring-1 transition-all duration-200"
-                                />
-                                <span className="text-[#3C3A39] font-medium text-xs group-hover:text-[#78533F] transition-colors duration-200">{option.label}</span>
-                              </label>
-                            ))}
+                          <div className="relative">
+                            <div
+                              className="w-full px-2 py-1 border-2 border-[#b09d94] border-opacity-50 rounded-md bg-white text-sm cursor-pointer flex items-center justify-between"
+                              onClick={() => setShowEventsDropdown(!showEventsDropdown)}
+                            >
+                              <span className={formData.events.length > 0 ? "text-[#3C3A39]" : "text-[#b09d94]"}>
+                                {formData.events.length > 0 ? formData.events.join(", ") : "Select events"}
+                              </span>
+                              <span className="text-[#78533F]">&#9662;</span>
+                            </div>
+                            {showEventsDropdown && (
+                              <div className="absolute z-10 w-full mt-1 bg-white border-2 border-[#b09d94] border-opacity-50 rounded-md shadow-lg max-h-40 overflow-y-auto">
+                                {eventOptions.map(option => (
+                                  <label
+                                    key={option.value}
+                                    className="flex items-center space-x-1 p-1.5 hover:bg-[#FDF8F1] cursor-pointer"
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      name="events"
+                                      value={option.value}
+                                      checked={formData.events.includes(option.value)}
+                                      onChange={handleChange}
+                                      className="w-3 h-3 text-[#ED695A] bg-white border-2 border-[#b09d94] rounded focus:ring-[#ED695A] focus:ring-1"
+                                    />
+                                    <span className="text-[#3C3A39] text-sm">{option.label}</span>
+                                  </label>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         </div>
                         
@@ -261,29 +274,43 @@ const AuditoriumRegistrationPage: React.FC = () => {
                           <label className="block text-[#78533F] font-semibold text-xs uppercase tracking-tight">
                             Locations *
                           </label>
-                          <div className="grid grid-cols-1 gap-0.5">
-                            {locationOptions.map(option => (
-                              <label key={option.value} className="flex items-center space-x-1 p-0.5 rounded-md hover:bg-white hover:shadow-sm transition-all duration-200 cursor-pointer group">
-                                <input
-                                  type="checkbox"
-                                  name="locations"
-                                  value={option.value}
-                                  checked={formData.locations.includes(option.value)}
-                                  onChange={handleChange}
-                                  className="w-3 h-3 text-[#ED695A] bg-white border-2 border-[#b09d94] rounded focus:ring-[#ED695A] focus:ring-1 transition-all duration-200"
-                                />
-                                <span className="text-[#3C3A39] font-medium text-xs group-hover:text-[#78533F] transition-colors duration-200">{option.label}</span>
-                              </label>
-                            ))}
+                          <div className="relative">
+                            <div
+                              className="w-full px-2 py-1 border-2 border-[#b09d94] border-opacity-50 rounded-md bg-white text-sm cursor-pointer flex items-center justify-between"
+                              onClick={() => setShowLocationsDropdown(!showLocationsDropdown)}
+                            >
+                              <span className={formData.locations.length > 0 ? "text-[#3C3A39]" : "text-[#b09d94]"}>
+                                {formData.locations.length > 0 ? formData.locations.join(", ") : "Select locations"}
+                              </span>
+                              <span className="text-[#78533F]">&#9662;</span>
+                            </div>
+                            {showLocationsDropdown && (
+                              <div className="absolute z-10 w-full mt-1 bg-white border-2 border-[#b09d94] border-opacity-50 rounded-md shadow-lg max-h-40 overflow-y-auto">
+                                {locationOptions.map(option => (
+                                  <label
+                                    key={option.value}
+                                    className="flex items-center space-x-1 p-1.5 hover:bg-[#FDF8F1] cursor-pointer"
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      name="locations"
+                                      value={option.value}
+                                      checked={formData.locations.includes(option.value)}
+                                      onChange={handleChange}
+                                      className="w-3 h-3 text-[#ED695A] bg-white border-2 border-[#b09d94] rounded focus:ring-[#ED695A] focus:ring-1"
+                                    />
+                                    <span className="text-[#3C3A39] text-sm">{option.label}</span>
+                                  </label>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
                     </div>
 
                     {/* Security Section */}
-                    <div className="bg-gradient-to-r from-[#FDF8F1] to-white p-2 rounded-lg ">
-                    
-                      
+                    <div className="bg-gradient-to-r from-[#FDF8F1] to-white p-2 rounded-lg">
                       <div className="grid grid-cols-2 gap-2">
                         <div className="space-y-1">
                           <label htmlFor="password" className="block text-[#78533F] font-semibold text-xs uppercase tracking-tight">
@@ -293,7 +320,7 @@ const AuditoriumRegistrationPage: React.FC = () => {
                             type="password"
                             id="password"
                             name="password"
-                            className="w-full px-1 py-0.5 border-2 border-[#b09d94] border-opacity-50 rounded-md focus:outline-none focus:border-[#ED695A] focus:ring-1 focus:ring-[#ED695A] focus:ring-opacity-20 transition-all duration-200 bg-white text-xs"
+                            className="w-full px-2 py-1 border-2 border-[#b09d94] border-opacity-50 rounded-md focus:outline-none focus:border-[#ED695A] focus:ring-1 focus:ring-[#ED695A] focus:ring-opacity-20 transition-all duration-200 bg-white text-sm"
                             value={formData.password}
                             onChange={handleChange}
                             placeholder="Password"
@@ -309,7 +336,7 @@ const AuditoriumRegistrationPage: React.FC = () => {
                             type="password"
                             id="confirmPassword"
                             name="confirmPassword"
-                            className="w-full px-1 py-0.5 border-2 border-[#b09d94] border-opacity-50 rounded-md focus:outline-none focus:border-[#ED695A] focus:ring-1 focus:ring-[#ED695A] focus:ring-opacity-20 transition-all duration-200 bg-white text-xs"
+                            className="w-full px-2 py-1 border-2 border-[#b09d94] border-opacity-50 rounded-md focus:outline-none focus:border-[#ED695A] focus:ring-1 focus:ring-[#ED695A] focus:ring-opacity-20 transition-all duration-200 bg-white text-sm"
                             value={formData.confirmPassword}
                             onChange={handleChange}
                             placeholder="Confirm"
@@ -321,7 +348,7 @@ const AuditoriumRegistrationPage: React.FC = () => {
 
                     {/* Terms and Submit */}
                     <div className="space-y-2">
-                      <div className="flex items-start space-x-1 p-1 bg-[#FDF8F1] rounded-md ">
+                      <div className="flex items-start space-x-1 p-1 bg-[#FDF8F1] rounded-md">
                         <input
                           id="terms"
                           name="terms"
@@ -351,7 +378,7 @@ const AuditoriumRegistrationPage: React.FC = () => {
                   </form>
 
                   {/* Login Link */}
-                  <div className="text-center mt-2 pt-1 ">
+                  <div className="text-center mt-2 pt-1">
                     <p className="text-[#3C3A39] text-xs">
                       Have account?{" "}
                       <button 
@@ -385,7 +412,7 @@ const AuditoriumRegistrationPage: React.FC = () => {
               <input
                 type="text"
                 placeholder="6-digit OTP"
-                className="w-full px-1 py-0.5 border-2 border-[#b09d94] border-opacity-50 rounded-md focus:outline-none focus:border-[#ED695A] focus:ring-1 focus:ring-[#ED695A] focus:ring-opacity-20 transition-all duration-200 text-center text-xs tracking-wide"
+                className="w-full px-2 py-1 border-2 border-[#b09d94] border-opacity-50 rounded-md focus:outline-none focus:border-[#ED695A] focus:ring-1 focus:ring-[#ED695A] focus:ring-opacity-20 transition-all duration-200 text-center text-sm tracking-wide"
                 maxLength={6}
               />
               
