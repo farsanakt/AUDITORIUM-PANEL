@@ -34,6 +34,7 @@ export const AuditoriumLogin =async (email:string,password:string)=>{
 
 }
 
+
 export const addVenueAPI=async(formData:FormData)=>{
 
 
@@ -76,12 +77,23 @@ export const FindAuidtorium = async (event: string, place: string) => {
 };
 
 
+export const FetchAuditoriumById = async (id: string) => {
+  const response = await api.get(`/findvenues/${id}`);
+  return response;
+};
 
+export const singleVenueDetails=async(id:string)=>{
+  console.log('call',id)
+
+  const response=await api.get(`/findVenueDetails/${id}`)
+
+  return response
+
+}
+
+
+// user api
 export const userLogin =async (email:string,password:string)=>{
-
-  console.log('heooo')
-
-  
 
   const response=await api.post('/signin',{email,password}, { withCredentials: true })
 

@@ -32,7 +32,6 @@ const VenueSelector: React.FC = () => {
       const response = await FindAuidtorium(place, event);
       console.log(response, 'lope');
 
-     
       const mappedVenues: Venue[] = response.map((item: any, index: number) => ({
         id: item.auditorium._id,
         name: item.auditorium.auditoriumName || `Auditorium ${index + 1}`,
@@ -53,6 +52,10 @@ const VenueSelector: React.FC = () => {
   useEffect(() => {
     findAuditorium();
   }, [place, event]);
+
+  const handleCardClick = (id: string) => {
+    navigate(`/venuelist/${id}`);
+  };
 
   const getTagColor = (tag: string): string => {
     switch (tag.toLowerCase()) {
@@ -112,7 +115,7 @@ const VenueSelector: React.FC = () => {
                     onChange={(e) => setPlace(e.target.value)}
                     className="w-full h-10 pl-10 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
                   >
-                   <option value="">Place</option>
+                    <option value="">Place</option>
                     <option value="Kochi">Kochi</option>
                     <option value="Trivandrum">Trivandrum</option>
                     <option value="Kannur">Kannur</option>
@@ -163,7 +166,7 @@ const VenueSelector: React.FC = () => {
                     onChange={(e) => setPlace(e.target.value)}
                     className="w-full h-10 sm:h-12 pl-10 sm:pl-12 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
                   >
-                  <option value="">Place</option>
+                    <option value="">Place</option>
                     <option value="Kochi">Kochi</option>
                     <option value="Trivandrum">Trivandrum</option>
                     <option value="Kannur">Kannur</option>
@@ -215,7 +218,8 @@ const VenueSelector: React.FC = () => {
             {venues.slice(0, 4).map((venue) => (
               <div
                 key={venue.id}
-                className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 group"
+                className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 group cursor-pointer"
+                onClick={() => handleCardClick(venue.id)}
               >
                 <div className="relative">
                   <img
@@ -250,7 +254,8 @@ const VenueSelector: React.FC = () => {
             {venues.slice(4, 8).map((venue) => (
               <div
                 key={venue.id}
-                className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 group"
+                className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 group cursor-pointer"
+                onClick={() => handleCardClick(venue.id)}
               >
                 <div className="relative">
                   <img
