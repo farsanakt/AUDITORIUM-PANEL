@@ -83,8 +83,8 @@ const AuditoriumDetails: React.FC = () => {
   };
 
   const handleBooking = () => {
-    // navigate(`/booking/${id}`);
-    navigate('/bookings')
+    navigate(`/booking/${id}`);
+    // navigate('/bookings')
   };
 
   if (loading) {
