@@ -52,6 +52,10 @@ const Bookings: React.FC = () => {
     return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
   };
 
+  const boking=async()=>{
+    console.log('hiiiiii')
+  }
+
   const generateCalendarDays = () => {
     const daysInMonth = getDaysInMonth(currentDate);
     const firstDay = getFirstDayOfMonth(currentDate);
