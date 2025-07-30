@@ -22,14 +22,10 @@ import pic1 from "../../assets/pic1.png";
 import pic2 from "../../assets/pic2.png";
 import pic3 from "../../assets/pic3.png";
 import pic4 from "../../assets/pic4.png";
-import venue1 from "../../assets/image 11.png";
-import venue2 from "../../assets/image 12.png";
-import venue3 from "../../assets/image 13.png";
-import venue4 from "../../assets/image 15.png";
 import pjct from "../../assets/image 16.png";
 import pjct1 from "../../assets/Rectangle 30.png";
-import vector from '../../assets/vector.png'
 import { useNavigate } from "react-router-dom";
+import { existingVenues } from "../../api/userApi";
 
 interface Service {
   id: number;
@@ -45,14 +41,17 @@ interface Artist {
   image: string;
   rating: number;
   location: string;
+  review: string;
 }
 
 interface Venue {
-  id: number;
+  id: string;
   name: string;
   location: string;
-  image: string;
+  images: string[];
   price: string;
+  rating: number;
+  review: string;
 }
 
 interface Project {
@@ -69,8 +68,10 @@ const HomePage: React.FC = () => {
     date: "",
     event: "",
   });
-
-  const navigate=useNavigate()
+  const [venues, setVenues] = useState<Venue[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -92,8 +93,38 @@ const HomePage: React.FC = () => {
   const handleSubmit = () => {
     console.log("Form submitted:", formData);
     navigate(`/auditoriumlist?place=${formData.place}&date=${formData.date}&event=${formData.event}`);
-
   };
+
+  const fetchVenues = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await existingVenues();
+      console.log("Venues API response:", response.data);
+      const mappedVenues = response.data.map((venue: any) => ({
+        id: venue._id,
+        name: venue.name || venue.venueName || "Unknown Venue",
+        location: venue.address || "Unknown Location",
+        images: venue.images && Array.isArray(venue.images) && venue.images.length > 0
+          ? venue.images
+          : ["/placeholder.svg?height=200&width=300"],
+        price: venue.totalamount || venue.tariff?.wedding || "Price not available",
+        rating: venue.rating || 4.5, // Dummy rating if not provided
+        review: venue.review || "Great venue with excellent amenities!", // Dummy review
+      }));
+      setVenues(mappedVenues);
+    } catch (err) {
+      console.error("Error fetching venues:", err);
+      setError("Failed to load venues. Please try again.");
+      setVenues([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchVenues();
+  }, []);
 
   const services: Service[] = [
     {
@@ -134,6 +165,7 @@ const HomePage: React.FC = () => {
       image: makeup1,
       rating: 4.9,
       location: "Kochi",
+      review: "Transformed my wedding look with stunning makeup!",
     },
     {
       id: 2,
@@ -142,6 +174,7 @@ const HomePage: React.FC = () => {
       image: makeup2,
       rating: 4.8,
       location: "Delhi",
+      review: "Organized everything perfectly, stress-free experience!",
     },
     {
       id: 3,
@@ -150,6 +183,7 @@ const HomePage: React.FC = () => {
       image: makeup3,
       rating: 4.9,
       location: "Trivandrum",
+      review: "Created a magical ambiance for our big day!",
     },
     {
       id: 4,
@@ -158,10 +192,11 @@ const HomePage: React.FC = () => {
       image: makeup4,
       rating: 4.7,
       location: "Kochui",
+      review: "Captured every moment beautifully!",
     },
   ];
 
-  const Photes: Artist[] = [
+  const photos: Artist[] = [
     {
       id: 1,
       name: "Sarah Johnson",
@@ -169,6 +204,7 @@ const HomePage: React.FC = () => {
       image: pic1,
       rating: 4.9,
       location: "Kochi",
+      review: "Amazing photos that captured our love story!",
     },
     {
       id: 2,
@@ -177,6 +213,7 @@ const HomePage: React.FC = () => {
       image: pic2,
       rating: 4.8,
       location: "Delhi",
+      review: "Professional and creative, highly recommend!",
     },
     {
       id: 3,
@@ -185,6 +222,7 @@ const HomePage: React.FC = () => {
       image: pic3,
       rating: 4.9,
       location: "Trivandrum",
+      review: "Turned our venue into a fairytale!",
     },
     {
       id: 4,
@@ -193,37 +231,7 @@ const HomePage: React.FC = () => {
       image: pic4,
       rating: 4.7,
       location: "Kochui",
-    },
-  ];
-
-  const venues: Venue[] = [
-    {
-      id: 1,
-      name: "Garden Paradise",
-      location: "Beverly Hills, CA",
-      image: venue1,
-      price: "$5,000",
-    },
-    {
-      id: 2,
-      name: "Ocean View Resort",
-      location: "Malibu, CA",
-      image: venue2,
-      price: "$8,000",
-    },
-    {
-      id: 3,
-      name: "Mountain Lodge",
-      location: "Aspen, CO",
-      image: venue3,
-      price: "$6,500",
-    },
-    {
-      id: 4,
-      name: "Historic Mansion",
-      location: "Napa Valley, CA",
-      image: venue4,
-      price: "$7,200",
+      review: "Stunning video quality, captured every detail!",
     },
   ];
 
@@ -243,7 +251,7 @@ const HomePage: React.FC = () => {
     {
       id: 3,
       title: "Garden Party Reception",
-      image: venue2,
+      image: pjct,
       category: "Garden Wedding",
     },
   ];
@@ -252,7 +260,7 @@ const HomePage: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-b from-pink-50 to-white overflow-x-hidden">
       <section className="relative h-screen overflow-hidden">
         <div
-          className="absolute  inset-0 w-full h-full bg-cover bg-center bg-no-repeat"
+          className="absolute inset-0 w-full h-full bg-cover bg-center bg-no-repeat"
           style={{
             backgroundImage: `url(${bgImg})`,
           }}
@@ -328,9 +336,7 @@ const HomePage: React.FC = () => {
           >
             {/* Form */}
             <div className="w-full max-w-sm sm:max-w-md space-y-3 sm:space-y-4">
-           
               <div className="flex flex-col sm:hidden space-y-3">
-               
                 <div className="relative">
                   <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
                   <select
@@ -347,7 +353,6 @@ const HomePage: React.FC = () => {
                   </select>
                 </div>
 
-                {/* Date */}
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
                   <input
@@ -359,7 +364,6 @@ const HomePage: React.FC = () => {
                   />
                 </div>
 
-                {/* Event */}
                 <div className="relative">
                   <Flag className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
                   <select
@@ -376,19 +380,16 @@ const HomePage: React.FC = () => {
                   </select>
                 </div>
 
-                {/* Submit Button */}
                 <button
                   onClick={handleSubmit}
-                  className="h-10 px-4 w-full bg-[#9c7c5d] text-white rounded-md font-medium hover:bg-[#9c7c5d] transition duration-300 flex items-center justify-center gap-2 text-sm"
+                  className="h-10 px-4 w-full bg-[#9c7c5d] text-white rounded-md font-medium hover:bg-[#8b6b4a] transition duration-300 flex items-center justify-center gap-2 text-sm"
                 >
                   <span>Find Venues</span>
                   <Search className="w-4 h-4" />
                 </button>
               </div>
 
-              {/* Tablet and Desktop: 2x2 Grid */}
               <div className="hidden sm:grid grid-cols-2 gap-3 sm:gap-4">
-                {/* Place */}
                 <div className="relative">
                   <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4 sm:w-5 sm:h-5" />
                   <select
@@ -397,7 +398,7 @@ const HomePage: React.FC = () => {
                     onChange={handleInputChange}
                     className="w-full h-10 sm:h-12 pl-10 sm:pl-12 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
                   >
-                     <option value="">Place</option>
+                    <option value="">Place</option>
                     <option value="Kochi">Kochi</option>
                     <option value="Trivandrum">Trivandrum</option>
                     <option value="Kannur">Kannur</option>
@@ -405,7 +406,6 @@ const HomePage: React.FC = () => {
                   </select>
                 </div>
 
-                {/* Date */}
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4 sm:w-5 sm:h-5" />
                   <input
@@ -417,7 +417,6 @@ const HomePage: React.FC = () => {
                   />
                 </div>
 
-                {/* Event */}
                 <div className="relative">
                   <Flag className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4 sm:w-5 sm:h-5" />
                   <select
@@ -434,10 +433,9 @@ const HomePage: React.FC = () => {
                   </select>
                 </div>
 
-                {/* Submit Button */}
                 <button
                   onClick={handleSubmit}
-                  className="h-10 sm:h-12 px-4 w-full bg-[#9c7c5d] text-white rounded-md font-medium bg-[#9c7c5d] transition duration-300 flex items-center justify-center gap-2 text-sm"
+                  className="h-10 sm:h-12 px-4 w-full bg-[#9c7c5d] text-white rounded-md font-medium hover:bg-[#8b6b4a] transition duration-300 flex items-center justify-center gap-2 text-sm"
                 >
                   <span>Find Venues</span>
                   <Search className="w-4 h-4" />
@@ -445,7 +443,6 @@ const HomePage: React.FC = () => {
               </div>
             </div>
 
-            {/* Categories */}
             <div
               className={`text-[#9c7c5d] text-xs sm:text-sm font-medium space-y-1 transition-all duration-1000 delay-800 ${
                 isVisible
@@ -475,15 +472,14 @@ const HomePage: React.FC = () => {
       </section>
 
       {/* Services Section */}
-      <section id="services" className="py-12 sm:py-16 lg:py-20 ">
-        
+      <section id="services" className="py-12 sm:py-16 lg:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-left mb-12 sm:mb-16">
             <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#5B4336] mb-4">
               Our Services
             </h2>
             <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl">
-              we specialize in creating seamless, unforgettable events tailored
+              We specialize in creating seamless, unforgettable events tailored
               to your vision. From corporate gatherings and weddings to private
               celebrations and brand activations, our expert team ensures every
               detail is flawlessly executed. With a passion for creativity and
@@ -496,12 +492,88 @@ const HomePage: React.FC = () => {
         </div>
       </section>
 
-      {/* photographers Section */}
-      <section
-        id="photographers"
-        className="py-12 sm:py-16 lg:py-20 bg-gradient-to-b  "
-      >
-        
+      {/* Venues Section */}
+      <section id="venues" className="py-12 sm:py-16 lg:py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-right mb-12 sm:mb-16">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#5B4336] mb-4">
+              Perfect Venues
+            </h2>
+            <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl ml-auto">
+              Choose from our collection of stunning venues that will provide
+              the perfect backdrop for your wedding
+            </p>
+          </div>
+
+          {loading ? (
+            <div className="text-center text-gray-600">Loading venues...</div>
+          ) : error ? (
+            <div className="text-center text-red-600">{error}</div>
+          ) : venues.length === 0 ? (
+            <div className="text-center text-gray-600">No venues available.</div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+              {venues.map((venue, index) => (
+                <div
+                  key={venue.id}
+                  className="group rounded-xl overflow-hidden hover:shadow-xl transition duration-300 transform opacity-0 scale-95"
+                  style={{
+                    animation: `fadeInScale 0.6s ease ${index * 0.15}s forwards`,
+                  }}
+                >
+                  <style>
+                    {`
+                      @keyframes fadeInScale {
+                        to {
+                          opacity: 1;
+                          transform: scale(1);
+                        }
+                      }
+                      .group:hover .card-content {
+                        transform: translateY(-5px);
+                      }
+                    `}
+                  </style>
+                  <div
+                    className="relative h-48 sm:h-56 lg:h-64 bg-cover bg-center rounded-xl"
+                    style={{ backgroundImage: `url(${venue.images[0]})` }}
+                  >
+                    <div className="absolute inset-0 bg-black opacity-20 group-hover:opacity-30 transition duration-300"></div>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <img
+                        src={venue.images[0]}
+                        alt={venue.name}
+                        className="w-full h-full object-cover rounded-xl"
+                      />
+                    </div>
+                  </div>
+                  <div className="p-3 text-left card-content transition-transform duration-300">
+                    <div className="flex items-center mb-1">
+                      {/* <MapPin className="h-5 w-5 text-gray-600 mr-2" /> */}
+                      <h3 className="text-lg sm:text-xl font-medium text-[#5B4336]">
+                        {venue.name}
+                      </h3>
+                    </div>
+                    <p className="text-gray-600 text-sm flex items-center mb-1">
+                      <MapPin className="h-4 w-4 text-gray-600 mr-1" />
+                      {venue.location}
+                    </p>
+                    {/* <p className="text-gray-600 text-sm mb-1">{venue.price}</p> */}
+                    <div className="flex items-center text-sm text-gray-600 mb-1">
+                      <Star className="h-4 w-4 text-yellow-500 mr-1" />
+                      <span>{venue.rating.toFixed(1)}</span>
+                    </div>
+                    {/* <p className="text-gray-600 text-sm italic line-clamp-2">{venue.review}</p> */}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Photographers Section */}
+      <section id="photographers" className="py-12 sm:py-16 lg:py-20 bg-gradient-to-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-left mb-12 sm:mb-16">
             <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#5B4336] mb-4">
@@ -516,10 +588,10 @@ const HomePage: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-            {Photes.map((artist, index) => (
+            {photos.map((artist, index) => (
               <div
                 key={artist.id}
-                className="group  rounded-xl overflow-hidden hover:shadow-xl transition duration-300 transform opacity-0 scale-95"
+                className="group rounded-xl overflow-hidden hover:shadow-xl transition duration-300 transform opacity-0 scale-95"
                 style={{
                   animation: `fadeInScale 0.6s ease ${index * 0.15}s forwards`,
                 }}
@@ -550,17 +622,22 @@ const HomePage: React.FC = () => {
                     />
                   </div>
                 </div>
-                <div className="p-3 text-left flex items-center card-content transition-transform duration-300">
-                  <MapPin className="h-5 w-5 text-gray-600 mr-2" />
-                  <div>
-                    <h3 className="text-lg sm:text-xl font-medium text-[#5B4336] mb-1">
+                <div className="p-3 text-left card-content transition-transform duration-300">
+                  <div className="flex items-center mb-1">
+                    {/* <MapPin className="h-5 w-5 text-gray-600 mr-2" /> */}
+                    <h3 className="text-lg sm:text-xl font-medium text-[#5B4336]">
                       {artist.name}
                     </h3>
-                    <p className="text-gray-600 text-sm flex items-center">
-                      <MapPin className="h-4 w-4 text-gray-600 mr-1" />
-                      {artist.location}
-                    </p>
                   </div>
+                  <p className="text-gray-600 text-sm flex items-center mb-1">
+                    <MapPin className="h-4 w-4 text-gray-600 mr-1" />
+                    {artist.location}
+                  </p>
+                  <div className="flex items-center text-sm text-gray-600 mb-1">
+                    <Star className="h-4 w-4 text-yellow-500 mr-1" />
+                    <span>{artist.rating.toFixed(1)}</span>
+                  </div>
+                  {/* <p className="text-gray-600 text-sm italic line-clamp-2">{artist.review}</p> */}
                 </div>
               </div>
             ))}
@@ -574,11 +651,11 @@ const HomePage: React.FC = () => {
       </section>
 
       {/* Artists Section */}
-      <section id="photographers" className="py-12 sm:py-16 lg:py-20 ">
+      <section id="artists" className="py-12 sm:py-16 lg:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-left mb-12 sm:mb-16">
             <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#5B4336] mb-4">
-              Our Makeup artist
+              Our Makeup Artists
             </h2>
             <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl">
               Whether you love classic, candid, documentary, or artistic
@@ -592,23 +669,23 @@ const HomePage: React.FC = () => {
             {artists.map((artist, index) => (
               <div
                 key={artist.id}
-                className="group  rounded-xl overflow-hidden hover:shadow-xl transition duration-300 transform opacity-0 scale-95"
+                className="group rounded-xl overflow-hidden hover:shadow-xl transition duration-300 transform opacity-0 scale-95"
                 style={{
                   animation: `fadeInScale 0.6s ease ${index * 0.15}s forwards`,
                 }}
               >
                 <style>
                   {`
-                  @keyframes fadeInScale {
-                    to {
-                      opacity: 1;
-                      transform: scale(1);
+                    @keyframes fadeInScale {
+                      to {
+                        opacity: 1;
+                        transform: scale(1);
+                      }
                     }
-                  }
-                  .group:hover .card-content {
-                    transform: translateY(-5px);
-                  }
-                `}
+                    .group:hover .card-content {
+                      transform: translateY(-5px);
+                    }
+                  `}
                 </style>
                 <div
                   className="relative h-48 sm:h-56 lg:h-64 bg-cover bg-center rounded-xl"
@@ -623,17 +700,22 @@ const HomePage: React.FC = () => {
                     />
                   </div>
                 </div>
-                <div className="p-3 text-left flex items-center card-content transition-transform duration-300">
-                  <MapPin className="h-5 w-5 text-gray-600 mr-2" />
-                  <div>
-                    <h3 className="text-lg sm:text-xl font-medium text-[#5B4336] mb-1">
+                <div className="p-3 text-left card-content transition-transform duration-300">
+                  <div className="flex items-center mb-1">
+                    {/* <MapPin className="h-5 w-5 text-gray-600 mr-2" /> */}
+                    <h3 className="text-lg sm:text-xl font-medium text-[#5B4336]">
                       {artist.name}
                     </h3>
-                    <p className="text-gray-600 text-sm flex items-center">
-                      <MapPin className="h-4 w-4 text-gray-600 mr-1" />
-                      {artist.location}
-                    </p>
                   </div>
+                  <p className="text-gray-600 text-sm flex items-center mb-1">
+                    <MapPin className="h-4 w-4 text-gray-600 mr-1" />
+                    {artist.location}
+                  </p>
+                  <div className="flex items-center text-sm text-gray-600 mb-1">
+                    <Star className="h-4 w-4 text-yellow-500 mr-1" />
+                    <span>{artist.rating.toFixed(1)}</span>
+                  </div>
+                  {/* <p className="text-gray-600 text-sm italic line-clamp-2">{artist.review}</p> */}
                 </div>
               </div>
             ))}
@@ -646,74 +728,8 @@ const HomePage: React.FC = () => {
         </div>
       </section>
 
-      {/* Venues Section */}
-      <section id="venues" className="py-12 sm:py-16 lg:py-20 ">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-right mb-12 sm:mb-16">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#5B4336] mb-4">
-              Perfect Venues
-            </h2>
-            <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl ml-auto">
-              Choose from our collection of stunning venues that will provide
-              the perfect backdrop for your wedding
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-            {venues.map((artist, index) => (
-              <div
-                key={artist.id}
-                className="group  rounded-xl overflow-hidden hover:shadow-xl transition duration-300 transform opacity-0 scale-95"
-                style={{
-                  animation: `fadeInScale 0.6s ease ${index * 0.15}s forwards`,
-                }}
-              >
-                <style>
-                  {`
-              @keyframes fadeInScale {
-                to {
-                  opacity: 1;
-                  transform: scale(1);
-                }
-              }
-              .group:hover .card-content {
-                transform: translateY(-5px);
-              }
-            `}
-                </style>
-                <div
-                  className="relative h-48 sm:h-56 lg:h-64 bg-cover bg-center rounded-xl"
-                  style={{ backgroundImage: `url(${artist.image})` }}
-                >
-                  <div className="absolute inset-0 bg-black opacity-20 group-hover:opacity-30 transition duration-300"></div>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <img
-                      src={artist.image}
-                      alt={artist.name}
-                      className="w-full h-full object-cover rounded-xl"
-                    />
-                  </div>
-                </div>
-                <div className="p-3 text-left flex items-center card-content transition-transform duration-300">
-                  <MapPin className="h-5 w-5 text-gray-600 mr-2" />
-                  <div>
-                    <h3 className="text-lg sm:text-xl font-medium text-[#5B4336] mb-1">
-                      {artist.name}
-                    </h3>
-                    <p className="text-gray-600 text-sm flex items-center">
-                      <MapPin className="h-4 w-4 text-gray-600 mr-1" />
-                      {artist.location}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Projects Section */}
-      <section id="projects" className="py-12 sm:py-16 lg:py-20 ">
+      <section id="projects" className="py-12 sm:py-16 lg:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-left mb-12 sm:mb-16">
             <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#5B4336] mb-4">
@@ -729,11 +745,11 @@ const HomePage: React.FC = () => {
             {projects.map((project) => (
               <div
                 key={project.id}
-                className="group  rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition duration-300 transform hover:-translate-y-2"
+                className="group rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition duration-300 transform hover:-translate-y-2"
               >
                 <div className="relative h-48 sm:h-56 lg:h-64">
                   <img
-                    src={project.image} // ✅ Use actual project image
+                    src={project.image}
                     alt={project.title}
                     className="w-full h-full object-cover"
                   />
@@ -744,10 +760,10 @@ const HomePage: React.FC = () => {
                   <h3 className="text-lg sm:text-xl font-semibold text-[#5B4336] mb-2">
                     {project.title}
                   </h3>
-                  <p className="text-black-600 text-sm mb-4">
+                  <p className="text-gray-600 text-sm mb-4">
                     {project.category}
                   </p>
-                  <button className="bg-[#9c7c5d] text-white px-4 sm:px-6 py-2 rounded-full text-xs sm:text-sm hover:bg-pink-700 transition duration-300">
+                  <button className="bg-[#9c7c5d] text-white px-4 sm:px-6 py-2 rounded-full text-xs sm:text-sm hover:bg-[#8b6b4a] transition duration-300">
                     View Gallery
                   </button>
                 </div>
@@ -756,121 +772,6 @@ const HomePage: React.FC = () => {
           </div>
         </div>
       </section>
-
-      {/* CTA Section */}
-      {/* <section className="py-12 sm:py-16 lg:py-20 bg-gradient-to-r from-pink-600 to-purple-600">
-        <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 sm:mb-6">
-            Ready to Plan Your Dream Wedding?
-          </h2>
-          <p className="text-base sm:text-lg md:text-xl text-pink-100 mb-6 sm:mb-8 max-w-2xl mx-auto">
-            Let us help you create the perfect wedding day that you and your loved ones will remember forever.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className=" text-pink-600 px-6 sm:px-8 py-3 sm:py-4 rounded-full text-base sm:text-lg font-semibold hover:bg-pink-50 transition duration-300">
-              Start Planning
-            </button>
-            <button className="border-2 border-white text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full text-base sm:text-lg font-semibold hover:bg-white hover:text-pink-600 transition duration-300">
-              Contact Us
-            </button>
-          </div>
-        </div>
-      </section> */}
-
-      {/* Footer */}
-      {/* <footer className="bg-gray-800 text-white py-8 sm:py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
-            <div className="text-left">
-              <div className="flex items-center mb-4">
-                <Heart className="h-6 w-6 sm:h-8 sm:w-8 text-pink-600 mr-2" />
-                <span className="text-xl sm:text-2xl font-bold">UnforgettableI</span>
-              </div>
-              <p className="text-gray-400 text-sm sm:text-base">
-                Creating magical wedding experiences that you'll treasure forever.
-              </p>
-            </div>
-            <div className="text-left">
-              <h3 className="text-base sm:text-lg font-semibold mb-4">Services</h3>
-              <ul className="space-y-2 text-gray-400 text-sm sm:text-base">
-                <li>
-                  <a href="#" className="hover:text-pink-600 transition duration-300">
-                    Wedding Photography
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-pink-600 transition duration-300">
-                    Event Planning
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-pink-600 transition duration-300">
-                    Venue Decoration
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-pink-600 transition duration-300">
-                    Catering
-                  </a>
-                </li>
-              </ul>
-            </div>
-            <div className="text-left">
-              <h3 className="text-base sm:text-lg font-semibold mb-4">Company</h3>
-              <ul className="space-y-2 text-gray-400 text-sm sm:text-base">
-                <li>
-                  <a href="#" className="hover:text-pink-600 transition duration-300">
-                    About Us
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-pink-600 transition duration-300">
-                    Our Team
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-pink-600 transition duration-300">
-                    Careers
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-pink-600 transition duration-300">
-                    Contact
-                  </a>
-                </li>
-              </ul>
-            </div>
-            <div className="text-left">
-              <h3 className="text-base sm:text-lg font-semibold mb-4">Connect</h3>
-              <ul className="space-y-2 text-gray-400 text-sm sm:text-base">
-                <li>
-                  <a href="#" className="hover:text-pink-600 transition duration-300">
-                    Instagram
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-pink-600 transition duration-300">
-                    Facebook
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-pink-600 transition duration-300">
-                    Twitter
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-pink-600 transition duration-300">
-                    Pinterest
-                  </a>
-                </li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t border-gray-700 mt-6 sm:mt-8 pt-6 sm:pt-8 text-center text-gray-400 text-sm sm:text-base">
-            <p>&copy; 2024 UnforgettableI. All rights reserved.</p>
-          </div>
-        </div>
-      </footer> */}
     </div>
   );
 };

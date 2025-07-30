@@ -24,9 +24,11 @@ interface Auditorium {
   decorPolicy: string;
   foodPolicy: string;
   cancellationPolicy: string;
-  timeSlots: any[]; 
+  timeSlots: any[];
   audiUserId: string;
   tariff: { wedding: string; reception: string };
+  totalamount: string;
+  advAmnt: string;
 }
 
 const AuditoriumDetails: React.FC = () => {
@@ -64,12 +66,11 @@ const AuditoriumDetails: React.FC = () => {
     }
   }, [id]);
 
-  
   useEffect(() => {
     if (auditorium?.images?.length > 1) {
       const interval = setInterval(() => {
         setCurrent((prev) => (prev + 1) % auditorium.images.length);
-      }, 3000); 
+      }, 3000);
       return () => clearInterval(interval);
     }
   }, [auditorium?.images]);
@@ -84,13 +85,12 @@ const AuditoriumDetails: React.FC = () => {
 
   const handleBooking = () => {
     navigate(`/bookings/${id}`);
-    // navigate('/bookings')
   };
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#FDF8F1]">
-        <p className="text-gray-600">Loading...</p>
+        <p className="text-gray-600 text-sm sm:text-base">Loading...</p>
       </div>
     );
   }
@@ -98,7 +98,7 @@ const AuditoriumDetails: React.FC = () => {
   if (error || !auditorium) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#FDF8F1]">
-        <p className="text-red-600">{error || "No venue found."}</p>
+        <p className="text-red-600 text-sm sm:text-base">{error || "No venue found."}</p>
       </div>
     );
   }
@@ -108,7 +108,7 @@ const AuditoriumDetails: React.FC = () => {
       <img
         src={Lines}
         alt="Lines"
-        className="absolute top-0 left-0 h-full object-cover mt-0 z-0 scale-250"
+        className="absolute top-0 left-0 h-full object-cover mt-0 z-0 sm:scale-150 scale-125"
         style={{ maxWidth: "none" }}
       />
       <div className="relative z-10 p-2 sm:p-4">
@@ -117,7 +117,7 @@ const AuditoriumDetails: React.FC = () => {
         <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8 max-w-6xl">
           {/* Headline */}
           <div className="mb-2 sm:mb-4">
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl text-left font-bold text-[#5B4336]">
+            <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl text-left font-bold text-[#5B4336]">
               {auditorium.name}
             </h1>
           </div>
@@ -131,7 +131,7 @@ const AuditoriumDetails: React.FC = () => {
                 clipRule="evenodd"
               />
             </svg>
-            <span className="text-sm sm:text-base text-[#5B4336]">
+            <span className="text-xs sm:text-sm md:text-base text-[#5B4336]">
               {auditorium.address}, {auditorium.cities.join(", ")} {auditorium.pincode}
             </span>
           </div>
@@ -140,31 +140,31 @@ const AuditoriumDetails: React.FC = () => {
           <div className="mb-6 sm:mb-8">
             <div className="relative bg-white rounded-lg shadow-lg overflow-hidden max-w-6xl mx-auto">
               <img
-                src={auditorium.images[current] || ""}
+                src={auditorium.images[current] || "/placeholder.svg?height=400&width=600"}
                 alt={`Slide ${current + 1}`}
-                className="w-full h-60 sm:h-72 md:h-80 lg:h-[400px] object-cover transition-all duration-700 ease-in-out"
+                className="w-full h-48 sm:h-64 md:h-80 lg:h-[400px] object-cover transition-all duration-700 ease-in-out"
                 onError={(e) => {
                   console.error("Error loading image:", auditorium.images[current]);
-                  (e.target as HTMLImageElement).style.display = "none";
+                  (e.target as HTMLImageElement).src = "/placeholder.svg?height=400&width=600";
                 }}
               />
               {auditorium.images.length > 1 && (
                 <>
                   <button
                     onClick={prevSlide}
-                    className="absolute top-1/2 left-3 transform -translate-y-1/2 bg-gray-800 bg-opacity-50 hover:bg-opacity-70 text-white p-2 rounded-full z-10"
+                    className="absolute top-1/2 left-2 sm:left-3 transform -translate-y-1/2 bg-gray-800 bg-opacity-50 hover:bg-opacity-70 text-white p-2 sm:p-3 rounded-full z-10 w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center"
                     aria-label="Previous image"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                     </svg>
                   </button>
                   <button
                     onClick={nextSlide}
-                    className="absolute top-1/2 right-3 transform -translate-y-1/2 bg-gray-800 bg-opacity-50 hover:bg-opacity-70 text-white p-2 rounded-full z-10"
+                    className="absolute top-1/2 right-2 sm:right-3 transform -translate-y-1/2 bg-gray-800 bg-opacity-50 hover:bg-opacity-70 text-white p-2 sm:p-3 rounded-full z-10 w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center"
                     aria-label="Next image"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </button>
@@ -172,12 +172,12 @@ const AuditoriumDetails: React.FC = () => {
               )}
             </div>
             {auditorium.images.length > 1 && (
-              <div className="mt-4 flex justify-center items-center gap-3 overflow-x-auto px-4 scrollbar-hide">
+              <div className="mt-3 sm:mt-4 flex justify-center items-center gap-2 sm:gap-3 overflow-x-auto px-2 sm:px-4 scrollbar-hide">
                 {auditorium.images.map((img, index) => (
                   <button
                     key={index}
                     onClick={() => setCurrent(index)}
-                    className={`h-16 w-24 rounded-md overflow-hidden border transition-all duration-200 ${
+                    className={`h-12 w-16 sm:h-16 sm:w-24 md:h-20 md:w-28 rounded-md overflow-hidden border transition-all duration-200 ${
                       index === current ? "border-[#b09d94] shadow-md" : "border-gray-200 hover:border-gray-400"
                     }`}
                   >
@@ -189,23 +189,23 @@ const AuditoriumDetails: React.FC = () => {
           </div>
 
           {/* About Venue and Booking Button */}
-          <div className="flex flex-col lg:flex-row justify-between items-start mb-6 sm:mb-8 gap-4 lg:gap-0">
-            <div className="flex-1 lg:pr-8 mt-4 sm:mt-9">
-              <h3 className="text-lg sm:text-xl font-semibold text-left text-[#5B4336] mt-4 sm:mt-10 mb-3">
+          <div className="flex flex-col lg:flex-row justify-between items-start mb-6 sm:mb-8 gap-4 lg:gap-6">
+            <div className="flex-1 lg:pr-6">
+              <h3 className="text-base sm:text-lg md:text-xl font-semibold text-left text-[#5B4336] mt-4 sm:mt-6 mb-3">
                 About Venue
               </h3>
-              <p className="text-sm sm:text-base text-[#000000] text-left leading-relaxed">
-                {auditorium.name} is a premier event venue offering modern amenities and elegant spaces for various events. 
-                With a seating capacity of {auditorium.seatingCapacity} and dining capacity of {auditorium.diningCapacity}, 
+              <p className="text-xs sm:text-sm md:text-base text-[#000000] text-left leading-relaxed">
+                {auditorium.name} is a premier event venue offering modern amenities and elegant spaces for various events.
+                With a seating capacity of {auditorium.seatingCapacity} and dining capacity of {auditorium.diningCapacity},
                 it’s ideal for {auditorium.tariff.wedding === "t" ? "weddings" : ""}{auditorium.tariff.wedding === "t" && auditorium.tariff.reception === "t" ? ", " : ""}
-                {auditorium.tariff.reception === "t" ? "receptions" : ""}, and other celebrations. 
+                {auditorium.tariff.reception === "t" ? "receptions" : ""}, and other celebrations.
                 The venue supports {auditorium.foodPolicy} food options and {auditorium.decorPolicy} decoration policies.
               </p>
             </div>
             <div className="flex-shrink-0 w-full lg:w-auto">
               <button
                 onClick={handleBooking}
-                className="bg-[#9c7c5d] hover:bg-[#d85c4e] mt-6 sm:mt-15 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-md font-medium transition-colors flex items-center space-x-2 w-full lg:w-auto justify-center"
+                className="bg-[#9c7c5d] hover:bg-[#d85c4e] mt-4 sm:mt-6 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-md font-medium transition-colors flex items-center space-x-2 w-full lg:w-auto justify-center text-xs sm:text-sm md:text-base"
               >
                 <span>Go to Booking</span>
                 <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -217,29 +217,29 @@ const AuditoriumDetails: React.FC = () => {
 
           {/* Contact */}
           <div className="mb-6 sm:mb-8">
-            <h3 className="text-lg sm:text-xl font-semibold text-left mt-8 sm:mt-20 text-[#49516F] mb-4">
+            <h3 className="text-base sm:text-lg md:text-xl font-semibold text-left text-[#49516F] mt-6 sm:mt-8 mb-3 sm:mb-4">
               Contact
             </h3>
             <div className="space-y-2">
               <div className="flex items-center">
-                <svg className="w-4 h-4 sm:w-5 sm:h-5 text-[#2A2929] mr-3" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5 text-[#2A2929] mr-2 sm:mr-3" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
                 </svg>
-                <span className="text-sm sm:text-base text-[#2A2929]">{auditorium.phone}</span>
+                <span className="text-xs sm:text-sm md:text-base text-[#2A2929]">{auditorium.phone}</span>
               </div>
               {auditorium.altPhone && (
                 <div className="flex items-center">
-                  <svg className="w-4 h-4 sm:w-5 sm:h-5 text-[#2A2929] mr-3" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5 text-[#2A2929] mr-2 sm:mr-3" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
                   </svg>
-                  <span className="text-sm sm:text-base text-[#2A2929]">{auditorium.altPhone}</span>
+                  <span className="text-xs sm:text-sm md:text-base text-[#2A2929]">{auditorium.altPhone}</span>
                 </div>
               )}
               <div className="flex items-center">
-                <svg className="w-4 h-4 sm:w-5 sm:h-5 text-[#2A2929] mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5 text-[#2A2929] mr-2 sm:mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
-                <span className="text-sm sm:text-base text-[#2A2929]">{auditorium.email}</span>
+                <span className="text-xs sm:text-sm md:text-base text-[#2A2929]">{auditorium.email}</span>
               </div>
             </div>
           </div>
@@ -249,14 +249,14 @@ const AuditoriumDetails: React.FC = () => {
             <img
               src={Bshape}
               alt="Lines"
-              className="absolute bottom-0 left-[-80px] h-[90%] object-cover z-0"
+              className="absolute bottom-0 left-[-40px] sm:left-[-60px] h-[80%] sm:h-[90%] object-cover z-0"
               style={{ maxWidth: "none" }}
             />
-            <div className="bg-white border mt-8 sm:mt-20 border-gray-200 rounded-xl shadow-sm p-4 sm:p-6 md:p-8 text-gray-800 max-w-6xl mx-auto">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 text-xs sm:text-sm">
+            <div className="bg-white border mt-6 sm:mt-8 md:mt-10 border-gray-200 rounded-xl shadow-sm p-3 sm:p-4 md:p-6 text-gray-800 max-w-6xl mx-auto">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6 text-xs sm:text-sm md:text-base">
                 {/* Timing Slots */}
-                <div className="text-left">
-                  <h4 className="font-semibold text-base text-[#2A2929] sm:text-lg mb-2">Timing Slots</h4>
+                {/* <div className="text-left">
+                  <h4 className="font-semibold text-sm sm:text-base md:text-lg text-[#2A2929] mb-2">Timing Slots</h4>
                   {auditorium.timeSlots.length > 0 ? (
                     auditorium.timeSlots.map((slot, index) => (
                       <p key={index} className="mb-1">
@@ -269,11 +269,11 @@ const AuditoriumDetails: React.FC = () => {
                   ) : (
                     <p className="mb-1">No time slots available</p>
                   )}
-                </div>
+                </div> */}
 
                 {/* Lodging */}
                 <div>
-                  <h4 className="font-semibold text-base text-[#2A2929] sm:text-lg mb-2 text-left">Lodging</h4>
+                  <h4 className="font-semibold text-sm sm:text-base md:text-lg text-[#2A2929] mb-2 text-left">Lodging</h4>
                   <ul className="list-disc list-inside space-y-1 text-left">
                     <li>{auditorium.changingRooms ? "Rooms Available" : "No Rooms Available"}</li>
                     <li>
@@ -287,7 +287,7 @@ const AuditoriumDetails: React.FC = () => {
 
                 {/* Changing Rooms */}
                 <div>
-                  <h4 className="font-semibold text-base text-[#2A2929] sm:text-lg mb-2 text-left">Changing Rooms</h4>
+                  <h4 className="font-semibold text-sm sm:text-base md:text-lg text-[#2A2929] mb-2 text-left">Changing Rooms</h4>
                   <ul className="list-disc list-inside space-y-1 text-left">
                     <li>{auditorium.changingRooms ? "Changing Rooms Available" : "No Changing Rooms"}</li>
                     <li>{auditorium.acType === "AC" || auditorium.acType === "Both" ? "AC Rooms available" : "Non-AC Rooms"}</li>
@@ -299,11 +299,11 @@ const AuditoriumDetails: React.FC = () => {
 
                 {/* Amenities */}
                 <div>
-                  <h4 className="font-semibold text-base text-[#2A2929] sm:text-lg mb-2 text-left">Amenities</h4>
+                  <h4 className="font-semibold text-sm sm:text-base md:text-lg text-[#2A2929] mb-2 text-left">Amenities</h4>
                   <ul className="list-disc list-inside space-y-1 text-left">
                     <li>
                       <span className="text-gray-500">Parking:</span>{" "}
-                      <span className="text-gray-800 font-semibold">{auditorium.parkingSlots ? `${auditorium.parkingSlots} Slots` : "Not Available"}</span>
+                      <span className="font-semibold">{auditorium.parkingSlots ? `${auditorium.parkingSlots} Slots` : "Not Available"}</span>
                     </li>
                     <li>Halls are {auditorium.acType === "AC" || auditorium.acType === "Both" ? "Air Conditioned" : "Non-Air Conditioned"}</li>
                     {auditorium.amenities.map((amenity, index) => (
@@ -314,11 +314,24 @@ const AuditoriumDetails: React.FC = () => {
 
                 {/* Decoration and Food Policy */}
                 <div>
-                  <h4 className="font-semibold text-base text-[#2A2929] sm:text-lg mb-2 text-left">Decoration & Food</h4>
+                  <h4 className="font-semibold text-sm sm:text-base md:text-lg text-[#2A2929] mb-2 text-left">Decoration & Food</h4>
                   <ul className="list-disc list-inside space-y-1 text-left">
                     <li>Decoration: <span className="font-semibold">{auditorium.decorPolicy === "coustom" ? "Custom Allowed" : "Venue Provided"}</span></li>
                     <li>Food: <span className="font-semibold">{auditorium.foodPolicy === "veg" ? "Vegetarian Only" : "Mixed Options"}</span></li>
                     <li>Cancellation: <span className="font-semibold">{auditorium.cancellationPolicy === "partially" ? "Partially Refundable" : "Non-Refundable"}</span></li>
+                  </ul>
+                </div>
+
+                {/* Pricing */}
+                <div>
+                  <h4 className="font-semibold text-sm sm:text-base md:text-lg text-[#2A2929] mb-2 text-left">Pricing</h4>
+                  <ul className="list-disc list-inside space-y-1 text-left">
+                    <li>
+                      Total Amount: <span className="font-semibold">₹{Number(auditorium.totalamount).toLocaleString("en-IN")}</span>
+                    </li>
+                    <li>
+                      Advance Amount: <span className="font-semibold">₹{Number(auditorium.advAmnt).toLocaleString("en-IN")}</span>
+                    </li>
                   </ul>
                 </div>
               </div>
@@ -326,17 +339,17 @@ const AuditoriumDetails: React.FC = () => {
 
             {/* Location Section */}
             <div className="mb-6 sm:mb-8">
-              <h2 className="text-xl sm:text-2xl font-bold text-left text-[#5B4336] mt-8 sm:mt-20 mb-4 sm:mb-6">
+              <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-left text-[#5B4336] mt-6 sm:mt-8 md:mt-10 mb-3 sm:mb-4">
                 Location
               </h2>
-              <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+              <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4 md:p-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 md:gap-8">
                   <div>
-                    <h3 className="text-base sm:text-lg font-semibold text-[#9c7c5d] mb-4 text-left">
+                    <h3 className="text-sm sm:text-base md:text-lg font-semibold text-[#9c7c5d] mb-3 sm:mb-4 text-left">
                       Address Details
                     </h3>
-                    <div className="space-y-3">
-                      <div className="flex items-start space-x-3">
+                    <div className="space-y-2 sm:space-y-3">
+                      <div className="flex items-start space-x-2 sm:space-x-3">
                         <svg
                           className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500 mt-0.5"
                           fill="currentColor"
@@ -349,13 +362,13 @@ const AuditoriumDetails: React.FC = () => {
                           />
                         </svg>
                         <div>
-                          <p className="font-medium text-gray-800 text-sm sm:text-base">{auditorium.name}</p>
-                          <p className="text-gray-600 text-sm sm:text-base">
+                          <p className="font-medium text-gray-800 text-xs sm:text-sm md:text-base">{auditorium.name}</p>
+                          <p className="text-gray-600 text-xs sm:text-sm md:text-base">
                             {auditorium.address}, {auditorium.cities.join(", ")} {auditorium.pincode}
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-3">
+                      <div className="flex items-center space-x-2 sm:space-x-3">
                         <svg
                           className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500"
                           fill="none"
@@ -375,16 +388,16 @@ const AuditoriumDetails: React.FC = () => {
                             d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
                           />
                         </svg>
-                        <p className="text-gray-600 text-sm sm:text-base">Easily accessible by public transport</p>
+                        <p className="text-gray-600 text-xs sm:text-sm md:text-base">Easily accessible by public transport</p>
                       </div>
                     </div>
                   </div>
 
                   {/* Map placeholder */}
-                  <div className="bg-gray-200 rounded-lg h-48 sm:h-64 flex items-center justify-center cursor-pointer hover:bg-gray-300 transition-colors">
+                  <div className="bg-gray-200 rounded-lg h-40 sm:h-48 md:h-64 flex items-center justify-center cursor-pointer hover:bg-gray-300 transition-colors">
                     <div className="text-center">
                       <svg
-                        className="w-8 h-8 sm:w-12 sm:h-12 text-gray-400 mx-auto mb-2"
+                        className="w-6 h-6 sm:w-8 sm:h-8 md:w-12 md:h-12 text-gray-400 mx-auto mb-2"
                         fill="currentColor"
                         viewBox="0 0 20 20"
                       >
@@ -394,7 +407,7 @@ const AuditoriumDetails: React.FC = () => {
                           clipRule="evenodd"
                         />
                       </svg>
-                      <p className="text-gray-500 font-medium text-sm sm:text-base">View on Map</p>
+                      <p className="text-gray-500 font-medium text-xs sm:text-sm md:text-base">View on Map</p>
                       <p className="text-xs sm:text-sm text-gray-400">Click to open location</p>
                     </div>
                   </div>

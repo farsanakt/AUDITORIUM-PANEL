@@ -114,6 +114,14 @@ export const createBooking=async(formData:any)=>{
 
 }
 
+export const existingBkngs=async(id:string)=>{
+
+  const response=await api.get(`/existingBookings/${id}`)
+
+  return response
+
+}
+
 
 export const userSingUpRequest=async(formData:any)=>{
 
@@ -131,4 +139,20 @@ export const userSingUpRequest=async(formData:any)=>{
 
   }
 
+}
+
+
+export const existingVenues=async()=>{
+
+  const response=await api.get('/venues')
+
+  return response
+
+}
+
+export const deleteVenueAPI=async(id:string)=>{
+
+  const response=await api.delete(`/deletevenue/${id}`)
+
+  return response
 }

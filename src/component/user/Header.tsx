@@ -35,6 +35,12 @@ const Header: React.FC<HeaderProps> = () => {
     setMenuOpen(false);
   };
 
+  const handleLogoClick = () => {
+    navigate("/");
+    setMenuOpen(false);
+    setDropdownOpen(false);
+  };
+
   return (
     <>
       <header className="fixed top-0 left-0 right-0 bg-[#FDF8F1] z-50 ">
@@ -42,7 +48,9 @@ const Header: React.FC<HeaderProps> = () => {
           {/* Logo */}
           <div className="flex ml-26 items-center space-x-4">
             <img src={logo} alt="Logo" className="h-10 w-auto scale-130" />
-            <img src={logo1} alt="Logo2" className="h-6 w-auto ml-15 scale-800" />
+            <button onClick={handleLogoClick} className="focus:outline-none">
+              <img src={logo1} alt="Logo2" className="h-6 w-auto ml-15 scale-800" />
+            </button>
           </div>
 
           {/* Desktop Menu */}

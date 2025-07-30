@@ -4,8 +4,7 @@ import Header from '../../component/user/Header';
 import Lines from '../../assets/vector.png';
 import Homeicon from '../../assets/homeIcon.png';
 import { useNavigate, useParams } from 'react-router-dom';
-import { singleVenueDetails, createBooking } from '../../api/userApi';
-
+import { singleVenueDetails, createBooking, existingBkngs } from '../../api/userApi';
 
 class ErrorBoundary extends Component<{ children: React.ReactNode }, { hasError: boolean; error: Error | null }> {
   state = { hasError: false, error: null };
@@ -23,7 +22,7 @@ class ErrorBoundary extends Component<{ children: React.ReactNode }, { hasError:
       return (
         <div className="p-4 text-red-600">
           <h2>Something went wrong!</h2>
-          <p>{this.state.error?.message}</p>
+          <p>{this.state.error?.message || 'An unexpected error occurred'}</p>
           <button
             className="mt-4 bg-[#876553] text-white py-2 px-4 rounded-lg"
             onClick={() => window.location.reload()}
@@ -44,7 +43,7 @@ interface BookingFormData {
   timeSlot: string;
   totalAmount: string;
   advanceAmount: string;
-  venueId: string; 
+  venueId: string;
 }
 
 interface TimeSlot {
@@ -64,6 +63,12 @@ interface Venue {
   bookedDates?: string[];
 }
 
+interface Booking {
+  bookeddate: string;
+  timeSlot: string;
+  status: string;
+}
+
 const Bookings: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -81,13 +86,13 @@ const Bookings: React.FC = () => {
     timeSlot: '',
     totalAmount: '',
     advanceAmount: '',
-    venueId: id || '', 
+    venueId: id || '',
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('');
+  const [bookings, setBookings] = useState<Booking[]>([]);
   const navigate = useNavigate();
-  const [bookedDates, setBookedDates] = useState<Date[]>([]);
 
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -120,9 +125,8 @@ const Bookings: React.FC = () => {
           venueName: venueData.name || '',
           totalAmount: venueData.totalamount || '',
           advanceAmount: venueData.advAmnt || '',
-          venueId: id || '', 
+          venueId: id || '',
         }));
-        setBookedDates((venueData.bookedDates || []).map((date: string) => new Date(date)).filter((date: Date) => !isNaN(date.getTime())));
       } else {
         setError('No venue data received');
       }
@@ -134,9 +138,29 @@ const Bookings: React.FC = () => {
     }
   };
 
+  const fetchExistingBookings = async () => {
+    try {
+      const response = await existingBkngs(id!);
+      console.log('Existing bookings:', response);
+      if (response.data) {
+        // Handle single object or array
+        const bookingData = Array.isArray(response.data) ? response.data : [response.data];
+        setBookings(bookingData);
+      } else {
+        console.warn('Existing bookings response is empty:', response.data);
+        setBookings([]);
+      }
+    } catch (error) {
+      console.error('Error fetching existing bookings:', error);
+      setBookings([]);
+      setError('Failed to load existing bookings');
+    }
+  };
+
   useEffect(() => {
     if (id) {
       fetchVenueData();
+      fetchExistingBookings();
     } else {
       setError('Invalid venue ID');
       setLoading(false);
@@ -148,7 +172,7 @@ const Bookings: React.FC = () => {
     const firstDay = getFirstDayOfMonth(currentDate);
     const days = [];
 
-    // Add previous month's days to fill the grid
+    // Add previous month's days
     const prevMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 0);
     const prevMonthDays = getDaysInMonth(prevMonth);
     for (let i = firstDay - 1; i >= 0; i--) {
@@ -169,7 +193,7 @@ const Bookings: React.FC = () => {
       });
     }
 
-    // Add next month's days to fill the grid
+    // Add next month's days
     const remainingDays = 42 - days.length;
     for (let day = 1; day <= remainingDays; day++) {
       days.push({
@@ -182,21 +206,35 @@ const Bookings: React.FC = () => {
     return days;
   };
 
+  const getTimeSlotStatus = (date: Date) => {
+    const dateString = date.toISOString().split('T')[0];
+    const bookedSlots = bookings
+      .filter(booking => booking.bookeddate === dateString && booking.status !== 'cancelled')
+      .map(booking => booking.timeSlot);
+    
+    return venue?.timeSlots?.map(slot => ({
+      ...slot,
+      isBooked: bookedSlots.includes(slot.id),
+    })) || [];
+  };
+
   const getDateStatus = (date: Date | null) => {
     if (!date) return null;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const isPast = date < today;
-    const isBooked = bookedDates.some(bookedDate =>
-      bookedDate.toDateString() === date.toDateString()
+    const dateString = date.toISOString().split('T')[0];
+    const bookedSlots = bookings.filter(booking => 
+      booking.bookeddate === dateString && booking.status !== 'cancelled'
     );
+    
     if (isPast) return 'past';
-    if (isBooked) return 'booked';
+    if (bookedSlots.length >= (venue?.timeSlots?.length || 0)) return 'booked';
     return 'available';
   };
 
   const getDateClassName = (date: Date | null, isCurrentMonth: boolean) => {
-    const baseClass = "w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-all";
+    const baseClass = "w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-all relative group";
     
     if (!isCurrentMonth || !date) {
       return `${baseClass} text-gray-400 cursor-not-allowed`;
@@ -217,6 +255,38 @@ const Bookings: React.FC = () => {
       : `${baseClass} bg-green-100 text-green-800 cursor-pointer hover:bg-green-200 hover:scale-105`;
   };
 
+  const getTooltipContent = (date: Date) => {
+    const slots = getTimeSlotStatus(date);
+    return (
+      <div className="absolute z-20 bg-white p-3 rounded-lg shadow-xl border border-gray-200 top-full mt-2 text-sm max-w-xs sm:max-w-sm bg-opacity-95 transform -translate-x-1/2 left-1/2">
+        <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-8 border-r-8 border-b-8 border-l-transparent border-r-transparent border-b-white"></div>
+        <p className="font-semibold text-gray-800 mb-2">Time Slots:</p>
+        {slots.length > 0 ? (
+          slots.map(slot => (
+            <div key={slot.id} className="flex items-center gap-2">
+              <div className={`w-3 h-3 rounded-full ${slot.isBooked ? 'bg-red-500' : 'bg-green-500'}`}></div>
+              <p className={slot.isBooked ? 'text-red-600' : 'text-green-600'}>
+                {slot.label}: {slot.isBooked ? 'Booked' : 'Available'}
+              </p>
+            </div>
+          ))
+        ) : (
+          <p className="text-gray-600">No time slots available</p>
+        )}
+      </div>
+    );
+  };
+
+  const isSlotBooked = (date: Date | null, slotId: string) => {
+    if (!date) return false;
+    const dateString = date.toISOString().split('T')[0];
+    return bookings.some(booking => 
+      booking.bookeddate === dateString && 
+      booking.timeSlot === slotId && 
+      booking.status !== 'cancelled'
+    );
+  };
+
   const handleDateClick = (date: Date | null) => {
     if (date && getDateStatus(date) === 'available') {
       setSelectedDate(date);
@@ -224,6 +294,7 @@ const Bookings: React.FC = () => {
         ...prev,
         bookingDate: date.toISOString().split('T')[0],
       }));
+      setVenueTime(''); // Reset time slot when date changes
     }
   };
 
@@ -238,6 +309,10 @@ const Bookings: React.FC = () => {
   const handleConfirmBooking = () => {
     if (!selectedDate || !acOption || !venueTime || !eventType) {
       alert('Please select a date and fill in all booking options');
+      return;
+    }
+    if (isSlotBooked(selectedDate, venueTime)) {
+      alert('This time slot is already booked. Please select another slot.');
       return;
     }
     setShowModal(true);
@@ -265,12 +340,17 @@ const Bookings: React.FC = () => {
       alert('Please select a payment method');
       return;
     }
+    if (isSlotBooked(selectedDate, formData.timeSlot)) {
+      alert('This time slot is already booked. Please select another slot.');
+      return;
+    }
 
     try {
-     const response= await createBooking(formData)
+      const response = await createBooking(formData);
       console.log('Booking data sent to backend:', response);
+      // Refresh bookings to reflect the new booking
+      await fetchExistingBookings();
       setCurrentPage('success');
-      navigate('/')
     } catch (error) {
       alert('Error processing payment. Please try again.');
       console.error('Payment error:', error);
@@ -281,6 +361,7 @@ const Bookings: React.FC = () => {
     setShowModal(false);
     setCurrentPage('calendar');
     setSelectedPaymentMethod('');
+    setVenueTime(''); // Reset time slot on modal close
   };
 
   if (loading) {
@@ -308,18 +389,18 @@ const Bookings: React.FC = () => {
         <img
           src={Lines}
           alt="Lines"
-          className="fixed top-0 right-0 h-full object-cover z-0 scale-140"
+          className="fixed top-0 right-0 h-full object-cover z-0 scale-140 sm:scale-100"
           style={{ maxWidth: 'none' }}
         />
-        <div className="relative z-10 p-4">
-          <div className="max-w-6xl mx-auto">
+        <div className="relative z-10 p-4 sm:p-6">
+          <div className="max-w-7xl mx-auto">
             <Header />
             <div className="overflow-hidden">
-              <div className="p-2">
-                <div className="flex items-center justify-between">
+              <div className="p-2 sm:p-4">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
                     <div>
-                      <h1 className="text-2xl font-bold text-[#845e38]">{venue?.name || 'Venue'}</h1>
+                      <h1 className="text-xl sm:text-2xl font-bold text-[#845e38]">{venue?.name || 'Venue'}</h1>
                       <p className="text-sm text-gray-600 flex items-center gap-1">
                         <MapPin className="w-4 h-4" />
                         {venue?.address || 'Location'}
@@ -338,18 +419,18 @@ const Bookings: React.FC = () => {
                 </div>
               </div>
 
-              <div className="p-6">
-                <div className="grid lg:grid-cols-2 gap-8">
+              <div className="p-4 sm:p-6">
+                <div className="grid lg:grid-cols-2 gap-6 sm:gap-8">
                   <div className="space-y-6">
-                    <div className="bg-white rounded-2xl shadow-2xl p-6 aspect-square flex flex-col">
-                      <div className="flex items-center justify-between mb-6">
+                    <div className="bg-white rounded-2xl shadow-2xl p-4 sm:p-6 aspect-square flex flex-col">
+                      <div className="flex items-center justify-between mb-4 sm:mb-6">
                         <button 
                           onClick={() => navigateMonth('prev')}
                           className="p-2 hover:bg-gray-100 rounded-full transition-colors"
                         >
                           <ChevronLeft className="w-5 h-5 text-gray-600" />
                         </button>
-                        <h2 className="text-xl font-semibold text-gray-800">
+                        <h2 className="text-lg sm:text-xl font-semibold text-gray-800">
                           {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
                         </h2>
                         <button 
@@ -378,13 +459,18 @@ const Bookings: React.FC = () => {
                               style={{ aspectRatio: '1' }}
                             >
                               {dateObj.day || ''}
+                              {dateObj.isCurrentMonth && dateObj.date && (
+                                <div className="hidden group-hover:block">
+                                  {getTooltipContent(dateObj.date)}
+                                </div>
+                              )}
                             </div>
                           ))}
                         </div>
                       </div>
                     </div>
 
-                    <div className="p-6">
+                    <div className="p-4 sm:p-6">
                       <div className="grid grid-cols-3 gap-4">
                         <div className="flex items-center gap-2 text-sm">
                           <div className="w-4 h-4 bg-green-100 border-2 border-green-400 rounded-full"></div>
@@ -402,12 +488,12 @@ const Bookings: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="rounded-2xl p-6">
+                  <div className="rounded-2xl p-4 sm:p-6">
                     <div className="space-y-4">
                       <select 
                         value={acOption}
                         onChange={(e) => setAcOption(e.target.value)}
-                        className="w-90 p-3 ml-44 mt-20 border border-[#b09d94] text-[#49516F] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553] focus:border-transparent"
+                        className="w-full sm:w-90 p-3 sm:ml-44 mt-8 sm:mt-20 border border-[#b09d94] text-[#49516F] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553] focus:border-transparent"
                       >
                         <option value="">Select AC Option</option>
                         {venue?.acType ? <option value={venue.acType}>{venue.acType}</option> : <option value="">No AC option available</option>}
@@ -419,18 +505,29 @@ const Bookings: React.FC = () => {
                           setVenueTime(e.target.value);
                           setFormData(prev => ({ ...prev, timeSlot: e.target.value }));
                         }}
-                        className="w-90 p-3 ml-44 mt-8 border border-[#b09d94] text-[#49516F] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553] focus:border-transparent"
+                        className="w-full sm:w-90 p-3 sm:ml-44 mt-8 border border-[#b09d94] text-[#49516F] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553] focus:border-transparent"
                       >
                         <option value="">Select Time Slot</option>
-                        {venue?.timeSlots?.map((slot, index) => (
-                          <option key={index} value={slot.id}>{slot.label}</option>
-                        )) || <option value="">No time slots available</option>}
+                        {selectedDate ? (
+                          getTimeSlotStatus(selectedDate).map((slot, index) => (
+                            <option 
+                              key={index} 
+                              value={slot.id} 
+                              disabled={slot.isBooked}
+                              className={slot.isBooked ? 'text-red-500' : 'text-green-500'}
+                            >
+                              {slot.label} {slot.isBooked ? '(Booked)' : '(Available)'}
+                            </option>
+                          ))
+                        ) : (
+                          <option value="">Select a date first</option>
+                        )}
                       </select>
 
                       <select 
                         value={eventType}
                         onChange={(e) => setEventType(e.target.value)}
-                        className="w-90 p-3 ml-44 mt-8 border border-[#b09d94] text-[#49516F] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553] focus:border-transparent"
+                        className="w-full sm:w-90 p-3 sm:ml-44 mt-8 border border-[#b09d94] text-[#49516F] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553] focus:border-transparent"
                       >
                         <option value="">Select Event Type</option>
                         {venue?.eventTypes?.map((type, index) => (
@@ -440,7 +537,7 @@ const Bookings: React.FC = () => {
 
                       <button
                         onClick={handleConfirmBooking}
-                        className="w-90 ml-44 mt-8 bg-[#876553] text-white py-3 px-6 rounded-lg font-semibold transition-all shadow-lg hover:bg-[#6e4e3d]"
+                        className="w-full sm:w-90 sm:ml-44 mt-8 bg-[#876553] text-white py-3 px-6 rounded-lg font-semibold transition-all shadow-lg hover:bg-[#6e4e3d]"
                         disabled={!venue}
                       >
                         Confirm your Booking!
@@ -448,9 +545,12 @@ const Bookings: React.FC = () => {
                     </div>
 
                     {selectedDate && (
-                      <div className="mt-4 p-3 ml-44 bg-blue-50 rounded-lg">
+                      <div className="mt-4 p-3 sm:ml-44 bg-blue-50 rounded-lg">
                         <p className="text-sm text-blue-700">
                           Selected Date: {selectedDate.toLocaleDateString()}
+                        </p>
+                        <p className="text-sm text-blue-700">
+                          Available Slots: {getTimeSlotStatus(selectedDate).filter(slot => !slot.isBooked).length}
                         </p>
                       </div>
                     )}
@@ -463,10 +563,10 @@ const Bookings: React.FC = () => {
               <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                 <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                   {currentPage === 'form' && (
-                    <div className="p-8">
-                      <div className="flex items-center justify-between mb-8">
+                    <div className="p-6 sm:p-8">
+                      <div className="flex items-center justify-between mb-6 sm:mb-8">
                         <div className="text-center flex-1">
-                          <h2 className="text-3xl font-bold text-[#845e38]">Booking Form</h2>
+                          <h2 className="text-2xl sm:text-3xl font-bold text-[#845e38]">Booking Form</h2>
                           <p className="text-gray-600">Please fill in your booking details</p>
                         </div>
                         <button
@@ -543,10 +643,10 @@ const Bookings: React.FC = () => {
                   )}
 
                   {currentPage === 'payment' && (
-                    <div className="p-8">
-                      <div className="flex items-center justify-between mb-8">
+                    <div className="p-6 sm:p-8">
+                      <div className="flex items-center justify-between mb-6 sm:mb-8">
                         <div className="text-center flex-1">
-                          <h2 className="text-3xl font-bold text-[#845e38]">Payment</h2>
+                          <h2 className="text-2xl sm:text-3xl font-bold text-[#845e38]">Payment</h2>
                           <p className="text-gray-600">Select your payment method</p>
                         </div>
                         <button
@@ -567,7 +667,7 @@ const Bookings: React.FC = () => {
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
-                          <div className="grid grid-cols-3 gap-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             {['Credit/Debit Card', 'UPI', 'Net Banking'].map((method) => (
                               <button
                                 key={method}
@@ -595,16 +695,16 @@ const Bookings: React.FC = () => {
                   )}
 
                   {currentPage === 'success' && (
-                    <div className="p-8">
-                      <div className="flex items-center justify-between mb-8">
+                    <div className="p-6 sm:p-8">
+                      <div className="flex items-center justify-between mb-6 sm:mb-8">
                         <div className="text-center flex-1">
-                          <h2 className="text-3xl font-bold text-[#845e38]">Booking Confirmed!</h2>
+                          <h2 className="text-2xl sm:text-3xl font-bold text-[#845e38]">Booking Confirmed!</h2>
                           <p className="text-gray-600">Your booking has been successfully completed</p>
                         </div>
                         <button
                           onClick={() => {
                             closeModal();
-                            navigate('/booking-confirmation');
+                            navigate('/');
                           }}
                           className="p-2 hover:bg-gray-100 rounded-full transition-colors"
                         >
@@ -630,11 +730,11 @@ const Bookings: React.FC = () => {
                         <button
                           onClick={() => {
                             closeModal();
-                            navigate('/booking-confirmation');
+                            navigate('/');
                           }}
                           className="w-full mt-6 bg-[#876553] text-white py-3 px-6 rounded-lg font-semibold hover:bg-[#6e4e3d] transition-all shadow-lg"
                         >
-                          Close
+                          Okay
                         </button>
                       </div>
                     </div>
