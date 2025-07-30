@@ -1,4 +1,4 @@
-"use client"
+
 import type React from "react"
 import { useState, useEffect } from "react"
 import {
@@ -20,7 +20,8 @@ import {
 } from "lucide-react"
 import { addVenueAPI, deleteVenueAPI, existingAllVenues, updateVenues } from "../../api/userApi"
 import { toast } from "react-toastify"
-import Swal from "sweetalert2"
+import Swal from 'sweetalert2';
+
 import Header from "../../component/user/Header"
 import Sidebar from "../../component/auditorium/Sidebar"
 import { useSelector } from "react-redux"
