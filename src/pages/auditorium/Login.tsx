@@ -160,7 +160,7 @@ const LoginPage: React.FC = () => {
                   <span className="px-2 bg-white text-[#b09d94]">Or continue with</span>
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-2">
+              {/* <div className="grid grid-cols-3 gap-2">
                 <button type="button" className="flex justify-center items-center py-1 px-2 border border-[#b09d94] rounded-md bg-white hover:bg-gray-50">
                   <svg className="w-4 h-4" viewBox="0 0 24 24">
                     <path fill="#EA4335" d="M12 11.7v2.6h5.4c-.2 1.3-.8 2.4-1.7 3.1v2.6h2.8c1.6-1.4 2.5-3.5 2.5-5.9 0-.6-.1-1.2-.2-1.8H12z"/>
@@ -179,7 +179,7 @@ const LoginPage: React.FC = () => {
                     <path d="M16.365 1.43c0 1.14-.48 2.26-1.32 3.06-.9.86-2.16 1.38-3.36 1.3-.03-1.15.45-2.28 1.29-3.08.45-.44 1.07-.8 1.74-1.01.15-.04.29-.07.44-.07.27 0 .53.06.77.17.16.08.31.2.44.34zM20.25 17.01c-.24.58-.49 1.15-.76 1.69-.43.86-.88 1.7-1.52 2.39-.61.67-1.22 1.34-2.12 1.36-.82.02-1.08-.52-2.23-.51-1.15.01-1.45.52-2.27.51-.91-.02-1.5-.68-2.1-1.34-.67-.74-1.17-1.61-1.6-2.5-.71-1.48-1.29-3.08-1.04-4.76.19-1.29.74-2.4 1.61-3.27.83-.82 2.12-1.43 3.11-1.27.61.1 1.05.33 1.37.33.29 0 .85-.42 1.59-.36.27.01 1.16.11 1.7.86-.05.03-1.02.6-1 1.77.03 1.43 1.23 1.91 1.28 1.93-.01.04-1.26.88-1.24 2.34.01 1.85 1.54 2.47 1.56 2.47z"/>
                   </svg>
                 </button>
-              </div>
+              </div> */}
               <div className="text-center mt-3">
                 <span className="text-sm text-gray-700">Don't have an account?</span>
                 <button

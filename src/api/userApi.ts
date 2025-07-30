@@ -92,10 +92,23 @@ export const singleVenueDetails=async(id:string)=>{
 }
 
 
+
 // user api
 export const userLogin =async (email:string,password:string)=>{
 
   const response=await api.post('/signin',{email,password}, { withCredentials: true })
+
+  return response
+
+}
+
+export const createBooking=async(formData:any)=>{
+
+  console.log('i am reaching',formData)
+
+  const response =await api.post('/bookings',formData)
+
+  console.log('form data,',formData)
 
   return response
 

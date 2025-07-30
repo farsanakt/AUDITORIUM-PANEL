@@ -16,7 +16,7 @@ const UserRoute = () => {
     <div>
      <Routes>
         <Route path='/auditoriumdetails/:id' element={<AuditoriumDetails/>} />
-        <Route path ='/bookings' element={<Bookings/>}/>
+        <Route path ='/bookings/:id' element={<Bookings/>}/>
         <Route path='/details' element={<DetailsForm/>} />
         <Route path='/singup' element={<UserRegistrationPage/>} />
         <Route path='/login' element={<UserLoginPage/>} />

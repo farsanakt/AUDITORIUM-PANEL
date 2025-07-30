@@ -176,7 +176,7 @@ const LoginUserPage: React.FC = () => {
               </div>
 
               {/* Social buttons */}
-              <div className="grid grid-cols-3 gap-2">
+              {/* <div className="grid grid-cols-3 gap-2">
                 <button className="flex items-center justify-center border rounded-md h-9 w-full hover:bg-gray-50">
                   <FaGoogle className="text-red-500" />
                 </button>
@@ -186,7 +186,7 @@ const LoginUserPage: React.FC = () => {
                 <button className="flex items-center justify-center border rounded-md h-9 w-full hover:bg-gray-50">
                   <FaApple className="text-black" />
                 </button>
-              </div>
+              </div> */}
 
               {/* Sign up text */}
               <div className="text-center text-xs text-gray-600">
