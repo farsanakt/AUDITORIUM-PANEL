@@ -1,16 +1,17 @@
-"use client";
 
 import type React from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Heart,
   Camera,
   Users,
   MapPin,
   Calendar,
-  Star,
   Flag,
   Search,
+  ChevronLeft,
+  ChevronRight,
+  Star, // Added Star icon import
 } from "lucide-react";
 import Header from "../../component/user/Header";
 import bgImg from "../../assets/Rectangle 50.png";
@@ -73,6 +74,11 @@ const HomePage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
+  
+  const venuesRef = useRef<HTMLDivElement>(null);
+  const photographersRef = useRef<HTMLDivElement>(null);
+  const artistsRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsVisible(true);
@@ -109,8 +115,8 @@ const HomePage: React.FC = () => {
           ? venue.images
           : ["/placeholder.svg?height=200&width=300"],
         price: venue.totalamount || venue.tariff?.wedding || "Price not available",
-        rating: venue.rating || 4.5, // Dummy rating if not provided
-        review: venue.review || "Great venue with excellent amenities!", // Dummy review
+        rating: venue.rating || 4.5,
+        review: venue.review || "Great venue with excellent amenities!",
       }));
       setVenues(mappedVenues);
     } catch (err) {
@@ -194,6 +200,15 @@ const HomePage: React.FC = () => {
       location: "Kochui",
       review: "Captured every moment beautifully!",
     },
+    {
+      id: 5,
+      name: "Lisa Wong",
+      role: "Makeup Artist",
+      image: makeup1,
+      rating: 4.8,
+      location: "Mumbai",
+      review: "Flawless makeup that lasted all day!",
+    },
   ];
 
   const photos: Artist[] = [
@@ -233,6 +248,15 @@ const HomePage: React.FC = () => {
       location: "Kochui",
       review: "Stunning video quality, captured every detail!",
     },
+    {
+      id: 5,
+      name: "Anna Lee",
+      role: "Photographer",
+      image: pic1,
+      rating: 4.8,
+      location: "Bangalore",
+      review: "Creative shots that exceeded expectations!",
+    },
   ];
 
   const projects: Project[] = [
@@ -256,8 +280,48 @@ const HomePage: React.FC = () => {
     },
   ];
 
+  const scrollLeft = (ref: React.RefObject<HTMLDivElement>) => {
+    if (ref.current) {
+      ref.current.scrollBy({ left: -300, behavior: "smooth" });
+    }
+  };
+
+  const scrollRight = (ref: React.RefObject<HTMLDivElement>) => {
+    if (ref.current) {
+      ref.current.scrollBy({ left: 300, behavior: "smooth" });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-pink-50 to-white overflow-x-hidden">
+      <style>
+        {`
+          .scroll-container {
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+          }
+          .scroll-container::-webkit-scrollbar {
+            display: none;
+          }
+          .scroll-button {
+            opacity: 0.7;
+            transition: opacity 0.3s;
+          }
+          .scroll-button:hover {
+            opacity: 1;
+          }
+          @keyframes fadeInScale {
+            to {
+              opacity: 1;
+              transform: scale(1);
+            }
+          }
+          .group:hover .card-content {
+            transform: translateY(-5px);
+          }
+        `}
+      </style>
+
       <section className="relative h-screen overflow-hidden">
         <div
           className="absolute inset-0 w-full h-full bg-cover bg-center bg-no-repeat"
@@ -268,12 +332,10 @@ const HomePage: React.FC = () => {
 
         <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/20 w-full h-full"></div>
 
-        {/* Header */}
         <div className="absolute top-0 left-0 right-0 z-50">
           <Header />
         </div>
 
-        {/* Top Labels */}
         <div className="absolute top-16 sm:top-20 left-4 sm:left-6 md:left-8 lg:left-12 xl:left-20 text-[#9c7c5d] text-xs sm:text-sm font-medium z-40">
           <div>EVENT DESIGN</div>
           <div>COMPANY</div>
@@ -283,9 +345,7 @@ const HomePage: React.FC = () => {
           Find Local Venues
         </div>
 
-        {/* Main Content Container */}
         <div className="relative z-10 h-full flex flex-col lg:flex-row items-center justify-between px-4 sm:px-6 md:px-8 lg:px-12 xl:px-20 py-8 pt-20 sm:pt-24">
-          {/* Left Content */}
           <div className="w-full lg:w-1/2 flex flex-col justify-center text-left space-y-4 sm:space-y-6 lg:space-y-8 mb-8 lg:mb-0">
             <h1
               className={`text-4xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-light text-amber-900 leading-tight transition-all duration-1000 ${
@@ -326,7 +386,6 @@ const HomePage: React.FC = () => {
             </div>
           </div>
 
-          {/* Right Content */}
           <div
             className={`w-full lg:w-1/2 flex flex-col items-center lg:items-end justify-center space-y-4 sm:space-y-6 text-center lg:text-right transition-all duration-1000 delay-400 ${
               isVisible
@@ -334,7 +393,6 @@ const HomePage: React.FC = () => {
                 : "opacity-0 translate-x-10"
             }`}
           >
-            {/* Form */}
             <div className="w-full max-w-sm sm:max-w-md space-y-3 sm:space-y-4">
               <div className="flex flex-col sm:hidden space-y-3">
                 <div className="relative">
@@ -471,7 +529,6 @@ const HomePage: React.FC = () => {
         </div>
       </section>
 
-      {/* Services Section */}
       <section id="services" className="py-12 sm:py-16 lg:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-left mb-12 sm:mb-16">
@@ -482,17 +539,12 @@ const HomePage: React.FC = () => {
               We specialize in creating seamless, unforgettable events tailored
               to your vision. From corporate gatherings and weddings to private
               celebrations and brand activations, our expert team ensures every
-              detail is flawlessly executed. With a passion for creativity and
-              precision, we handle everything from planning and design to
-              logistics and on-site coordination so you can enjoy a stress-free
-              experience. Let us bring your ideas to life and craft an event
-              that leaves a lasting impression.
+              detail is flawlessly executed.
             </p>
           </div>
         </div>
       </section>
 
-      {/* Venues Section */}
       <section id="venues" className="py-12 sm:py-16 lg:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-right mb-12 sm:mb-16">
@@ -512,67 +564,71 @@ const HomePage: React.FC = () => {
           ) : venues.length === 0 ? (
             <div className="text-center text-gray-600">No venues available.</div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-              {venues.map((venue, index) => (
-                <div
-                  key={venue.id}
-                  className="group rounded-xl overflow-hidden hover:shadow-xl transition duration-300 transform opacity-0 scale-95"
-                  style={{
-                    animation: `fadeInScale 0.6s ease ${index * 0.15}s forwards`,
-                  }}
-                >
-                  <style>
-                    {`
-                      @keyframes fadeInScale {
-                        to {
-                          opacity: 1;
-                          transform: scale(1);
-                        }
-                      }
-                      .group:hover .card-content {
-                        transform: translateY(-5px);
-                      }
-                    `}
-                  </style>
-                  <div
-                    className="relative h-48 sm:h-56 lg:h-64 bg-cover bg-center rounded-xl"
-                    style={{ backgroundImage: `url(${venue.images[0]})` }}
+            <div className="relative">
+              {venues.length > 4 && (
+                <div className="absolute top-1/2 -left-4 sm:-left-6 transform -translate-y-1/2 z-10">
+                  <button
+                    onClick={() => scrollLeft(venuesRef)}
+                    className="scroll-button bg-[#9c7c5d] text-white rounded-full p-2 sm:p-3 hover:bg-[#8b6b4a] transition duration-300"
                   >
-                    <div className="absolute inset-0 bg-black opacity-20 group-hover:opacity-30 transition duration-300"></div>
-                    <div className="absolute inset-0 flex items-center justify-center">
+                    <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
+                  </button>
+                </div>
+              )}
+              <div
+                ref={venuesRef}
+                className="scroll-container flex overflow-x-auto space-x-4 sm:space-x-6 pb-4"
+              >
+                {venues.map((venue, index) => (
+                  <div
+                    key={venue.id}
+                    className="group rounded-xl overflow-hidden hover:shadow-xl transition duration-300 transform opacity-0 scale-95 flex-shrink-0 w-[240px] sm:w-[280px]"
+                    style={{
+                      animation: `fadeInScale 0.6s ease ${index * 0.15}s forwards`,
+                    }}
+                  >
+                    <div
+                      className="relative h-48 sm:h-56 bg-cover bg-center rounded-xl"
+                      style={{ backgroundImage: `url(${venue.images[0]})` }}
+                    >
+                      <div className="absolute inset-0 bg-black opacity-20 group-hover:opacity-30 transition duration-300"></div>
                       <img
                         src={venue.images[0]}
                         alt={venue.name}
                         className="w-full h-full object-cover rounded-xl"
                       />
                     </div>
-                  </div>
-                  <div className="p-3 text-left card-content transition-transform duration-300">
-                    <div className="flex items-center mb-1">
-                      {/* <MapPin className="h-5 w-5 text-gray-600 mr-2" /> */}
+                    <div className="p-3 text-left card-content transition-transform duration-300">
                       <h3 className="text-lg sm:text-xl font-medium text-[#5B4336]">
                         {venue.name}
                       </h3>
+                      <p className="text-gray-600 text-sm flex items-center mb-1">
+                        <MapPin className="h-4 w-4 text-gray-600 mr-1" />
+                        {venue.location}
+                      </p>
+                      <div className="flex items-center text-sm text-gray-600">
+                        <Star className="h-4 w-4 text-yellow-500 mr-1" />
+                        <span>{venue.rating.toFixed(1)}</span>
+                      </div>
                     </div>
-                    <p className="text-gray-600 text-sm flex items-center mb-1">
-                      <MapPin className="h-4 w-4 text-gray-600 mr-1" />
-                      {venue.location}
-                    </p>
-                    {/* <p className="text-gray-600 text-sm mb-1">{venue.price}</p> */}
-                    <div className="flex items-center text-sm text-gray-600 mb-1">
-                      <Star className="h-4 w-4 text-yellow-500 mr-1" />
-                      <span>{venue.rating.toFixed(1)}</span>
-                    </div>
-                    {/* <p className="text-gray-600 text-sm italic line-clamp-2">{venue.review}</p> */}
                   </div>
+                ))}
+              </div>
+              {venues.length > 4 && (
+                <div className="absolute top-1/2 -right-4 sm:-right-6 transform -translate-y-1/2 z-10">
+                  <button
+                    onClick={() => scrollRight(venuesRef)}
+                    className="scroll-button bg-[#9c7c5d] text-white rounded-full p-2 sm:p-3 hover:bg-[#8b6b4a] transition duration-300"
+                  >
+                    <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
+                  </button>
                 </div>
-              ))}
+              )}
             </div>
           )}
         </div>
       </section>
 
-      {/* Photographers Section */}
       <section id="photographers" className="py-12 sm:py-16 lg:py-20 bg-gradient-to-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-left mb-12 sm:mb-16">
@@ -581,66 +637,70 @@ const HomePage: React.FC = () => {
             </h2>
             <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl">
               Whether you love classic, candid, documentary, or artistic
-              photography, we have the perfect match for your vision. Find your
-              photographers offering flexible packages to fit your budget and
-              needs.
+              photography, we have the perfect match for your vision.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-            {photos.map((artist, index) => (
-              <div
-                key={artist.id}
-                className="group rounded-xl overflow-hidden hover:shadow-xl transition duration-300 transform opacity-0 scale-95"
-                style={{
-                  animation: `fadeInScale 0.6s ease ${index * 0.15}s forwards`,
-                }}
-              >
-                <style>
-                  {`
-                    @keyframes fadeInScale {
-                      to {
-                        opacity: 1;
-                        transform: scale(1);
-                      }
-                    }
-                    .group:hover .card-content {
-                      transform: translateY(-5px);
-                    }
-                  `}
-                </style>
-                <div
-                  className="relative h-48 sm:h-56 lg:h-64 bg-cover bg-center rounded-xl"
-                  style={{ backgroundImage: `url(${artist.image})` }}
+          <div className="relative">
+            {photos.length > 4 && (
+              <div className="absolute top-1/2 -left-4 sm:-left-6 transform -translate-y-1/2 z-10">
+                <button
+                  onClick={() => scrollLeft(photographersRef)}
+                  className="scroll-button bg-[#9c7c5d] text-white rounded-full p-2 sm:p-3 hover:bg-[#8b6b4a] transition duration-300"
                 >
-                  <div className="absolute inset-0 bg-black opacity-20 group-hover:opacity-30 transition duration-300"></div>
-                  <div className="absolute inset-0 flex items-center justify-center">
+                  <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
+                </button>
+              </div>
+            )}
+            <div
+              ref={photographersRef}
+              className="scroll-container flex overflow-x-auto space-x-4 sm:space-x-6 pb-4"
+            >
+              {photos.map((artist, index) => (
+                <div
+                  key={artist.id}
+                  className="group rounded-xl overflow-hidden hover:shadow-xl transition duration-300 transform opacity-0 scale-95 flex-shrink-0 w-[240px] sm:w-[280px]"
+                  style={{
+                    animation: `fadeInScale 0.6s ease ${index * 0.15}s forwards`,
+                  }}
+                >
+                  <div
+                    className="relative h-48 sm:h-56 bg-cover bg-center rounded-xl"
+                    style={{ backgroundImage: `url(${artist.image})` }}
+                  >
+                    <div className="absolute inset-0 bg-black opacity-20 group-hover:opacity-30 transition duration-300"></div>
                     <img
                       src={artist.image}
                       alt={artist.name}
                       className="w-full h-full object-cover rounded-xl"
                     />
                   </div>
-                </div>
-                <div className="p-3 text-left card-content transition-transform duration-300">
-                  <div className="flex items-center mb-1">
-                    {/* <MapPin className="h-5 w-5 text-gray-600 mr-2" /> */}
+                  <div className="p-3 text-left card-content transition-transform duration-300">
                     <h3 className="text-lg sm:text-xl font-medium text-[#5B4336]">
                       {artist.name}
                     </h3>
+                    <p className="text-gray-600 text-sm flex items-center mb-1">
+                      <MapPin className="h-4 w-4 text-gray-600 mr-1" />
+                      {artist.location}
+                    </p>
+                    <div className="flex items-center text-sm text-gray-600">
+                      <Star className="h-4 w-4 text-yellow-500 mr-1" />
+                      <span>{artist.rating.toFixed(1)}</span>
+                    </div>
                   </div>
-                  <p className="text-gray-600 text-sm flex items-center mb-1">
-                    <MapPin className="h-4 w-4 text-gray-600 mr-1" />
-                    {artist.location}
-                  </p>
-                  <div className="flex items-center text-sm text-gray-600 mb-1">
-                    <Star className="h-4 w-4 text-yellow-500 mr-1" />
-                    <span>{artist.rating.toFixed(1)}</span>
-                  </div>
-                  {/* <p className="text-gray-600 text-sm italic line-clamp-2">{artist.review}</p> */}
                 </div>
+              ))}
+            </div>
+            {photos.length > 4 && (
+              <div className="absolute top-1/2 -right-4 sm:-right-6 transform -translate-y-1/2 z-10">
+                <button
+                  onClick={() => scrollRight(photographersRef)}
+                  className="scroll-button bg-[#9c7c5d] text-white rounded-full p-2 sm:p-3 hover:bg-[#8b6b4a] transition duration-300"
+                >
+                  <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
+                </button>
               </div>
-            ))}
+            )}
           </div>
           <div className="text-right mt-6">
             <button className="px-4 py-2 bg-gray-200 text-[#9c7c5d] rounded-lg hover:bg-gray-300 transition duration-300">
@@ -650,7 +710,6 @@ const HomePage: React.FC = () => {
         </div>
       </section>
 
-      {/* Artists Section */}
       <section id="artists" className="py-12 sm:py-16 lg:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-left mb-12 sm:mb-16">
@@ -659,66 +718,70 @@ const HomePage: React.FC = () => {
             </h2>
             <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl">
               Whether you love classic, candid, documentary, or artistic
-              photography, we have the perfect match for your vision. Find your
-              photographers offering flexible packages to fit your budget and
-              needs.
+              photography, we have the perfect match for your vision.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-            {artists.map((artist, index) => (
-              <div
-                key={artist.id}
-                className="group rounded-xl overflow-hidden hover:shadow-xl transition duration-300 transform opacity-0 scale-95"
-                style={{
-                  animation: `fadeInScale 0.6s ease ${index * 0.15}s forwards`,
-                }}
-              >
-                <style>
-                  {`
-                    @keyframes fadeInScale {
-                      to {
-                        opacity: 1;
-                        transform: scale(1);
-                      }
-                    }
-                    .group:hover .card-content {
-                      transform: translateY(-5px);
-                    }
-                  `}
-                </style>
-                <div
-                  className="relative h-48 sm:h-56 lg:h-64 bg-cover bg-center rounded-xl"
-                  style={{ backgroundImage: `url(${artist.image})` }}
+          <div className="relative">
+            {artists.length > 4 && (
+              <div className="absolute top-1/2 -left-4 sm:-left-6 transform -translate-y-1/2 z-10">
+                <button
+                  onClick={() => scrollLeft(artistsRef)}
+                  className="scroll-button bg-[#9c7c5d] text-white rounded-full p-2 sm:p-3 hover:bg-[#8b6b4a] transition duration-300"
                 >
-                  <div className="absolute inset-0 bg-black opacity-20 group-hover:opacity-30 transition duration-300"></div>
-                  <div className="absolute inset-0 flex items-center justify-center">
+                  <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
+                </button>
+              </div>
+            )}
+            <div
+              ref={artistsRef}
+              className="scroll-container flex overflow-x-auto space-x-4 sm:space-x-6 pb-4"
+            >
+              {artists.map((artist, index) => (
+                <div
+                  key={artist.id}
+                  className="group rounded-xl overflow-hidden hover:shadow-xl transition duration-300 transform opacity-0 scale-95 flex-shrink-0 w-[240px] sm:w-[280px]"
+                  style={{
+                    animation: `fadeInScale 0.6s ease ${index * 0.15}s forwards`,
+                  }}
+                >
+                  <div
+                    className="relative h-48 sm:h-56 bg-cover bg-center rounded-xl"
+                    style={{ backgroundImage: `url(${artist.image})` }}
+                  >
+                    <div className="absolute inset-0 bg-black opacity-20 group-hover:opacity-30 transition duration-300"></div>
                     <img
                       src={artist.image}
                       alt={artist.name}
                       className="w-full h-full object-cover rounded-xl"
                     />
                   </div>
-                </div>
-                <div className="p-3 text-left card-content transition-transform duration-300">
-                  <div className="flex items-center mb-1">
-                    {/* <MapPin className="h-5 w-5 text-gray-600 mr-2" /> */}
+                  <div className="p-3 text-left card-content transition-transform duration-300">
                     <h3 className="text-lg sm:text-xl font-medium text-[#5B4336]">
                       {artist.name}
                     </h3>
+                    <p className="text-gray-600 text-sm flex items-center mb-1">
+                      <MapPin className="h-4 w-4 text-gray-600 mr-1" />
+                      {artist.location}
+                    </p>
+                    <div className="flex items-center text-sm text-gray-600">
+                      <Star className="h-4 w-4 text-yellow-500 mr-1" />
+                      <span>{artist.rating.toFixed(1)}</span>
+                    </div>
                   </div>
-                  <p className="text-gray-600 text-sm flex items-center mb-1">
-                    <MapPin className="h-4 w-4 text-gray-600 mr-1" />
-                    {artist.location}
-                  </p>
-                  <div className="flex items-center text-sm text-gray-600 mb-1">
-                    <Star className="h-4 w-4 text-yellow-500 mr-1" />
-                    <span>{artist.rating.toFixed(1)}</span>
-                  </div>
-                  {/* <p className="text-gray-600 text-sm italic line-clamp-2">{artist.review}</p> */}
                 </div>
+              ))}
+            </div>
+            {artists.length > 4 && (
+              <div className="absolute top-1/2 -right-4 sm:-right-6 transform -translate-y-1/2 z-10">
+                <button
+                  onClick={() => scrollRight(artistsRef)}
+                  className="scroll-button bg-[#9c7c5d] text-white rounded-full p-2 sm:p-3 hover:bg-[#8b6b4a] transition duration-300"
+                >
+                  <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
+                </button>
               </div>
-            ))}
+            )}
           </div>
           <div className="text-right mt-6">
             <button className="px-4 py-2 bg-gray-200 text-[#9c7c5d] rounded-lg hover:bg-gray-300 transition duration-300">
@@ -728,7 +791,6 @@ const HomePage: React.FC = () => {
         </div>
       </section>
 
-      {/* Projects Section */}
       <section id="projects" className="py-12 sm:py-16 lg:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-left mb-12 sm:mb-16">

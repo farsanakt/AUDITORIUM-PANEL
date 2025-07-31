@@ -91,6 +91,14 @@ export const singleVenueDetails=async(id:string)=>{
 
 }
 
+export const upComingEvents=async(id:string)=>{
+
+  const response=await api.get(`/upcomigevents/${id}`)
+
+  return response
+
+}
+
 
 
 // user api

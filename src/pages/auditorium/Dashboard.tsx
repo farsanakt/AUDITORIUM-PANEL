@@ -1,96 +1,169 @@
 "use client"
 
-import { useState } from "react"
-
+import { useEffect, useState } from "react"
 import Header from "../../component/user/Header"
+import { useSelector } from "react-redux"
+import type { RootState } from "../../redux/store"
+import { existingAllVenues, upComingEvents } from "../../api/userApi"
 
-// Sample data for different venues
-const venueData = {
-  "whole-auditorium": {
-    name: "Whole Auditorium",
-    totalBookings: 128,
-    earnings: {
-      monthly: 356000,
-      yearly: 4250000,
-    },
-    pendingRequests: [
-      {
-        id: 1,
-        name: "Annual College Function",
-        client: "St. Xavier's College",
-        date: "28 Apr, 2025",
-        status: "Pending",
-      },
-      { id: 2, name: "Tech Conference 2025", client: "TechMinds Corp", date: "15 May, 2025", status: "Pending" },
-      { id: 3, name: "Classical Music Concert", client: "Symphony Arts", date: "22 May, 2025", status: "Pending" },
-    ],
-    upcomingEvents: [
-      { id: 1, name: "Graduation Ceremony", client: "City University", date: "25 Apr, 2025", status: "Confirmed" },
-      { id: 2, name: "Corporate Seminar", client: "Global Industries", date: "30 Apr, 2025", status: "Confirmed" },
-      { id: 3, name: "Dance Competition", client: "StarDance Academy", date: "05 May, 2025", status: "Confirmed" },
-    ],
-  },
-  "main-hall": {
-    name: "Main Hall",
-    totalBookings: 85,
-    earnings: {
-      monthly: 245000,
-      yearly: 2940000,
-    },
-    pendingRequests: [
-      {
-        id: 1,
-        name: "Annual College Function",
-        client: "St. Xavier's College",
-        date: "28 Apr, 2025",
-        status: "Pending",
-      },
-      { id: 2, name: "Tech Conference 2025", client: "TechMinds Corp", date: "15 May, 2025", status: "Pending" },
-    ],
-    upcomingEvents: [
-      { id: 1, name: "Graduation Ceremony", client: "City University", date: "25 Apr, 2025", status: "Confirmed" },
-      { id: 2, name: "Corporate Seminar", client: "Global Industries", date: "30 Apr, 2025", status: "Confirmed" },
-    ],
-  },
-  "conference-room": {
-    name: "Conference Room",
-    totalBookings: 32,
-    earnings: {
-      monthly: 85000,
-      yearly: 1020000,
-    },
-    pendingRequests: [
-      { id: 1, name: "Classical Music Concert", client: "Symphony Arts", date: "22 May, 2025", status: "Pending" },
-    ],
-    upcomingEvents: [
-      { id: 1, name: "Dance Competition", client: "StarDance Academy", date: "05 May, 2025", status: "Confirmed" },
-    ],
-  },
-  "theater": {
-    name: "Theater",
-    totalBookings: 11,
-    earnings: {
-      monthly: 26000,
-      yearly: 290000,
-    },
-    pendingRequests: [],
-    upcomingEvents: [],
-  },
+// Add this function after the imports
+const formatDate = (dateString: string) => {
+  if (!dateString) return "Unknown Date"
+
+  try {
+    const date = new Date(dateString)
+    if (isNaN(date.getTime())) return "Unknown Date"
+
+    return date.toLocaleDateString("en-US", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    })
+  } catch (error) {
+    console.error("Date formatting error:", error)
+    return "Unknown Date"
+  }
 }
 
 const DashboardOverview = () => {
   const [activeSection, setActiveSection] = useState<string>("upcoming")
   const [selectedVenue, setSelectedVenue] = useState<string>("whole-auditorium")
+  const [venues, setVenues] = useState<any[]>([])
+  const [upcomingEvents, setUpcomingEvents] = useState<any[]>([])
+  const [auditoriumName, setAuditoriumName] = useState<string>("")
+  const { currentUser } = useSelector((state: RootState) => state.auth)
 
-  const currentVenueData = venueData[selectedVenue as keyof typeof venueData]
-  const dashboardData = currentVenueData
+  const fetchAllVenues = async () => {
+    try {
+      if (currentUser) {
+        const response = await existingAllVenues(currentUser.id)
+        console.log("Venues response:", response.data)
+        if (response.data) {
+          setVenues(response.data)
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching venues:", error)
+    }
+  }
+
+  const fetchAllUpcomingEvents = async () => {
+    try {
+      if (currentUser) {
+        const response = await upComingEvents(currentUser.id)
+        console.log("Upcoming events response:", response.data)
+        if (response.data && Array.isArray(response.data.events)) {
+          setUpcomingEvents(response.data.events)
+          setAuditoriumName(response.data.auditoriumName || "")
+        } else {
+          console.warn("No valid events array in response:", response.data)
+          setUpcomingEvents([])
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching upcoming events:", error)
+      setUpcomingEvents([])
+    }
+  }
+
+  useEffect(() => {
+    fetchAllVenues()
+    fetchAllUpcomingEvents()
+  }, [currentUser])
+
+  useEffect(() => {
+    console.log("Current upcomingEvents state:", upcomingEvents)
+  }, [upcomingEvents])
+
+  useEffect(() => {
+    if (upcomingEvents.length > 0) {
+      console.log("Sample event structure:", upcomingEvents[0])
+      console.log("Available date fields:", {
+        bookeddate: upcomingEvents[0]?.bookeddate, // lowercase 'd'
+        bookedDate: upcomingEvents[0]?.bookedDate, // uppercase 'D'
+        eventDate: upcomingEvents[0]?.eventDate,
+        date: upcomingEvents[0]?.date,
+        createdAt: upcomingEvents[0]?.createdAt,
+        updatedAt: upcomingEvents[0]?.updatedAt,
+      })
+    }
+  }, [upcomingEvents])
+
+  const allVenues = [
+    { id: "whole-auditorium", name: "Whole Auditorium" },
+    ...venues.map((venue) => ({ id: venue._id, name: venue.name })),
+  ]
+
+  
+  const getFilteredEvents = () => {
+    
+
+    if (selectedVenue === "whole-auditorium") {
+     
+      const allEvents = upcomingEvents.map((event, index) => {
+       
+        return {
+          id: event._id || `fallback-${index}`,
+          name: event.eventName || event.name || event.venueName || `Event ${index + 1}`,
+          client: event.userEmail || event.clientEmail || event.client || "Unknown Client",
+          date: formatDate(event.bookeddate || event.eventDate || event.date),
+          status: event.status ? event.status.charAt(0).toUpperCase() + event.status.slice(1) : "Unknown",
+          venueId: event.venueId || event.venue_id || null,
+          rawDate: event.bookeddate || event.eventDate || event.date, 
+        }
+      })
+      
+      return allEvents
+    } else {
+     
+      const filteredEvents = upcomingEvents
+        .filter((event) => {
+          const eventVenueId = event.venueId || event.venue_id
+          console.log("Event venue ID:", eventVenueId, "Selected venue:", selectedVenue) 
+          return eventVenueId === selectedVenue
+        })
+        .map((event, index) => {
+          console.log("Processing filtered event:", event) 
+          return {
+            id: event._id || `fallback-${index}`,
+            name: event.eventName || event.name || event.venueName || `Event ${index + 1}`,
+            // client: event.userEmail || event.clientEmail || event.client || "Unknown Client",
+            date: formatDate(event.bookeddate || event.eventDate || event.date),
+            status: event.status ? event.status.charAt(0).toUpperCase() + event.status.slice(1) : "Unknown",
+            venueId: event.venueId || event.venue_id || null,
+            rawDate: event.bookeddate || event.eventDate || event.date,
+          }
+        })
+      console.log("Processed filtered events:", filteredEvents) // Debug log
+      return filteredEvents
+    }
+  }
+
+  const currentVenueData = {
+    name:
+      selectedVenue === "whole-auditorium"
+        ? "Whole Auditorium"
+        : venues.find((v) => v._id === selectedVenue)?.name || "Unknown Venue",
+    totalBookings: selectedVenue === "whole-auditorium" ? 128 : 0, // You can update this with real data
+    earnings: selectedVenue === "whole-auditorium" ? { monthly: 356000, yearly: 4250000 } : { monthly: 0, yearly: 0 }, // You can update this with real data
+    upcomingEvents: getFilteredEvents(),
+  }
+
+  console.log("Current venue data:", currentVenueData)
+  console.log("Selected venue:", selectedVenue)
+  console.log("Filtered events:", currentVenueData.upcomingEvents)
 
   return (
-    <div className="px-0 md:px-4 py-6 w-full pt-0">
-      <Header/>
+    <div className="px-4 py-6 w-full pt-0 max-w-7xl mx-auto sm:px-6 lg:px-8">
+      <Header />
       <div className="mb-6">
-        <h2 className="text-2xl font-bold  text-[#78533F]">Dashboard Overview</h2>
-        <p className="text-gray-600">Hello! Here's what's happening with your auditorium today.</p>
+        <h2 className="text-2xl font-bold text-[#78533F] sm:text-3xl">Dashboard Overview</h2>
+        <p className="text-gray-600 text-sm sm:text-base">
+          Auditorium: <span className="font-medium text-[#78533F]">{auditoriumName || "N/A"}</span>
+        </p>
+        <p className="text-gray-600 text-sm sm:text-base mt-1">
+          Hello! Here's what's happening with your venues today.
+        </p>
       </div>
 
       {/* Venue Selection */}
@@ -102,11 +175,14 @@ const DashboardOverview = () => {
           <select
             id="venue-select"
             value={selectedVenue}
-            onChange={(e) => setSelectedVenue(e.target.value)}
+            onChange={(e) => {
+              console.log("Venue selection changed to:", e.target.value)
+              setSelectedVenue(e.target.value)
+            }}
             className="block w-full max-w-xs px-4 py-3 pr-10 text-base border border-gray-300 rounded-lg bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-[#ED695A] focus:border-[#ED695A] transition-colors duration-200"
           >
-            {Object.entries(venueData).map(([key, venue]) => (
-              <option key={key} value={key}>
+            {allVenues.map((venue) => (
+              <option key={venue.id} value={venue.id}>
                 {venue.name}
               </option>
             ))}
@@ -132,8 +208,8 @@ const DashboardOverview = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white p-6 rounded-xl shadow-sm">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+        <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-gray-500 text-sm font-medium">Total Bookings</h3>
             <span className="p-2 bg-[#ED695A] bg-opacity-10 rounded-lg">
@@ -154,7 +230,7 @@ const DashboardOverview = () => {
             </span>
           </div>
           <div className="flex items-end space-x-2">
-            <h2 className="text-3xl font-bold text-gray-800">{dashboardData.totalBookings}</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">{currentVenueData.totalBookings}</h2>
             <span className="text-green-500 text-sm font-medium flex items-center">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -171,7 +247,7 @@ const DashboardOverview = () => {
           <p className="text-gray-500 text-sm mt-2">vs previous month</p>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm">
+        <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-gray-500 text-sm font-medium">Monthly Earnings</h3>
             <span className="p-2 bg-blue-100 rounded-lg">
@@ -192,7 +268,9 @@ const DashboardOverview = () => {
             </span>
           </div>
           <div className="flex items-end space-x-2">
-            <h2 className="text-3xl font-bold text-gray-800">₹{dashboardData.earnings.monthly.toLocaleString()}</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">
+              ₹{currentVenueData.earnings.monthly.toLocaleString()}
+            </h2>
             <span className="text-green-500 text-sm font-medium flex items-center">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -209,7 +287,7 @@ const DashboardOverview = () => {
           <p className="text-gray-500 text-sm mt-2">vs previous month</p>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm">
+        <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-gray-500 text-sm font-medium">Yearly Revenue</h3>
             <span className="p-2 bg-purple-100 rounded-lg">
@@ -230,7 +308,9 @@ const DashboardOverview = () => {
             </span>
           </div>
           <div className="flex items-end space-x-2">
-            <h2 className="text-3xl font-bold text-gray-800">₹{dashboardData.earnings.yearly.toLocaleString()}</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">
+              ₹{currentVenueData.earnings.yearly.toLocaleString()}
+            </h2>
             <span className="text-green-500 text-sm font-medium flex items-center">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -247,9 +327,9 @@ const DashboardOverview = () => {
           <p className="text-gray-500 text-sm mt-2">vs previous year</p>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm">
+        <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-gray-500 text-sm font-medium">Pending Requests</h3>
+            <h3 className="text-gray-500 text-sm font-medium">Upcoming Events</h3>
             <span className="p-2 bg-amber-100 rounded-lg">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -268,35 +348,39 @@ const DashboardOverview = () => {
             </span>
           </div>
           <div className="flex items-end space-x-2">
-            <h2 className="text-3xl font-bold text-gray-800">{dashboardData.pendingRequests.length}</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">{currentVenueData.upcomingEvents.length}</h2>
           </div>
-          <p className="text-gray-500 text-sm mt-2">Need your attention</p>
+          <p className="text-gray-500 text-sm mt-2">
+            {selectedVenue === "whole-auditorium" ? "All venues" : "This venue"}
+          </p>
         </div>
       </div>
 
-      {/* Toggle for Upcoming Events and Pending Requests */}
+      {/* Toggle for Upcoming Events */}
       <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-8">
         <div className="border-b border-gray-200">
           <div className="flex">
             <button
-              className={`flex-1 py-4 text-center text-left ml-7 font-medium ${activeSection === "upcoming" ? "text-[#ED695A] border-b-2 border-[#ED695A]" : "text-gray-500"}`}
+              className={`flex-1 py-4 text-center text-left ml-4 sm:ml-7 font-medium ${
+                activeSection === "upcoming" ? "text-[#ED695A] border-b-2 border-[#ED695A]" : "text-gray-500"
+              }`}
               onClick={() => setActiveSection("upcoming")}
             >
               Upcoming Events
+              {selectedVenue === "whole-auditorium" && <span className="ml-2 text-sm text-gray-400">(All Venues)</span>}
             </button>
-           
           </div>
         </div>
 
         {/* Upcoming Events Content */}
         {activeSection === "upcoming" && (
-          <div className="p-6">
-            {dashboardData.upcomingEvents.length > 0 ? (
+          <div className="p-4 sm:p-6">
+            {currentVenueData.upcomingEvents.length > 0 ? (
               <div className="space-y-4">
-                {dashboardData.upcomingEvents.map((event) => (
+                {currentVenueData.upcomingEvents.map((event) => (
                   <div
                     key={event.id}
-                    className="flex items-center justify-between border-b border-gray-100 pb-4 last:border-b-0 last:pb-0"
+                    className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-gray-100 pb-4 last:border-b-0 last:pb-0"
                   >
                     <div className="flex items-center space-x-4">
                       <div className="w-12 h-12 rounded-lg bg-[#ED695A] bg-opacity-10 flex items-center justify-center">
@@ -317,12 +401,27 @@ const DashboardOverview = () => {
                       </div>
                       <div>
                         <h4 className="font-medium text-gray-800">{event.name}</h4>
-                        <p className="text-sm text-gray-500">Client: {event.client}</p>
+                        {/* <p className="text-sm text-gray-500">Client: {event.client}</p> */}
+                        {selectedVenue === "whole-auditorium" && event.venueId && (
+                          <p className="text-xs text-gray-400">
+                            Venue: {venues.find((v) => v._id === event.venueId)?.name || "Unknown Venue"}
+                          </p>
+                        )}
                       </div>
                     </div>
-                    <div className="text-right">
+                    <div className="mt-2 sm:mt-0 sm:text-right">
                       <div className="font-medium text-gray-800">{event.date}</div>
-                      <span className="inline-block px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
+                      <span
+                        className={`inline-block px-2 py-1 text-xs rounded-full ${
+                          event.status.toLowerCase() === "pending"
+                            ? "bg-amber-100 text-amber-800"
+                            : event.status.toLowerCase() === "approved"
+                              ? "bg-green-100 text-green-800"
+                              : event.status.toLowerCase() === "rejected"
+                                ? "bg-red-100 text-red-800"
+                                : "bg-gray-100 text-gray-800"
+                        }`}
+                      >
                         {event.status}
                       </span>
                     </div>
@@ -353,9 +452,6 @@ const DashboardOverview = () => {
             )}
           </div>
         )}
-
-        
-    
       </div>
     </div>
   )

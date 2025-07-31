@@ -347,7 +347,7 @@ export default function VenueManagement() {
     const { name, value } = e.target
     const updateState = (prev: Partial<Venue>): Partial<Venue> => {
       if (name === "amenities") {
-        // Fixed amenities handling - properly split by comma and trim whitespace
+        
         const amenitiesArray = value
           ? value
               .split(",")

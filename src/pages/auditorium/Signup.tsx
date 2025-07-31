@@ -58,7 +58,7 @@ const AuditoriumRegistrationPage: React.FC = () => {
 
   const handleOtpModal = () => {
     setShowOtpModal(false)
-    navigate('/login')
+    navigate('/auditorium/login')
   }
 
   const handleSignup = async () => {
