@@ -131,6 +131,7 @@ const UserRegistrationPage: React.FC = () => {
                       value={formData.lastName}
                       onChange={handleChange}
                       placeholder="Enter last name"
+                      
                       required
                     />
                   </div>

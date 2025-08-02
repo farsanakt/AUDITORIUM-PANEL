@@ -1,11 +1,14 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { ArrowLeft, Calendar, Check, Clock, Home, MapPin, Phone, User } from "lucide-react"
 import Sidebar from "../../component/auditorium/Sidebar"
 import Header from "../../component/user/Header"
+import { existingAllVenues, existingBookings } from "../../api/userApi"
+import { useSelector } from "react-redux"
+import { RootState } from "../../redux/store"
 
 // Define types for form data
 type PartyType = "Wedding" | "Birthday" | "Corporate" | "Anniversary" | "Other"
@@ -43,6 +46,8 @@ export default function BookingConfirmation() {
     advanceAmount: 10000,
   })
 
+  const { currentUser } = useSelector((state: RootState) => state.auth)
+
   // Handle input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -77,6 +82,8 @@ export default function BookingConfirmation() {
   const handleGoBack = () => {
     navigate(-1)
   }
+
+
 
   return (
     <div className="min-h-screen bg-[#FDF8F1]">

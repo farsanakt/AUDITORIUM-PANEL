@@ -1,30 +1,61 @@
-"use client"
-
 import type React from "react"
-import { useState, useRef } from "react"
-import { ChevronLeft, ChevronRight, X, Eye, EyeOff } from "lucide-react"
+import { useState, useRef, useEffect } from "react"
+import { ChevronLeft, ChevronRight, X, Eye, EyeOff, Mail, User, Lock } from "lucide-react"
 import Header from "../../component/user/Header"
 import Sidebar from "../../component/auditorium/Sidebar"
 import { useNavigate } from "react-router-dom"
+import { existingAllVenues, existingBookings } from "../../api/userApi"
+import { useSelector } from "react-redux"
+import type { RootState } from "../../redux/store"
+
+
+const signupUser = async (userData: any) => {
+  try {
+    const response = await fetch("/api/signup", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(userData),
+    })
+    return await response.json()
+  } catch (error) {
+    console.error("Signup error:", error)
+    throw error
+  }
+}
 
 interface TimeSlot {
-  id: string
+  _id?: string
   time: string
-  status: "available" | "booked" | "waitlist" | "maintenance"
   price: number
+  isBooked?: boolean
 }
 
 interface Venue {
-  id: string
+  _id: string
   name: string
+  address: string
   timeSlots: TimeSlot[]
+  seatingCapacity: string
+  acType: string
+  phone: string
+  email: string
+  audiUserId: string
 }
 
-interface BookingDetails {
-  customerName: string
-  contactNumber: string
-  balancePayable: number
-  bookingId: string
+interface Booking {
+  _id: string
+  userEmail: string
+  venueId: string
+  auditoriumId: string
+  amount: string
+  advanceAmount: string
+  bookeddate: string 
+  timeSlot: string
+  paymentStatus: string
+  status: string
+  venueName: string
 }
 
 interface TooltipData {
@@ -32,79 +63,114 @@ interface TooltipData {
   y: number
   date: number
   status: string
-  bookingDetails?: BookingDetails
+  bookingDetails?: Booking[]
 }
 
 const VenueBookingPage: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
-  const [selectedVenue, setSelectedVenue] = useState<string>("auditorium")
-  const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null)
-  const [showConfirmation, setShowConfirmation] = useState(false)
-  const [acOption, setAcOption] = useState<"ac" | "non-ac">("ac")
+  const [selectedVenue, setSelectedVenue] = useState<string>("all")
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date())
   const [tooltip, setTooltip] = useState<TooltipData | null>(null)
-  const [showCancelConfirm, setShowCancelConfirm] = useState(false)
-  const [showPasswordModal, setShowPasswordModal] = useState(false)
-  const [password, setPassword] = useState("")
-  const [showPassword, setShowPassword] = useState(false)
-  const [cancellingDate, setCancellingDate] = useState<number | null>(null)
   const [isAnimating, setIsAnimating] = useState(false)
   const [animationDirection, setAnimationDirection] = useState<"left" | "right">("right")
-  const navigate = useNavigate()
 
+  
+  const [showEmailModal, setShowEmailModal] = useState(false)
+  const [showSignupModal, setShowSignupModal] = useState(false)
+  const [email, setEmail] = useState("")
+  const [signupData, setSignupData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+  })
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+
+ 
+  const [venues, setVenues] = useState<Venue[]>([])
+  const [bookings, setBookings] = useState<Booking[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const navigate = useNavigate()
+  const { currentUser } = useSelector((state: RootState) => state.auth)
   const hideTimeoutRef = useRef<number | null>(null)
   const tooltipRef = useRef<HTMLDivElement>(null)
 
-  const venues: Venue[] = [
-    {
-      id: "auditorium",
-      name: "Golden Auditorium",
-      timeSlots: [
-        { id: "1", time: "Morning (6 AM - 10 AM)", status: "available", price: 500 },
-        { id: "2", time: "Late Morning (10 AM - 2 PM)", status: "booked", price: 700 },
-        { id: "3", time: "Afternoon (2 PM - 6 PM)", status: "waitlist", price: 600 },
-        { id: "4", time: "Evening (6 PM - 9 PM)", status: "maintenance", price: 800 },
-      ],
-    },
-    {
-      id: "conference",
-      name: "Conference Hall",
-      timeSlots: [
-        { id: "1", time: "Morning (6 AM - 10 AM)", status: "booked", price: 400 },
-        { id: "2", time: "Late Morning (10 AM - 2 PM)", status: "available", price: 600 },
-        { id: "3", time: "Afternoon (2 PM - 6 PM)", status: "available", price: 500 },
-        { id: "4", time: "Evening (6 PM - 9 PM)", status: "waitlist", price: 700 },
-      ],
-    },
-  ]
-
-  const getBookingDetails = (date: number): BookingDetails | undefined => {
-    const sampleBookings: { [key: number]: BookingDetails } = {
-      7: { customerName: "John Doe", contactNumber: "+1-234-567-8901", balancePayable: 350, bookingId: "BK001" },
-      14: { customerName: "Jane Smith", contactNumber: "+1-234-567-8902", balancePayable: 250, bookingId: "BK002" },
-      21: { customerName: "Mike Johnson", contactNumber: "+1-234-567-8903", balancePayable: 450, bookingId: "BK003" },
-      9: { customerName: "Sarah Wilson", contactNumber: "+1-234-567-8904", balancePayable: 200, bookingId: "BK004" },
-      23: { customerName: "David Brown", contactNumber: "+1-234-567-8905", balancePayable: 300, bookingId: "BK005" },
-      3: { customerName: "Alice Johnson", contactNumber: "+1-234-567-8906", balancePayable: 180, bookingId: "BK006" },
-      16: { customerName: "Bob Smith", contactNumber: "+1-234-567-8907", balancePayable: 220, bookingId: "BK007" },
+  const fetchAllVenues = async () => {
+    try {
+      if (currentUser) {
+        const response = await existingAllVenues(currentUser.id)
+        console.log("Venues response:", response.data)
+        if (response.data && Array.isArray(response.data)) {
+          setVenues(response.data)
+          console.log(
+            "Venues set:",
+            response.data.map((v) => ({ id: v._id, name: v.name })),
+          )
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching venues:", error)
     }
-    return sampleBookings[date]
   }
 
-  const getDateStatus = (date: number): "available" | "booked" | "waitlist" | "maintenance" => {
-    const sampleStatuses: { [key: number]: "available" | "booked" | "waitlist" | "maintenance" } = {
-      3: "waitlist",
-      5: "available",
-      7: "booked",
-      9: "maintenance",
-      11: "booked",
-      13: "available",
-      16: "waitlist",
-      26: "booked",
-      28: "booked",
-      30: "maintenance",
+  const fetchAllBookings = async () => {
+    try {
+      if (currentUser) {
+        const response = await existingBookings(currentUser.id)
+        if (response.data && Array.isArray(response.data)) {
+          setBookings(response.data)
+          response.data.forEach((booking) => {
+          })
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching bookings:", error)
+    } finally {
+      setLoading(false)
     }
-    return sampleStatuses[date] || "available"
+  }
+
+  useEffect(() => {
+    fetchAllVenues()
+    fetchAllBookings()
+  }, [currentUser])
+
+  
+  const getBookingsForDate = (date: number, venueId?: string, targetMonth?: Date): Booking[] => {
+    const monthToUse = targetMonth || currentMonth
+    const targetDate = new Date(monthToUse.getFullYear(), monthToUse.getMonth(), date)
+    const dateString = targetDate.toISOString().split("T")[0] 
+
+    return bookings.filter((booking) => {
+      const matchesDate = booking.bookeddate === dateString
+      const matchesVenue = !venueId || venueId === "all" || booking.venueId === venueId
+      return matchesDate && matchesVenue && booking.status !== "cancelled"
+    })
+  }
+
+  
+  const getDateStatus = (date: number, venueId?: string, targetMonth?: Date): "available" | "booked" | "partial" => {
+    const dayBookings = getBookingsForDate(date, venueId, targetMonth)
+
+    if (dayBookings.length === 0) return "available"
+
+    if (venueId === "all") {
+      return dayBookings.length > 0 ? "partial" : "available"
+    } else {
+      // For specific venue, check if all time slots are booked
+      const venue = venues.find((v) => v._id === venueId)
+      if (!venue) return "available"
+
+      const totalSlots = venue.timeSlots?.length || 4 // Default to 4 if no timeSlots
+      const bookedSlots = dayBookings.length
+
+      if (bookedSlots >= totalSlots) return "booked"
+      if (bookedSlots > 0) return "partial"
+      return "available"
+    }
   }
 
   const getStatusColor = (status: string) => {
@@ -113,10 +179,8 @@ const VenueBookingPage: React.FC = () => {
         return "bg-green-600 hover:bg-green-700"
       case "booked":
         return "bg-red-600 hover:bg-red-700"
-      case "waitlist":
+      case "partial":
         return "bg-yellow-600 hover:bg-yellow-700"
-      case "maintenance":
-        return "bg-blue-600 hover:bg-blue-700"
       default:
         return "bg-green-600 hover:bg-green-700"
     }
@@ -127,27 +191,37 @@ const VenueBookingPage: React.FC = () => {
       case "available":
         return "Available"
       case "booked":
-        return "Booked"
-      case "waitlist":
-        return "Waiting List"
-      case "maintenance":
-        return "Maintenance"
+        return "Fully Booked"
+      case "partial":
+        return "Partially Booked"
       default:
         return "Available"
     }
   }
 
   const isSelectable = (status: string) => {
-    return status === "available" || status === "waitlist"
+    return status === "available" || status === "partial"
   }
 
   const handleDateClick = (date: number) => {
-    const status = getDateStatus(date)
+    const status = getDateStatus(date, selectedVenue)
     if (isSelectable(status)) {
       const newDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), date)
       setSelectedDate(newDate)
-      setShowConfirmation(true)
+      setShowEmailModal(true)
     }
+  }
+
+  const handleEditBooking = (bookingId: string) => {
+    console.log(`Edit booking: ${bookingId}`)
+    // Implement edit booking logic
+    setTooltip(null)
+  }
+
+  const handleCancelBooking = (bookingId: string) => {
+    console.log(`Cancel booking: ${bookingId}`)
+    // Implement cancel booking logic
+    setTooltip(null)
   }
 
   const handleMouseEnter = (event: React.MouseEvent, date: number) => {
@@ -156,15 +230,17 @@ const VenueBookingPage: React.FC = () => {
       hideTimeoutRef.current = null
     }
 
-    const status = getDateStatus(date)
-    if (status === "booked" || status === "waitlist" || status === "maintenance") {
+    const status = getDateStatus(date, selectedVenue, currentMonth)
+    const dayBookings = getBookingsForDate(date, selectedVenue, currentMonth)
+
+    if (status !== "available" || dayBookings.length > 0) {
       const rect = event.currentTarget.getBoundingClientRect()
       setTooltip({
         x: rect.left + rect.width / 2,
         y: rect.top - 10,
         date,
         status,
-        bookingDetails: getBookingDetails(date),
+        bookingDetails: dayBookings,
       })
     }
   }
@@ -186,57 +262,18 @@ const VenueBookingPage: React.FC = () => {
     setTooltip(null)
   }
 
-  const handleCancelBooking = (date: number) => {
-    setCancellingDate(date)
-    setShowCancelConfirm(true)
-    setTooltip(null)
-  }
-
-  const handleEditDetails = (date: number) => {
-    console.log(`Edit details for date ${date}`)
-    setTooltip(null)
-  }
-
-  const handleConfirmBooking = (date: number) => {
-    console.log(`Confirm booking for date ${date}`)
-    setTooltip(null)
-  }
-
-  const confirmCancellation = () => {
-    setShowCancelConfirm(false)
-    setShowPasswordModal(true)
-  }
-
-  const handlePasswordSubmit = () => {
-    trituradora
-    if (password === "admin123") {
-      console.log(`Booking cancelled for date ${cancellingDate}`)
-      setShowPasswordModal(false)
-      setPassword("")
-      setCancellingDate(null)
-    } else {
-      alert("Incorrect password!")
+  const handleEmailSubmit = () => {
+    if (email.trim()) {
+      // Check if user exists (you can implement this check)
+      setSignupData((prev) => ({ ...prev, email }))
+      setShowEmailModal(false)
+      setShowSignupModal(true)
     }
   }
 
-  const handleConfirmSlot = () => {
-    console.log("Proceeding to booking confirmation")
-    navigate("/auditorium/Bookingconfirmation")
-    setShowConfirmation(false)
-    setSelectedSlot(null)
-  }
-
-  const handleCancelSlot = () => {
-    setShowConfirmation(false)
-    setSelectedSlot(null)
-  }
-
   const getCurrentVenue = () => {
-    return venues.find((venue) => venue.id === selectedVenue)
-  }
-
-  const handleGoBack = () => {
-    console.log("Going back")
+    if (selectedVenue === "all") return null
+    return venues.find((venue) => venue._id === selectedVenue)
   }
 
   const getDaysInMonth = (date: Date) => {
@@ -250,7 +287,6 @@ const VenueBookingPage: React.FC = () => {
   const navigateMonth = (direction: "prev" | "next") => {
     setIsAnimating(true)
     setAnimationDirection(direction === "prev" ? "left" : "right")
-
     setTimeout(() => {
       setCurrentMonth((prev) => {
         const newMonth = new Date(prev)
@@ -261,11 +297,40 @@ const VenueBookingPage: React.FC = () => {
         }
         return newMonth
       })
-
       setTimeout(() => {
         setIsAnimating(false)
       }, 300)
     }, 300)
+  }
+
+  const handleSignupSubmit = async () => {
+    if (signupData.password !== signupData.confirmPassword) {
+      alert("Passwords don't match!")
+      return
+    }
+
+    if (signupData.firstName && signupData.lastName && signupData.email && signupData.password) {
+      try {
+        const response = await signupUser({
+          firstName: signupData.firstName,
+          lastName: signupData.lastName,
+          email: signupData.email,
+          password: signupData.password,
+        })
+
+        if (response.success) {
+          console.log("User registered successfully:", response)
+          navigate("/bookings")
+        } else {
+          alert(response.message || "Signup failed. Please try again.")
+        }
+      } catch (error) {
+        console.error("Signup error:", error)
+        alert("An error occurred during signup. Please try again.")
+      }
+    } else {
+      alert("Please fill all fields!")
+    }
   }
 
   const renderCalendar = () => {
@@ -278,7 +343,14 @@ const VenueBookingPage: React.FC = () => {
     }
 
     for (let day = 1; day <= daysInMonth; day++) {
-      const status = getDateStatus(day)
+      const status = getDateStatus(day, selectedVenue, currentMonth)
+      const dayBookings = getBookingsForDate(day, selectedVenue, currentMonth)
+
+      // Debug logging
+      if (dayBookings.length > 0) {
+        console.log(`Day ${day}: ${dayBookings.length} bookings, status: ${status}`)
+      }
+
       const isSelected =
         selectedDate.getDate() === day &&
         selectedDate.getMonth() === currentMonth.getMonth() &&
@@ -317,17 +389,15 @@ const VenueBookingPage: React.FC = () => {
     }
 
     for (let day = 1; day <= miniDaysInMonth; day++) {
-      const status = getDateStatus(day)
+      const status = getDateStatus(day, selectedVenue, miniDate) // Pass miniDate here
       const getMiniStatusColor = (status: string) => {
         switch (status) {
           case "available":
             return "bg-green-600 text-white"
           case "booked":
             return "bg-red-600 text-white"
-          case "waitlist":
+          case "partial":
             return "bg-yellow-600 text-white"
-          case "maintenance":
-            return "bg-blue-600 text-white"
           default:
             return "bg-green-600 text-white"
         }
@@ -347,8 +417,11 @@ const VenueBookingPage: React.FC = () => {
       <div className="bg-white p-3 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-300">
         <h3 className="text-xs font-semibold text-center mb-2 text-gray-700">{title}</h3>
         <div className="grid grid-cols-7 gap-1 text-xs text-center mb-1">
-          {["S", "M", "T", "W", "T", "F", "S"].map((day) => (
-            <div key={day} className="font-semibold text-gray-500 h-5 flex items-center justify-center">
+          {["S", "M", "T", "W", "T", "F", "S"].map((day, index) => (
+            <div
+              key={`mini-day-${index}-${monthOffset}`}
+              className="font-semibold text-gray-500 h-5 flex items-center justify-center"
+            >
               {day}
             </div>
           ))}
@@ -358,51 +431,51 @@ const VenueBookingPage: React.FC = () => {
     )
   }
 
-  return (
-    <div className="flex min-h-screen bg-[#FDF8F1] ">
-      <Header />
+  if (loading) {
+    return (
+      <div className="flex min-h-screen bg-[#FDF8F1] items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+          <p className="mt-4 text-gray-600">Loading venues and bookings...</p>
+        </div>
+      </div>
+    )
+  }
 
+  return (
+    <div className="flex min-h-screen bg-[#FDF8F1]">
+      <Header />
       <div className="w-64 shrink-0 h-[calc(100vh-64px)] sticky top-16 hidden md:block bg-[#FDF8F1] text-[#4A3728]">
         <Sidebar />
       </div>
-
       <div className="flex-1 flex flex-col mt-16 overflow-auto">
         <main className="flex-1 p-4 md:p-6 lg:p-8">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
             <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
               <select
-                value={acOption}
-                onChange={(e) => setAcOption(e.target.value as "ac" | "non-ac")}
-                className="w-full md:w-40 bg-white border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-900 shadow-sm hover:shadow-md transition-all duration-300"
-              >
-                <option value="ac">AC</option>
-                <option value="non-ac">Non-AC</option>
-              </select>
-
-              <select
                 value={selectedVenue}
                 onChange={(e) => setSelectedVenue(e.target.value)}
-                className="w-full md:w-56 bg-white border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-900 shadow-sm hover:shadow-md transition-all duration-300"
+                className="w-full md:w-64 bg-white border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-900 shadow-sm hover:shadow-md transition-all duration-300"
               >
+                <option value="all">All Venues</option>
                 {venues.map((venue) => (
-                  <option key={venue.id} value={venue.id}>
+                  <option key={venue._id} value={venue._id}>
                     {venue.name}
                   </option>
                 ))}
               </select>
             </div>
-
-            <button
-              onClick={handleGoBack}
-              className="w-full md:w-auto px-5 py-2 bg-white text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 hover:shadow-md transition-all duration-300 flex items-center justify-center text-sm"
-            >
-              Back
-            </button>
           </div>
 
           <div className="flex justify-center items-center gap-4 mb-8">
-            <div className="hidden lg:block">{renderMiniCalendar(-1, new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1).toLocaleDateString("en-US", { month: "long" }))}</div>
-
+            <div className="hidden lg:block">
+              {renderMiniCalendar(
+                -1,
+                new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1).toLocaleDateString("en-US", {
+                  month: "long",
+                }),
+              )}
+            </div>
             <button
               onClick={() => navigateMonth("prev")}
               disabled={isAnimating}
@@ -410,7 +483,6 @@ const VenueBookingPage: React.FC = () => {
             >
               <ChevronLeft className="text-gray-700 hover:text-gray-900 w-5 h-5" />
             </button>
-
             <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-300">
               <div className="p-5">
                 <div className="flex justify-center items-center mb-4">
@@ -426,15 +498,13 @@ const VenueBookingPage: React.FC = () => {
                     {currentMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
                   </h2>
                 </div>
-
                 <div className="grid grid-cols-7 gap-2 mb-3">
-                  {["S", "M", "T", "W", "T", "F", "S"].map((day) => (
-                    <div key={day} className="text-center text-sm font-semibold text-gray-600 py-2">
+                  {["S", "M", "T", "W", "T", "F", "S"].map((day, index) => (
+                    <div key={`main-day-${index}`} className="text-center text-sm font-semibold text-gray-600 py-2">
                       {day}
                     </div>
                   ))}
                 </div>
-
                 <div
                   className={`grid grid-cols-7 gap-2 transition-all duration-300 ease-in-out ${
                     isAnimating
@@ -448,7 +518,6 @@ const VenueBookingPage: React.FC = () => {
                 </div>
               </div>
             </div>
-
             <button
               onClick={() => navigateMonth("next")}
               disabled={isAnimating}
@@ -456,33 +525,42 @@ const VenueBookingPage: React.FC = () => {
             >
               <ChevronRight className="text-gray-700 hover:text-gray-900 w-5 h-5" />
             </button>
-
-            <div className="hidden lg:block">{renderMiniCalendar(1, new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1).toLocaleDateString("en-US", { month: "long" }))}</div>
+            <div className="hidden lg:block">
+              {renderMiniCalendar(
+                1,
+                new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1).toLocaleDateString("en-US", {
+                  month: "long",
+                }),
+              )}
+            </div>
           </div>
 
           {/* Display Time Slots for Selected Venue */}
-          <div className="mt-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-3">Available Time Slots for {getCurrentVenue()?.name}</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              {getCurrentVenue()?.timeSlots.map((slot) => (
-                <div
-                  key={slot.id}
-                  className={`p-4 rounded-md shadow-sm border border-gray-200 ${getStatusColor(slot.status)} text-white cursor-pointer hover:shadow-md transition-all duration-300 transform hover:-translate-y-1`}
-                >
-                  <p className="font-medium text-sm">{slot.time}</p>
-                  <p className="text-xs">Price: ${slot.price}</p>
-                  <p className="text-xs">Status: {getStatusText(slot.status)}</p>
-                </div>
-              ))}
+          {getCurrentVenue() && (
+            <div className="mt-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">
+                Available Time Slots for {getCurrentVenue()?.name}
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                {getCurrentVenue()?.timeSlots.map((slot, index) => (
+                  <div
+                    key={slot._id || index}
+                    className="p-4 rounded-md shadow-sm border border-gray-200 bg-white hover:shadow-md transition-all duration-300 transform hover:-translate-y-1"
+                  >
+                    <p className="font-medium text-sm text-gray-800">{slot.time}</p>
+                    <p className="text-xs text-gray-600">Price: ₹{slot.price}</p>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="flex justify-center mt-6">
             <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200 hover:shadow-md transition-all duration-300">
               <div className="flex flex-wrap justify-center gap-4 text-xs">
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-4 rounded-full bg-red-600 shadow-sm"></div>
-                  <span className="text-gray-700 font-medium">Booked</span>
+                  <span className="text-gray-700 font-medium">Fully Booked</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-4 rounded-full bg-green-600 shadow-sm"></div>
@@ -490,11 +568,7 @@ const VenueBookingPage: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-4 rounded-full bg-yellow-600 shadow-sm"></div>
-                  <span className="text-gray-700 font-medium">Waiting List</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded-full bg-blue-600 shadow-sm"></div>
-                  <span className="text-gray-700 font-medium">Maintenance</span>
+                  <span className="text-gray-700 font-medium">Partially Booked</span>
                 </div>
               </div>
             </div>
@@ -507,178 +581,277 @@ const VenueBookingPage: React.FC = () => {
           ref={tooltipRef}
           onMouseEnter={handleTooltipMouseEnter}
           onMouseLeave={handleTooltipMouseLeave}
-          className="fixed z-50 bg-gray-800 text-white p-4 rounded-lg shadow-lg border border-gray-600 max-w-xs animate-fade-in"
+          className="fixed z-50 bg-white rounded-lg shadow-2xl border border-gray-200 max-w-md animate-fade-in"
           style={{
-            left: tooltip.x - 150,
-            top: tooltip.y - 180,
+            left: tooltip.x - 200,
+            top: tooltip.y - 220,
             transform: "translateX(-50%)",
           }}
         >
-          <div className="space-y-2">
-            <div className="font-semibold text-center border-b border-gray-500 pb-2 text-sm">
-              Date: {tooltip.date} - {getStatusText(tooltip.status)}
+          <div className="p-4">
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-800">
+                {new Date(currentMonth.getFullYear(), currentMonth.getMonth(), tooltip.date).toLocaleDateString(
+                  "en-US",
+                  {
+                    weekday: "long",
+                    month: "long",
+                    day: "numeric",
+                  },
+                )}
+              </h3>
+              <span
+                className={`px-3 py-1 rounded-full text-xs font-medium ${
+                  tooltip.status === "available"
+                    ? "bg-green-100 text-green-800"
+                    : tooltip.status === "booked"
+                      ? "bg-red-100 text-red-800"
+                      : "bg-yellow-100 text-yellow-800"
+                }`}
+              >
+                {getStatusText(tooltip.status)}
+              </span>
             </div>
-            {tooltip.bookingDetails && (
-              <>
-                <div className="text-xs">
-                  <strong>Customer:</strong> {tooltip.bookingDetails.customerName}
-                </div>
-                <div className="text-xs">
-                  <strong>Contact:</strong> {tooltip.bookingDetails.contactNumber}
-                </div>
-                <div className="text-xs">
-                  <strong>Balance:</strong> ${tooltip.bookingDetails.balancePayable}
-                </div>
-                <div className="text-xs">
-                  <strong>Booking ID:</strong> {tooltip.bookingDetails.bookingId}
-                </div>
-                <div className="flex gap-2 pt-2 border-t border-gray-500">
-                  <button
-                    onClick={() => handleEditDetails(tooltip.date)}
-                    className="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded-md text-xs transition-all duration-300"
-                  >
-                    Edit Details
-                  </button>
-                  {tooltip.status === "waitlist" ? (
-                    <button
-                      onClick={() => handleConfirmBooking(tooltip.date)}
-                      className="px-3 py-1 bg-green-600 hover:bg-green-700 rounded-md text-xs transition-all duration-300"
-                    >
-                      Confirm Booking
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => handleCancelBooking(tooltip.date)}
-                      className="px-3 py-1 bg-red-600 hover:bg-red-700 rounded-md text-xs transition-all duration-300"
-                    >
-                      Cancel Booking
-                    </button>
-                  )}
-                </div>
-              </>
-            )}
-            {tooltip.status === "maintenance" && !tooltip.bookingDetails && (
-              <div className="text-xs text-center text-gray-300">This date is under maintenance</div>
-            )}
-          </div>
-        </div>
-      )}
 
-      {showConfirmation && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50 animate-fade-in">
-          <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6 border border-gray-200 animate-scale-in">
-            <h3 className="text-xl font-semibold text-gray-800 mb-3">Confirm Booking</h3>
-            <p className="mb-3 text-gray-600 text-sm">You have selected the following date:</p>
+            {tooltip.bookingDetails && tooltip.bookingDetails.length > 0 ? (
+              <div className="space-y-4 max-h-80 overflow-y-auto">
+                {tooltip.bookingDetails.map((booking, index) => (
+                  <div key={booking._id} className="bg-gray-50 rounded-lg p-4 border border-gray-100">
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      <div>
+                        <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Venue</label>
+                        <p className="text-sm font-semibold text-gray-900 mt-1">{booking.venueName}</p>
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Time Slot</label>
+                        <p className="text-sm font-semibold text-gray-900 mt-1 capitalize">{booking.timeSlot}</p>
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Customer</label>
+                        <p className="text-sm text-gray-700 mt-1">{booking.userEmail}</p>
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Amount</label>
+                        <p className="text-sm font-semibold text-gray-900 mt-1">₹{booking.amount}</p>
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Status</label>
+                        <span
+                          className={`inline-block px-2 py-1 rounded-full text-xs font-medium mt-1 ${
+                            booking.status === "confirmed"
+                              ? "bg-green-100 text-green-800"
+                              : booking.status === "pending"
+                                ? "bg-yellow-100 text-yellow-800"
+                                : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          {booking.status}
+                        </span>
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Payment</label>
+                        <span
+                          className={`inline-block px-2 py-1 rounded-full text-xs font-medium mt-1 ${
+                            booking.paymentStatus === "completed"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-yellow-100 text-yellow-800"
+                          }`}
+                        >
+                          {booking.paymentStatus}
+                        </span>
+                      </div>
+                    </div>
 
-            <div className="bg-gray-50 p-4 rounded-md mb-3 border border-gray-200">
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between items-center">
-                  <span className="font-medium text-gray-700">Venue:</span>
-                  <span className="text-gray-800">{getCurrentVenue()?.name}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="font-medium text-gray-700">Type:</span>
-                  <span className="text-gray-800">{acOption.toUpperCase()}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="font-medium text-gray-700">Date:</span>
-                  <span className="text-gray-800">{selectedDate.toLocaleDateString()}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="font-medium text-gray-700">Status:</span>
-                  <span
-                    className={`px-2 py-1 text-xs rounded-full text-white ${getStatusColor(getDateStatus(selectedDate.getDate()))}`}
-                  >
-                    {getStatusText(getDateStatus(selectedDate.getDate()))}
-                  </span>
-                </div>
+                    <div className="flex gap-2 pt-3 border-t border-gray-200">
+                      <button
+                        onClick={() => handleEditBooking(booking._id)}
+                        className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors duration-200 flex items-center justify-center gap-2"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                          />
+                        </svg>
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleCancelBooking(booking._id)}
+                        className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md text-sm font-medium transition-colors duration-200 flex items-center justify-center gap-2"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
+                        </svg>
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
-            </div>
-
-            <p className="mb-3 text-gray-600 text-sm">Would you like to proceed with this booking?</p>
-
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={handleCancelSlot}
-                className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-all duration-300 text-gray-700 text-sm"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleConfirmSlot}
-                className="px-4 py-2 bg-gray-900 text-white rounded-md hover:bg-gray-800 transition-all duration-300 text-sm"
-              >
-                Proceed to Booking
-              </button>
-            </div>
+            ) : (
+              <div className="text-center py-8">
+                <div className="w-16 h-16 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center">
+                  <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <p className="text-gray-600 text-sm">This date is available for booking</p>
+              </div>
+            )}
           </div>
         </div>
       )}
 
-      {showCancelConfirm && (
+      {/* Email Modal */}
+      {showEmailModal && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50 animate-fade-in">
-          <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6 border border-gray-200 animate-scale-in">
-            <h3 className="text-xl font-semibold text-red-600 mb-3">Cancel Booking</h3>
-            <p className="mb-3 text-gray-600 text-sm">Are you sure you want to cancel the booking for date {cancellingDate}?</p>
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={() => setShowCancelConfirm(false)}
-                className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-all duration-300 text-gray-700 text-sm"
-              >
-                No, Keep Booking
-              </button>
-              <button
-                onClick={confirmCancellation}
-                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-all duration-300 text-sm"
-              >
-                Yes, Cancel Booking
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showPasswordModal && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50 animate-fade-in">
-          <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6 border border-gray-200 animate-scale-in">
-            <div className="flex justify-between items-center mb-3">
-              <h3 className="text-xl font-semibold text-gray-800">Enter Password</h3>
-              <button onClick={() => setShowPasswordModal(false)} className="p-1 hover:bg-gray-100 rounded-full">
+          <div className="bg-white rounded-lg shadow-lg max-w-md w-full mx-4 p-6 border border-gray-200 animate-scale-in">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold text-gray-800">Enter Your Email</h3>
+              <button onClick={() => setShowEmailModal(false)} className="p-1 hover:bg-gray-100 rounded-full">
                 <X className="h-4 w-4 text-gray-600" />
               </button>
             </div>
-            <p className="mb-3 text-gray-600 text-sm">Please enter your password to confirm the cancellation:</p>
-            <div className="relative mb-3">
+            <p className="mb-4 text-gray-600 text-sm">
+              Please enter your email to proceed with the booking for {selectedDate.toLocaleDateString()}
+            </p>
+            <div className="relative mb-4">
+              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <input
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter password"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 text-sm"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email"
+                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 text-sm"
               />
+            </div>
+            <div className="text-center mb-4">
+              <p className="text-sm text-gray-600">New user?</p>
               <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                onClick={() => {
+                  setShowEmailModal(false)
+                  setShowSignupModal(true)
+                }}
+                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
               >
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                Sign up here
               </button>
             </div>
             <div className="flex justify-end space-x-3">
               <button
-                onClick={() => {
-                  setShowPasswordModal(false)
-                  setPassword("")
-                }}
+                onClick={() => setShowEmailModal(false)}
                 className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-all duration-300 text-gray-700 text-sm"
               >
                 Cancel
               </button>
               <button
-                onClick={handlePasswordSubmit}
-                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-all duration-300 text-sm"
+                onClick={handleEmailSubmit}
+                className="px-4 py-2 bg-gray-900 text-white rounded-md hover:bg-gray-800 transition-all duration-300 text-sm"
               >
-                Confirm Cancellation
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Signup Modal */}
+      {showSignupModal && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50 animate-fade-in">
+          <div className="bg-white rounded-lg shadow-lg max-w-md w-full mx-4 p-6 border border-gray-200 animate-scale-in max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold text-gray-800">Create Account</h3>
+              <button onClick={() => setShowSignupModal(false)} className="p-1 hover:bg-gray-100 rounded-full">
+                <X className="h-4 w-4 text-gray-600" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <input
+                    type="text"
+                    value={signupData.firstName}
+                    onChange={(e) => setSignupData((prev) => ({ ...prev, firstName: e.target.value }))}
+                    placeholder="First Name"
+                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 text-sm"
+                  />
+                </div>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <input
+                    type="text"
+                    value={signupData.lastName}
+                    onChange={(e) => setSignupData((prev) => ({ ...prev, lastName: e.target.value }))}
+                    placeholder="Last Name"
+                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 text-sm"
+                  />
+                </div>
+              </div>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <input
+                  type="email"
+                  value={signupData.email}
+                  onChange={(e) => setSignupData((prev) => ({ ...prev, email: e.target.value }))}
+                  placeholder="Email"
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 text-sm"
+                />
+              </div>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={signupData.password}
+                  onChange={(e) => setSignupData((prev) => ({ ...prev, password: e.target.value }))}
+                  placeholder="Password"
+                  className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 text-sm"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={signupData.confirmPassword}
+                  onChange={(e) => setSignupData((prev) => ({ ...prev, confirmPassword: e.target.value }))}
+                  placeholder="Confirm Password"
+                  className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 text-sm"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                >
+                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => setShowSignupModal(false)}
+                className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-all duration-300 text-gray-700 text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSignupSubmit}
+                className="px-4 py-2 bg-gray-900 text-white rounded-md hover:bg-gray-800 transition-all duration-300 text-sm"
+              >
+                Create Account & Continue
               </button>
             </div>
           </div>

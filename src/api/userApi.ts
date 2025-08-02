@@ -58,6 +58,14 @@ export const existingAllVenues = async (id: string) => {
 }
 
 
+export const existingBookings=async(id:string)=>{
+
+  const response=await api.get(`/audibookings/${id}`)
+
+  return response
+
+}
+
 export const updateVenues=async(id:any,data:any)=>{
 
   const response=await api.put('/updatevenues ',{id,data})

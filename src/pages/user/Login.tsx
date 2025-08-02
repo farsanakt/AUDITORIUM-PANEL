@@ -193,6 +193,8 @@ const LoginUserPage: React.FC = () => {
                 <span>Don't have an account? </span>
                 <button className="text-[#ED695A] hover:underline" onClick={handleSignUp}>
                   Sign up
+
+                  
                 </button>
               </div>
             </div>
