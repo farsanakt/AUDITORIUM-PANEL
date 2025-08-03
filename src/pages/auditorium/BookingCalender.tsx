@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, X, Eye, EyeOff, Mail, User, Lock } from "luc
 import Header from "../../component/user/Header"
 import Sidebar from "../../component/auditorium/Sidebar"
 import { useNavigate } from "react-router-dom"
-import { existingAllVenues, existingBookings } from "../../api/userApi"
+import { existingAllVenues, existingBookings, userSingUpRequest } from "../../api/userApi"
 import { useSelector } from "react-redux"
 import type { RootState } from "../../redux/store"
 
@@ -304,34 +304,34 @@ const VenueBookingPage: React.FC = () => {
   }
 
   const handleSignupSubmit = async () => {
-    if (signupData.password !== signupData.confirmPassword) {
-      alert("Passwords don't match!")
-      return
-    }
-
-    if (signupData.firstName && signupData.lastName && signupData.email && signupData.password) {
-      try {
-        const response = await signupUser({
-          firstName: signupData.firstName,
-          lastName: signupData.lastName,
-          email: signupData.email,
-          password: signupData.password,
-        })
-
-        if (response.success) {
-          console.log("User registered successfully:", response)
-          navigate("/bookings")
-        } else {
-          alert(response.message || "Signup failed. Please try again.")
-        }
-      } catch (error) {
-        console.error("Signup error:", error)
-        alert("An error occurred during signup. Please try again.")
-      }
-    } else {
-      alert("Please fill all fields!")
-    }
+  if (signupData.password !== signupData.confirmPassword) {
+    alert("Passwords don't match!")
+    return
   }
+
+  const { firstName, lastName, email, password } = signupData
+
+  if (firstName && lastName && email && password) {
+    try {
+      const response = await userSingUpRequest(signupData) 
+
+      if (response.success) {
+        console.log("User registered successfully:", response)
+
+        
+        navigate("/bookings", { state: { email } })
+      } else {
+        alert(response.message || "Signup failed. Please try again.")
+      }
+    } catch (error) {
+      console.error("Signup error:", error)
+      alert("An error occurred during signup. Please try again.")
+    }
+  } else {
+    alert("Please fill all fields!")
+  }
+}
+
 
   const renderCalendar = () => {
     const daysInMonth = getDaysInMonth(currentMonth)

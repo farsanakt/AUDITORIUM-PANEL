@@ -45,6 +45,10 @@ export const addVenueAPI=async(formData:FormData)=>{
 
 }
 
+export const checkUserExists=async(email:string)=>{
+
+}
+
 
 export const existingAllVenues = async (id: string) => {
 

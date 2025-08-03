@@ -1,4 +1,4 @@
-"use client"
+
 
 import { useEffect, useState } from "react"
 import Header from "../../component/user/Header"
@@ -6,14 +6,11 @@ import { useSelector } from "react-redux"
 import type { RootState } from "../../redux/store"
 import { existingAllVenues, upComingEvents } from "../../api/userApi"
 
-// Add this function after the imports
 const formatDate = (dateString: string) => {
   if (!dateString) return "Unknown Date"
-
   try {
     const date = new Date(dateString)
     if (isNaN(date.getTime())) return "Unknown Date"
-
     return date.toLocaleDateString("en-US", {
       day: "2-digit",
       month: "short",
@@ -25,12 +22,28 @@ const formatDate = (dateString: string) => {
   }
 }
 
+const isTodayOrFuture = (dateString: string) => {
+  if (!dateString) return false
+  try {
+    const eventDate = new Date(dateString)
+    const today = new Date()
+    
+    today.setHours(0, 0, 0, 0)
+    eventDate.setHours(0, 0, 0, 0)
+    return eventDate >= today
+  } catch (error) {
+    console.error("Date comparison error:", error)
+    return false
+  }
+}
+
 const DashboardOverview = () => {
   const [activeSection, setActiveSection] = useState<string>("upcoming")
   const [selectedVenue, setSelectedVenue] = useState<string>("whole-auditorium")
   const [venues, setVenues] = useState<any[]>([])
   const [upcomingEvents, setUpcomingEvents] = useState<any[]>([])
   const [auditoriumName, setAuditoriumName] = useState<string>("")
+  const [showAllEvents, setShowAllEvents] = useState<boolean>(false)
   const { currentUser } = useSelector((state: RootState) => state.auth)
 
   const fetchAllVenues = async () => {
@@ -79,8 +92,8 @@ const DashboardOverview = () => {
     if (upcomingEvents.length > 0) {
       console.log("Sample event structure:", upcomingEvents[0])
       console.log("Available date fields:", {
-        bookeddate: upcomingEvents[0]?.bookeddate, // lowercase 'd'
-        bookedDate: upcomingEvents[0]?.bookedDate, // uppercase 'D'
+        bookeddate: upcomingEvents[0]?.bookeddate,
+        bookedDate: upcomingEvents[0]?.bookedDate,
         eventDate: upcomingEvents[0]?.eventDate,
         date: upcomingEvents[0]?.date,
         createdAt: upcomingEvents[0]?.createdAt,
@@ -94,60 +107,83 @@ const DashboardOverview = () => {
     ...venues.map((venue) => ({ id: venue._id, name: venue.name })),
   ]
 
-  
   const getFilteredEvents = () => {
-    
-
     if (selectedVenue === "whole-auditorium") {
-     
-      const allEvents = upcomingEvents.map((event, index) => {
-       
-        return {
-          id: event._id || `fallback-${index}`,
-          name: event.eventName || event.name || event.venueName || `Event ${index + 1}`,
-          client: event.userEmail || event.clientEmail || event.client || "Unknown Client",
-          date: formatDate(event.bookeddate || event.eventDate || event.date),
-          status: event.status ? event.status.charAt(0).toUpperCase() + event.status.slice(1) : "Unknown",
-          venueId: event.venueId || event.venue_id || null,
-          rawDate: event.bookeddate || event.eventDate || event.date, 
-        }
-      })
-      
-      return allEvents
-    } else {
-     
-      const filteredEvents = upcomingEvents
+      const allEvents = upcomingEvents
         .filter((event) => {
-          const eventVenueId = event.venueId || event.venue_id
-          console.log("Event venue ID:", eventVenueId, "Selected venue:", selectedVenue) 
-          return eventVenueId === selectedVenue
+          const eventDate = event.bookeddate || event.eventDate || event.date
+          return isTodayOrFuture(eventDate)
         })
         .map((event, index) => {
-          console.log("Processing filtered event:", event) 
           return {
             id: event._id || `fallback-${index}`,
             name: event.eventName || event.name || event.venueName || `Event ${index + 1}`,
-            // client: event.userEmail || event.clientEmail || event.client || "Unknown Client",
+            client: event.userEmail || event.clientEmail || event.client || "Unknown Client",
             date: formatDate(event.bookeddate || event.eventDate || event.date),
             status: event.status ? event.status.charAt(0).toUpperCase() + event.status.slice(1) : "Unknown",
             venueId: event.venueId || event.venue_id || null,
             rawDate: event.bookeddate || event.eventDate || event.date,
           }
         })
-      console.log("Processed filtered events:", filteredEvents) // Debug log
+        .sort((a, b) => {
+          // Sort by date (earliest first)
+          const dateA = new Date(a.rawDate || 0)
+          const dateB = new Date(b.rawDate || 0)
+          return dateA.getTime() - dateB.getTime()
+        })
+
+      return allEvents
+    } else {
+      const filteredEvents = upcomingEvents
+        .filter((event) => {
+          const eventVenueId = event.venueId || event.venue_id
+          const eventDate = event.bookeddate || event.eventDate || event.date
+          console.log("Event venue ID:", eventVenueId, "Selected venue:", selectedVenue)
+          return eventVenueId === selectedVenue && isTodayOrFuture(eventDate)
+        })
+        .map((event, index) => {
+          console.log("Processing filtered event:", event)
+          return {
+            id: event._id || `fallback-${index}`,
+            name: event.eventName || event.name || event.venueName || `Event ${index + 1}`,
+            client: event.userEmail || event.clientEmail || event.client || "Unknown Client",
+            date: formatDate(event.bookeddate || event.eventDate || event.date),
+            status: event.status ? event.status.charAt(0).toUpperCase() + event.status.slice(1) : "Unknown",
+            venueId: event.venueId || event.venue_id || null,
+            rawDate: event.bookeddate || event.eventDate || event.date,
+          }
+        })
+        .sort((a, b) => {
+          // Sort by date (earliest first)
+          const dateA = new Date(a.rawDate || 0)
+          const dateB = new Date(b.rawDate || 0)
+          return dateA.getTime() - dateB.getTime()
+        })
+
+      console.log("Processed filtered events:", filteredEvents)
       return filteredEvents
     }
   }
+
+ 
+  useEffect(() => {
+    setShowAllEvents(false)
+  }, [selectedVenue])
 
   const currentVenueData = {
     name:
       selectedVenue === "whole-auditorium"
         ? "Whole Auditorium"
         : venues.find((v) => v._id === selectedVenue)?.name || "Unknown Venue",
-    totalBookings: selectedVenue === "whole-auditorium" ? 128 : 0, // You can update this with real data
-    earnings: selectedVenue === "whole-auditorium" ? { monthly: 356000, yearly: 4250000 } : { monthly: 0, yearly: 0 }, // You can update this with real data
+    totalBookings: selectedVenue === "whole-auditorium" ? 128 : 0,
+    earnings: selectedVenue === "whole-auditorium" ? { monthly: 356000, yearly: 4250000 } : { monthly: 0, yearly: 0 },
     upcomingEvents: getFilteredEvents(),
   }
+
+ 
+  const eventsToDisplay = showAllEvents ? currentVenueData.upcomingEvents : currentVenueData.upcomingEvents.slice(0, 4)
+
+  const hasMoreEvents = currentVenueData.upcomingEvents.length > 4
 
   console.log("Current venue data:", currentVenueData)
   console.log("Selected venue:", selectedVenue)
@@ -375,9 +411,9 @@ const DashboardOverview = () => {
         {/* Upcoming Events Content */}
         {activeSection === "upcoming" && (
           <div className="p-4 sm:p-6">
-            {currentVenueData.upcomingEvents.length > 0 ? (
+            {eventsToDisplay.length > 0 ? (
               <div className="space-y-4">
-                {currentVenueData.upcomingEvents.map((event) => (
+                {eventsToDisplay.map((event) => (
                   <div
                     key={event.id}
                     className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-gray-100 pb-4 last:border-b-0 last:pb-0"
@@ -401,7 +437,6 @@ const DashboardOverview = () => {
                       </div>
                       <div>
                         <h4 className="font-medium text-gray-800">{event.name}</h4>
-                        {/* <p className="text-sm text-gray-500">Client: {event.client}</p> */}
                         {selectedVenue === "whole-auditorium" && event.venueId && (
                           <p className="text-xs text-gray-400">
                             Venue: {venues.find((v) => v._id === event.venueId)?.name || "Unknown Venue"}
@@ -427,6 +462,44 @@ const DashboardOverview = () => {
                     </div>
                   </div>
                 ))}
+
+                {/* Show More/Show Less Button */}
+                {hasMoreEvents && (
+                  <div className="pt-4 border-t border-gray-100">
+                    <button
+                      onClick={() => setShowAllEvents(!showAllEvents)}
+                      className="w-full sm:w-auto mx-auto flex items-center justify-center px-6 py-3 text-sm font-medium text-[#ED695A] bg-[#ED695A] bg-opacity-10 hover:bg-opacity-20 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#ED695A] focus:ring-opacity-50"
+                    >
+                      {showAllEvents ? (
+                        <>
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-4 w-4 mr-2"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                          </svg>
+                          Show Less
+                        </>
+                      ) : (
+                        <>
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-4 w-4 mr-2"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                          Show More ({currentVenueData.upcomingEvents.length - 4} more events)
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="text-center py-8">
