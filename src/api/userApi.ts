@@ -47,6 +47,12 @@ export const addVenueAPI=async(formData:FormData)=>{
 
 export const checkUserExists=async(email:string)=>{
 
+  console.log('reached api',email)
+
+  const response=await api.post('/userexist',{email})
+
+  return response
+
 }
 
 
@@ -61,6 +67,13 @@ export const existingAllVenues = async (id: string) => {
   return response
 }
 
+export const userDetails = async (email: string) => {
+  const response = await api.get('/userDetails', {
+    params: { email },
+  });
+
+  return response;
+};
 
 export const existingBookings=async(id:string)=>{
 

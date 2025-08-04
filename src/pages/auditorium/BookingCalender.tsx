@@ -1,13 +1,28 @@
+"use client"
+
 import type React from "react"
 import { useState, useRef, useEffect } from "react"
-import { ChevronLeft, ChevronRight, X, Eye, EyeOff, Mail, User, Lock } from "lucide-react"
+import {
+  ChevronLeft,
+  ChevronRight,
+  X,
+  Eye,
+  EyeOff,
+  Mail,
+  User,
+  Lock,
+  Clock,
+  MapPin,
+  CreditCard,
+  Calendar,
+  Building2,
+} from "lucide-react"
 import Header from "../../component/user/Header"
 import Sidebar from "../../component/auditorium/Sidebar"
 import { useNavigate } from "react-router-dom"
-import { existingAllVenues, existingBookings, userSingUpRequest } from "../../api/userApi"
+import { checkUserExists, existingAllVenues, existingBookings, userSingUpRequest } from "../../api/userApi"
 import { useSelector } from "react-redux"
 import type { RootState } from "../../redux/store"
-
 
 const signupUser = async (userData: any) => {
   try {
@@ -25,11 +40,13 @@ const signupUser = async (userData: any) => {
   }
 }
 
+
 interface TimeSlot {
-  _id?: string
-  time: string
-  price: number
-  isBooked?: boolean
+  id: string
+  label: string
+  startTime: string
+  endTime: string
+  status: "available" | "booked"
 }
 
 interface Venue {
@@ -42,6 +59,11 @@ interface Venue {
   phone: string
   email: string
   audiUserId: string
+  totalamount: string
+  advAmnt: string
+  images: string[]
+  amenities: string[]
+  cities: string[]
 }
 
 interface Booking {
@@ -51,7 +73,7 @@ interface Booking {
   auditoriumId: string
   amount: string
   advanceAmount: string
-  bookeddate: string 
+  bookeddate: string
   timeSlot: string
   paymentStatus: string
   status: string
@@ -67,14 +89,12 @@ interface TooltipData {
 }
 
 const VenueBookingPage: React.FC = () => {
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date())
-  const [selectedVenue, setSelectedVenue] = useState<string>("all")
-  const [currentMonth, setCurrentMonth] = useState<Date>(new Date())
-  const [tooltip, setTooltip] = useState<TooltipData | null>(null)
-  const [isAnimating, setIsAnimating] = useState(false)
-  const [animationDirection, setAnimationDirection] = useState<"left" | "right">("right")
+  // Time slot selection states
+  const [showTimeSlotsModal, setShowTimeSlotsModal] = useState(false)
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState<TimeSlot | null>(null)
+  const [selectedDateForSlots, setSelectedDateForSlots] = useState<Date | null>(null)
 
-  
+  // User authentication states
   const [showEmailModal, setShowEmailModal] = useState(false)
   const [showSignupModal, setShowSignupModal] = useState(false)
   const [email, setEmail] = useState("")
@@ -88,10 +108,23 @@ const VenueBookingPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
- 
+  // Booking confirmation states
+  const [showBookingModal, setShowBookingModal] = useState(false)
+  const [userAddress, setUserAddress] = useState("")
+  const [confirmedUserEmail, setConfirmedUserEmail] = useState("")
+  const [isSubmittingBooking, setIsSubmittingBooking] = useState(false)
+
+  // Main component states
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date())
+  const [selectedVenue, setSelectedVenue] = useState<string>("all")
+  const [currentMonth, setCurrentMonth] = useState<Date>(new Date())
+  const [tooltip, setTooltip] = useState<TooltipData | null>(null)
+  const [isAnimating, setIsAnimating] = useState(false)
+  const [animationDirection, setAnimationDirection] = useState<"left" | "right">("right")
   const [venues, setVenues] = useState<Venue[]>([])
   const [bookings, setBookings] = useState<Booking[]>([])
   const [loading, setLoading] = useState(true)
+  const [emailError, setEmailError] = useState<string>("")
 
   const navigate = useNavigate()
   const { currentUser } = useSelector((state: RootState) => state.auth)
@@ -105,10 +138,6 @@ const VenueBookingPage: React.FC = () => {
         console.log("Venues response:", response.data)
         if (response.data && Array.isArray(response.data)) {
           setVenues(response.data)
-          console.log(
-            "Venues set:",
-            response.data.map((v) => ({ id: v._id, name: v.name })),
-          )
         }
       }
     } catch (error) {
@@ -122,8 +151,6 @@ const VenueBookingPage: React.FC = () => {
         const response = await existingBookings(currentUser.id)
         if (response.data && Array.isArray(response.data)) {
           setBookings(response.data)
-          response.data.forEach((booking) => {
-          })
         }
       }
     } catch (error) {
@@ -138,11 +165,10 @@ const VenueBookingPage: React.FC = () => {
     fetchAllBookings()
   }, [currentUser])
 
-  
   const getBookingsForDate = (date: number, venueId?: string, targetMonth?: Date): Booking[] => {
     const monthToUse = targetMonth || currentMonth
     const targetDate = new Date(monthToUse.getFullYear(), monthToUse.getMonth(), date)
-    const dateString = targetDate.toISOString().split("T")[0] 
+    const dateString = targetDate.toISOString().split("T")[0]
 
     return bookings.filter((booking) => {
       const matchesDate = booking.bookeddate === dateString
@@ -151,22 +177,51 @@ const VenueBookingPage: React.FC = () => {
     })
   }
 
-  
+  const getTimeSlotsWithStatus = (venueId: string, date: Date): TimeSlot[] => {
+    const venue = venues.find((v) => v._id === venueId)
+    if (!venue || !venue.timeSlots) {
+      return []
+    }
+
+    const dateString = date.toISOString().split("T")[0]
+    const dateBookings = bookings.filter(
+      (booking) => booking.bookeddate === dateString && booking.venueId === venueId && booking.status !== "cancelled",
+    )
+
+    return venue.timeSlots.map((slot) => {
+      const isSlotBooked = dateBookings.some(
+        (booking) =>
+          booking.timeSlot.toLowerCase() === slot.id.toLowerCase() ||
+          booking.timeSlot.toLowerCase() === slot.label.toLowerCase(),
+      )
+
+      return {
+        ...slot,
+        status: isSlotBooked ? "booked" : "available",
+      }
+    })
+  }
+
   const getDateStatus = (date: number, venueId?: string, targetMonth?: Date): "available" | "booked" | "partial" => {
-    const dayBookings = getBookingsForDate(date, venueId, targetMonth)
-
-    if (dayBookings.length === 0) return "available"
-
     if (venueId === "all") {
+      const dayBookings = getBookingsForDate(date, venueId, targetMonth)
       return dayBookings.length > 0 ? "partial" : "available"
     } else {
-      // For specific venue, check if all time slots are booked
       const venue = venues.find((v) => v._id === venueId)
       if (!venue) return "available"
 
-      const totalSlots = venue.timeSlots?.length || 4 // Default to 4 if no timeSlots
-      const bookedSlots = dayBookings.length
+      const monthToUse = targetMonth || currentMonth
+      const targetDate = new Date(monthToUse.getFullYear(), monthToUse.getMonth(), date)
+      const dateString = targetDate.toISOString().split("T")[0]
 
+      const dateBookings = bookings.filter(
+        (booking) => booking.bookeddate === dateString && booking.venueId === venueId && booking.status !== "cancelled",
+      )
+
+      const totalSlots = venue.timeSlots?.length || 0
+      const bookedSlots = dateBookings.length
+
+      if (totalSlots === 0) return "available"
       if (bookedSlots >= totalSlots) return "booked"
       if (bookedSlots > 0) return "partial"
       return "available"
@@ -205,22 +260,31 @@ const VenueBookingPage: React.FC = () => {
 
   const handleDateClick = (date: number) => {
     const status = getDateStatus(date, selectedVenue)
-    if (isSelectable(status)) {
+    if (isSelectable(status) && selectedVenue !== "all") {
       const newDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), date)
       setSelectedDate(newDate)
+      setSelectedDateForSlots(newDate)
+      setShowTimeSlotsModal(true)
+    } else if (selectedVenue === "all") {
+      alert("Please select a specific venue to view available time slots.")
+    }
+  }
+
+  const handleTimeSlotSelect = (timeSlot: TimeSlot) => {
+    if (timeSlot.status === "available") {
+      setSelectedTimeSlot(timeSlot)
+      setShowTimeSlotsModal(false)
       setShowEmailModal(true)
     }
   }
 
   const handleEditBooking = (bookingId: string) => {
     console.log(`Edit booking: ${bookingId}`)
-    // Implement edit booking logic
     setTooltip(null)
   }
 
   const handleCancelBooking = (bookingId: string) => {
     console.log(`Cancel booking: ${bookingId}`)
-    // Implement cancel booking logic
     setTooltip(null)
   }
 
@@ -229,10 +293,8 @@ const VenueBookingPage: React.FC = () => {
       window.clearTimeout(hideTimeoutRef.current)
       hideTimeoutRef.current = null
     }
-
     const status = getDateStatus(date, selectedVenue, currentMonth)
     const dayBookings = getBookingsForDate(date, selectedVenue, currentMonth)
-
     if (status !== "available" || dayBookings.length > 0) {
       const rect = event.currentTarget.getBoundingClientRect()
       setTooltip({
@@ -262,12 +324,65 @@ const VenueBookingPage: React.FC = () => {
     setTooltip(null)
   }
 
-  const handleEmailSubmit = () => {
-    if (email.trim()) {
-      // Check if user exists (you can implement this check)
-      setSignupData((prev) => ({ ...prev, email }))
-      setShowEmailModal(false)
-      setShowSignupModal(true)
+ 
+  const handleEmailSubmit = async () => {
+  if (email.trim()) {
+   try {
+  const response = await checkUserExists(email);
+
+  if (response.data.success) {
+  
+    setConfirmedUserEmail(email);
+    setShowEmailModal(false);
+    setShowBookingModal(true);
+  } else {
+    
+    setEmailError(response.data.message || "User not found.");
+  }
+} catch (error) {
+  console.error("Unexpected error:", error);
+  setEmailError("Something went wrong. Please try again.");
+}
+  } else {
+    setEmailError("Please enter a valid email.")
+  }
+}
+
+  
+  const handleSignupSubmit = async () => {
+    if (signupData.password !== signupData.confirmPassword) {
+      alert("Passwords don't match!")
+      return
+    }
+
+    const { firstName, lastName, email, password } = signupData
+    if (firstName && lastName && email && password) {
+      try {
+        const response = await userSingUpRequest(signupData)
+        console.log("Signup response:", response)
+
+        if (response.success === true || response.data) {
+          console.log("User registered successfully, going to booking modal")
+          setConfirmedUserEmail(email)
+          setShowSignupModal(false)
+          setShowBookingModal(true)
+          // Clear signup data
+          setSignupData({
+            firstName: "",
+            lastName: "",
+            email: "",
+            password: "",
+            confirmPassword: "",
+          })
+        } else {
+          alert(response.message || "Signup failed. Please try again.")
+        }
+      } catch (error) {
+        console.error("Signup error:", error)
+        alert("An error occurred during signup. Please try again.")
+      }
+    } else {
+      alert("Please fill all fields!")
     }
   }
 
@@ -303,35 +418,43 @@ const VenueBookingPage: React.FC = () => {
     }, 300)
   }
 
-  const handleSignupSubmit = async () => {
-  if (signupData.password !== signupData.confirmPassword) {
-    alert("Passwords don't match!")
-    return
-  }
-
-  const { firstName, lastName, email, password } = signupData
-
-  if (firstName && lastName && email && password) {
-    try {
-      const response = await userSingUpRequest(signupData) 
-
-      if (response.success) {
-        console.log("User registered successfully:", response)
-
-        
-        navigate("/bookings", { state: { email } })
-      } else {
-        alert(response.message || "Signup failed. Please try again.")
-      }
-    } catch (error) {
-      console.error("Signup error:", error)
-      alert("An error occurred during signup. Please try again.")
+  
+  const handleBookingConfirm = async () => {
+    if (!userAddress.trim()) {
+      alert("Please enter your address")
+      return
     }
-  } else {
-    alert("Please fill all fields!")
-  }
-}
 
+    setIsSubmittingBooking(true)
+
+    const currentVenue = getCurrentVenue()
+    const bookingData = {
+      userEmail: confirmedUserEmail,
+      venueId: selectedVenue,
+      venueName: currentVenue?.name,
+      selectedDate: selectedDate.toISOString().split("T")[0],
+      selectedTimeSlot: selectedTimeSlot?.label,
+      timeSlotId: selectedTimeSlot?.id,
+      totalAmount: currentVenue?.totalamount,
+      advanceAmount: currentVenue?.advAmnt,
+      address: userAddress,
+    }
+
+    try {
+      console.log("Submitting booking data:", bookingData)
+
+      
+      await new Promise((resolve) => setTimeout(resolve, 2000))
+
+      // Navigate to payment or success page
+      navigate("/auditorium/payment", { state: bookingData })
+    } catch (error) {
+      console.error("Booking submission error:", error)
+      alert("Failed to create booking. Please try again.")
+    } finally {
+      setIsSubmittingBooking(false)
+    }
+  }
 
   const renderCalendar = () => {
     const daysInMonth = getDaysInMonth(currentMonth)
@@ -344,12 +467,6 @@ const VenueBookingPage: React.FC = () => {
 
     for (let day = 1; day <= daysInMonth; day++) {
       const status = getDateStatus(day, selectedVenue, currentMonth)
-      const dayBookings = getBookingsForDate(day, selectedVenue, currentMonth)
-
-      // Debug logging
-      if (dayBookings.length > 0) {
-        console.log(`Day ${day}: ${dayBookings.length} bookings, status: ${status}`)
-      }
 
       const isSelected =
         selectedDate.getDate() === day &&
@@ -389,7 +506,8 @@ const VenueBookingPage: React.FC = () => {
     }
 
     for (let day = 1; day <= miniDaysInMonth; day++) {
-      const status = getDateStatus(day, selectedVenue, miniDate) // Pass miniDate here
+      const status = getDateStatus(day, selectedVenue, miniDate)
+
       const getMiniStatusColor = (status: string) => {
         switch (status) {
           case "available":
@@ -544,11 +662,22 @@ const VenueBookingPage: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 {getCurrentVenue()?.timeSlots.map((slot, index) => (
                   <div
-                    key={slot._id || index}
+                    key={slot.id || index}
                     className="p-4 rounded-md shadow-sm border border-gray-200 bg-white hover:shadow-md transition-all duration-300 transform hover:-translate-y-1"
                   >
-                    <p className="font-medium text-sm text-gray-800">{slot.time}</p>
-                    <p className="text-xs text-gray-600">Price: ₹{slot.price}</p>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium text-gray-800">{slot.label}</span>
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          slot.status === "available" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                        }`}
+                      >
+                        {slot.status === "available" ? "Available" : "Booked"}
+                      </span>
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      {slot.startTime} - {slot.endTime}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -576,191 +705,314 @@ const VenueBookingPage: React.FC = () => {
         </main>
       </div>
 
-      {tooltip && (
-        <div
-          ref={tooltipRef}
-          onMouseEnter={handleTooltipMouseEnter}
-          onMouseLeave={handleTooltipMouseLeave}
-          className="fixed z-50 bg-white rounded-lg shadow-2xl border border-gray-200 max-w-md animate-fade-in"
-          style={{
-            left: tooltip.x - 200,
-            top: tooltip.y - 220,
-            transform: "translateX(-50%)",
-          }}
-        >
-          <div className="p-4">
-            <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-800">
-                {new Date(currentMonth.getFullYear(), currentMonth.getMonth(), tooltip.date).toLocaleDateString(
-                  "en-US",
-                  {
+      {/* Time Slots Modal */}
+      {showTimeSlotsModal && selectedDateForSlots && selectedVenue !== "all" && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50 animate-fade-in">
+          <div className="bg-white rounded-lg shadow-lg max-w-2xl w-full mx-4 p-6 border border-gray-200 animate-scale-in max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h3 className="text-xl font-semibold text-gray-800">Select Time Slot</h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  {selectedDateForSlots.toLocaleDateString("en-US", {
                     weekday: "long",
+                    year: "numeric",
                     month: "long",
                     day: "numeric",
-                  },
-                )}
-              </h3>
-              <span
-                className={`px-3 py-1 rounded-full text-xs font-medium ${
-                  tooltip.status === "available"
-                    ? "bg-green-100 text-green-800"
-                    : tooltip.status === "booked"
-                      ? "bg-red-100 text-red-800"
-                      : "bg-yellow-100 text-yellow-800"
-                }`}
-              >
-                {getStatusText(tooltip.status)}
-              </span>
-            </div>
-
-            {tooltip.bookingDetails && tooltip.bookingDetails.length > 0 ? (
-              <div className="space-y-4 max-h-80 overflow-y-auto">
-                {tooltip.bookingDetails.map((booking, index) => (
-                  <div key={booking._id} className="bg-gray-50 rounded-lg p-4 border border-gray-100">
-                    <div className="grid grid-cols-2 gap-3 mb-4">
-                      <div>
-                        <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Venue</label>
-                        <p className="text-sm font-semibold text-gray-900 mt-1">{booking.venueName}</p>
-                      </div>
-                      <div>
-                        <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Time Slot</label>
-                        <p className="text-sm font-semibold text-gray-900 mt-1 capitalize">{booking.timeSlot}</p>
-                      </div>
-                      <div>
-                        <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Customer</label>
-                        <p className="text-sm text-gray-700 mt-1">{booking.userEmail}</p>
-                      </div>
-                      <div>
-                        <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Amount</label>
-                        <p className="text-sm font-semibold text-gray-900 mt-1">₹{booking.amount}</p>
-                      </div>
-                      <div>
-                        <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Status</label>
-                        <span
-                          className={`inline-block px-2 py-1 rounded-full text-xs font-medium mt-1 ${
-                            booking.status === "confirmed"
-                              ? "bg-green-100 text-green-800"
-                              : booking.status === "pending"
-                                ? "bg-yellow-100 text-yellow-800"
-                                : "bg-red-100 text-red-800"
-                          }`}
-                        >
-                          {booking.status}
-                        </span>
-                      </div>
-                      <div>
-                        <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Payment</label>
-                        <span
-                          className={`inline-block px-2 py-1 rounded-full text-xs font-medium mt-1 ${
-                            booking.paymentStatus === "completed"
-                              ? "bg-green-100 text-green-800"
-                              : "bg-yellow-100 text-yellow-800"
-                          }`}
-                        >
-                          {booking.paymentStatus}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2 pt-3 border-t border-gray-200">
-                      <button
-                        onClick={() => handleEditBooking(booking._id)}
-                        className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors duration-200 flex items-center justify-center gap-2"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                          />
-                        </svg>
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleCancelBooking(booking._id)}
-                        className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md text-sm font-medium transition-colors duration-200 flex items-center justify-center gap-2"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                          />
-                        </svg>
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  })}{" "}
+                  - {getCurrentVenue()?.name}
+                </p>
               </div>
-            ) : (
-              <div className="text-center py-8">
-                <div className="w-16 h-16 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center">
-                  <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-                <p className="text-gray-600 text-sm">This date is available for booking</p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Email Modal */}
-      {showEmailModal && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50 animate-fade-in">
-          <div className="bg-white rounded-lg shadow-lg max-w-md w-full mx-4 p-6 border border-gray-200 animate-scale-in">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-semibold text-gray-800">Enter Your Email</h3>
-              <button onClick={() => setShowEmailModal(false)} className="p-1 hover:bg-gray-100 rounded-full">
+              <button onClick={() => setShowTimeSlotsModal(false)} className="p-1 hover:bg-gray-100 rounded-full">
                 <X className="h-4 w-4 text-gray-600" />
               </button>
             </div>
-            <p className="mb-4 text-gray-600 text-sm">
-              Please enter your email to proceed with the booking for {selectedDate.toLocaleDateString()}
-            </p>
-            <div className="relative mb-4">
-              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
-                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 text-sm"
-              />
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {getCurrentVenue() &&
+                getTimeSlotsWithStatus(selectedVenue, selectedDateForSlots).map((slot, index) => {
+                  const isAvailable = slot.status === "available"
+                  return (
+                    <div
+                      key={slot.id || index}
+                      onClick={() => isAvailable && handleTimeSlotSelect(slot)}
+                      className={`
+                      p-6 rounded-lg border-2 transition-all duration-300 cursor-pointer transform hover:scale-105
+                      ${
+                        isAvailable
+                          ? "border-green-200 bg-green-50 hover:border-green-400 hover:bg-green-100 hover:shadow-md"
+                          : "border-red-200 bg-red-50 cursor-not-allowed opacity-60"
+                      }
+                    `}
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-5 w-5 text-gray-600" />
+                          <span className="font-bold text-lg text-gray-800">{slot.label}</span>
+                        </div>
+                        <span
+                          className={`
+                        px-3 py-1 rounded-full text-sm font-medium
+                        ${isAvailable ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}
+                      `}
+                        >
+                          {isAvailable ? "Available" : "Booked"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center mb-3">
+                        <span className="text-gray-600 font-medium">
+                          {slot.startTime} - {slot.endTime}
+                        </span>
+                      </div>
+                      {isAvailable && (
+                        <div className="text-center">
+                          <span className="text-sm text-green-600 font-medium bg-green-100 px-3 py-1 rounded-full">
+                            Click to select
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
             </div>
-            <div className="text-center mb-4">
-              <p className="text-sm text-gray-600">New user?</p>
-              <button
-                onClick={() => {
-                  setShowEmailModal(false)
-                  setShowSignupModal(true)
-                }}
-                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-              >
-                Sign up here
-              </button>
-            </div>
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={() => setShowEmailModal(false)}
-                className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-all duration-300 text-gray-700 text-sm"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleEmailSubmit}
-                className="px-4 py-2 bg-gray-900 text-white rounded-md hover:bg-gray-800 transition-all duration-300 text-sm"
-              >
-                Continue
-              </button>
-            </div>
+
+            {getCurrentVenue() &&
+              getTimeSlotsWithStatus(selectedVenue, selectedDateForSlots).every((slot) => slot.status === "booked") && (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
+                    <X className="w-8 h-8 text-red-600" />
+                  </div>
+                  <p className="text-gray-600 text-sm">All time slots are booked for this date</p>
+                </div>
+              )}
           </div>
         </div>
       )}
+
+      {/* Clean Classic Booking Confirmation Modal */}
+     {showBookingModal && (
+  <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50 animate-fade-in">
+    <div className="bg-white rounded-lg shadow-lg max-w-lg w-full mx-4 overflow-hidden animate-scale-in">
+      {/* Header */}
+      <div className="bg-gray-100 px-6 py-4 border-b border-gray-200">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-800">Confirm Your Booking</h2>
+            <p className="text-sm text-gray-600 mt-1">Please review your booking details</p>
+          </div>
+          <button
+            onClick={() => setShowBookingModal(false)}
+            className="text-gray-500 hover:text-gray-700 transition-colors p-1 rounded-full hover:bg-gray-200"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+      </div>
+
+      <div className="p-6">
+        {/* Booking Summary Card */}
+        <div className="bg-white rounded-md p-5 mb-5 border border-gray-100 shadow-sm">
+          <h3 className="text-base font-medium text-gray-800 mb-3 flex items-center">
+            <Building2 className="h-4 w-4 mr-2 text-gray-500" />
+            Booking Details
+          </h3>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <div className="flex items-center">
+                <Mail className="h-4 w-4 text-gray-400 mr-2" />
+                <div>
+                  <p className="text-xs text-gray-500 uppercase tracking-wide">Email</p>
+                  <p className="text-sm font-medium text-gray-800">{confirmedUserEmail}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center">
+                <Building2 className="h-4 w-4 text-gray-400 mr-2" />
+                <div>
+                  <p className="text-xs text-gray-500 uppercase tracking-wide">Venue</p>
+                  <p className="text-sm font-medium text-gray-800">{getCurrentVenue()?.name}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center">
+                <Calendar className="h-4 w-4 text-gray-400 mr-2" />
+                <div>
+                  <p className="text-xs text-gray-500 uppercase tracking-wide">Date</p>
+                  <p className="text-sm font-medium text-gray-800">
+                    {selectedDate.toLocaleDateString("en-US", {
+                      weekday: "long",
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center">
+                <Clock className="h-4 w-4 text-gray-400 mr-2" />
+                <div>
+                  <p className="text-xs text-gray-500 uppercase tracking-wide">Time Slot</p>
+                  <p className="text-sm font-medium text-gray-800 capitalize">{selectedTimeSlot?.label}</p>
+                  <p className="text-xs text-gray-600">
+                    {selectedTimeSlot?.startTime} - {selectedTimeSlot?.endTime}
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 rounded-md p-3 border border-gray-100">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-xs text-gray-600">Total Amount</span>
+                  <span className="text-base font-semibold text-gray-800">₹{getCurrentVenue()?.totalamount}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-gray-600">Advance Amount</span>
+                  <span className="text-base font-semibold text-green-600">₹{getCurrentVenue()?.advAmnt}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Address Section */}
+        <div className="mb-5">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            <MapPin className="inline h-4 w-4 mr-1 text-gray-500" />
+            Complete Address
+          </label>
+          <textarea
+            value={userAddress}
+            onChange={(e) => setUserAddress(e.target.value)}
+            placeholder="Enter your complete address including city, state, and postal code"
+            rows={3}
+            className="w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-600 text-sm resize-none transition-all duration-200 placeholder-gray-400"
+            required
+          />
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex flex-col sm:flex-row gap-2 pt-4 border-t border-gray-100">
+          <button
+            onClick={() => setShowBookingModal(false)}
+            className="flex-1 px-4 py-2 border border-gray-200 rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-800 transition-all duration-200 text-sm font-medium"
+            disabled={isSubmittingBooking}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleBookingConfirm}
+            disabled={isSubmittingBooking || !userAddress.trim()}
+            className="flex-1 px-4 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-900 transition-all duration-200 text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isSubmittingBooking ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                Processing...
+              </>
+            ) : (
+              <>
+                <CreditCard className="h-4 w-4" />
+                Proceed to Payment
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
+      {/* Email Modal */}
+     {showEmailModal && (
+      <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50 animate-fade-in">
+        <div className="bg-white rounded-lg shadow-lg max-w-md w-full mx-4 p-6 border border-gray-200 animate-scale-in">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-semibold text-gray-800">Enter Your Email</h3>
+            <button
+              onClick={() => {
+                setShowEmailModal(false)
+                setEmailError("") // ✅ clear error when modal closes
+              }}
+              className="p-1 hover:bg-gray-100 rounded-full"
+            >
+              <X className="h-4 w-4 text-gray-600" />
+            </button>
+          </div>
+
+          <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+            <p className="text-sm text-gray-600 mb-2">Booking Details:</p>
+            <div className="space-y-1">
+              <p className="text-sm">
+                <span className="font-medium">Date:</span> {selectedDate.toLocaleDateString()}
+              </p>
+              <p className="text-sm">
+                <span className="font-medium">Time Slot:</span> {selectedTimeSlot?.label}
+              </p>
+              <p className="text-sm">
+                <span className="font-medium">Time:</span> {selectedTimeSlot?.startTime} - {selectedTimeSlot?.endTime}
+              </p>
+              <p className="text-sm">
+                <span className="font-medium">Venue:</span> {getCurrentVenue()?.name}
+              </p>
+            </div>
+          </div>
+
+          <p className="mb-4 text-gray-600 text-sm">Please enter your email to proceed with the booking</p>
+
+          <div className="relative mb-2">
+            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value)
+                setEmailError("") // ✅ clear error when typing
+              }}
+              placeholder="Enter your email"
+              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 text-sm"
+            />
+            {emailError && (
+              <p className="text-red-600 text-sm mt-1 px-1">{emailError}</p>
+            )}
+          </div>
+
+          <div className="text-center mb-4">
+            <p className="text-sm text-gray-600">New user?</p>
+            <button
+              onClick={() => {
+                setShowEmailModal(false)
+                setEmailError("")
+                setShowSignupModal(true)
+              }}
+              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+            >
+              Sign up here
+            </button>
+          </div>
+
+          <div className="flex justify-end space-x-3">
+            <button
+              onClick={() => {
+                setShowEmailModal(false)
+                setEmailError("") // ✅ clear error
+              }}
+              className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-all duration-300 text-gray-700 text-sm"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleEmailSubmit}
+              className="px-4 py-2 bg-gray-900 text-white rounded-md hover:bg-gray-800 transition-all duration-300 text-sm"
+            >
+              Continue
+            </button>
+          </div>
+        </div>
+      </div>
+      )}
+
 
       {/* Signup Modal */}
       {showSignupModal && (
@@ -771,6 +1023,23 @@ const VenueBookingPage: React.FC = () => {
               <button onClick={() => setShowSignupModal(false)} className="p-1 hover:bg-gray-100 rounded-full">
                 <X className="h-4 w-4 text-gray-600" />
               </button>
+            </div>
+            <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+              <p className="text-sm text-gray-600 mb-2">Booking Details:</p>
+              <div className="space-y-1">
+                <p className="text-sm">
+                  <span className="font-medium">Date:</span> {selectedDate.toLocaleDateString()}
+                </p>
+                <p className="text-sm">
+                  <span className="font-medium">Time Slot:</span> {selectedTimeSlot?.label}
+                </p>
+                <p className="text-sm">
+                  <span className="font-medium">Time:</span> {selectedTimeSlot?.startTime} - {selectedTimeSlot?.endTime}
+                </p>
+                <p className="text-sm">
+                  <span className="font-medium">Venue:</span> {getCurrentVenue()?.name}
+                </p>
+              </div>
             </div>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
@@ -854,6 +1123,138 @@ const VenueBookingPage: React.FC = () => {
                 Create Account & Continue
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tooltip */}
+      {tooltip && (
+        <div
+          ref={tooltipRef}
+          onMouseEnter={handleTooltipMouseEnter}
+          onMouseLeave={handleTooltipMouseLeave}
+          className="fixed z-50 bg-white rounded-lg shadow-2xl border border-gray-200 max-w-md animate-fade-in"
+          style={{
+            left: tooltip.x - 200,
+            top: tooltip.y - 220,
+            transform: "translateX(-50%)",
+          }}
+        >
+          <div className="p-4">
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-800">
+                {new Date(currentMonth.getFullYear(), currentMonth.getMonth(), tooltip.date).toLocaleDateString(
+                  "en-US",
+                  {
+                    weekday: "long",
+                    month: "long",
+                    day: "numeric",
+                  },
+                )}
+              </h3>
+              <span
+                className={`px-3 py-1 rounded-full text-xs font-medium ${
+                  tooltip.status === "available"
+                    ? "bg-green-100 text-green-800"
+                    : tooltip.status === "booked"
+                      ? "bg-red-100 text-red-800"
+                      : "bg-yellow-100 text-yellow-800"
+                }`}
+              >
+                {getStatusText(tooltip.status)}
+              </span>
+            </div>
+            {tooltip.bookingDetails && tooltip.bookingDetails.length > 0 ? (
+              <div className="space-y-4 max-h-80 overflow-y-auto">
+                {tooltip.bookingDetails.map((booking, index) => (
+                  <div key={booking._id} className="bg-gray-50 rounded-lg p-4 border border-gray-100">
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      <div>
+                        <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Venue</label>
+                        <p className="text-sm font-semibold text-gray-900 mt-1">{booking.venueName}</p>
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Time Slot</label>
+                        <p className="text-sm font-semibold text-gray-900 mt-1 capitalize">{booking.timeSlot}</p>
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Customer</label>
+                        <p className="text-sm text-gray-700 mt-1">{booking.userEmail}</p>
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Amount</label>
+                        <p className="text-sm font-semibold text-gray-900 mt-1">₹{booking.amount}</p>
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Status</label>
+                        <span
+                          className={`inline-block px-2 py-1 rounded-full text-xs font-medium mt-1 ${
+                            booking.status === "confirmed"
+                              ? "bg-green-100 text-green-800"
+                              : booking.status === "pending"
+                                ? "bg-yellow-100 text-yellow-800"
+                                : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          {booking.status}
+                        </span>
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Payment</label>
+                        <span
+                          className={`inline-block px-2 py-1 rounded-full text-xs font-medium mt-1 ${
+                            booking.paymentStatus === "completed"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-yellow-100 text-yellow-800"
+                          }`}
+                        >
+                          {booking.paymentStatus}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 pt-3 border-t border-gray-200">
+                      <button
+                        onClick={() => handleEditBooking(booking._id)}
+                        className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors duration-200 flex items-center justify-center gap-2"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                          />
+                        </svg>
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleCancelBooking(booking._id)}
+                        className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md text-sm font-medium transition-colors duration-200 flex items-center justify-center gap-2"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
+                        </svg>
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <div className="w-16 h-16 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center">
+                  <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <p className="text-gray-600 text-sm">This date is available for booking</p>
+              </div>
+            )}
           </div>
         </div>
       )}

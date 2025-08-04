@@ -1,6 +1,5 @@
 "use client"
-
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { ArrowLeft, Calendar, Check, CreditCard, Download, Landmark, Printer, Wallet } from "lucide-react"
 import { Button } from "../../component/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../../component/ui/card"
@@ -10,56 +9,87 @@ import { Input } from "../../component/ui/input"
 import { cn } from "../../component/lib/utils"
 import Header from "../../component/user/Header"
 import Sidebar from "../../component/auditorium/Sidebar"
-import { useNavigate } from "react-router-dom"
+import { useLocation, useNavigate } from "react-router-dom"
+import { userDetails } from "../../api/userApi"
+import axios from "axios" // Added for backend API call
 
 export default function PaymentDetails() {
   const [paymentStatus, setPaymentStatus] = useState<"pending" | "success">("pending")
   const [paymentType, setPaymentType] = useState<"advance" | "full">("advance")
+  const [customer, setCustomer] = useState<any>(null)
+  
+  const location = useLocation()
+  const bookingData = location.state
   const navigate = useNavigate()
 
-  const handlePayment = () => {
-    
-    setPaymentStatus("success")
+  const handlePayment = async () => {
+    try {
+      // Prepare payment data for backend
+      const paymentData = {
+        userEmail: bookingData.userEmail,
+        venueId: bookingData.venueId,
+        venueName: bookingData.venueName,
+        paidAmount: paymentType === "advance" ? bookingData.advanceAmount : bookingData.totalAmount,
+        balanceAmount: paymentType === "advance" ? 
+          parseInt(bookingData.totalAmount) - parseInt(bookingData.advanceAmount) : 0,
+        bookedDate: bookingData.selectedDate,
+        timeSlot: bookingData.selectedTimeSlot,
+        address: bookingData.address,
+        paymentType: paymentType
+      }
+
+      // Send payment data to backend
+      await axios.post("/api/payment", paymentData)
+      setPaymentStatus("success")
+    } catch (error) {
+      console.error("Payment processing failed:", error)
+      alert("Payment processing failed. Please try again.")
+    }
   }
+
+  const customerDetails = async () => {
+    try {
+      console.log(bookingData.userEmail, 'm')
+      const response = await userDetails(bookingData.userEmail)
+      console.log(response.data, 'customerDetails')
+      setCustomer(response.data)
+    } catch (error) {
+      console.error("Failed to fetch customer details:", error)
+    }
+  }
+
+  useEffect(() => {
+    console.log(bookingData, 'booking data')
+    customerDetails()
+  }, [])
 
   const handleGoBack = () => {
     navigate(-1)
   }
 
-  const bookingDetails = {
-    auditoriumName: "Grand Celebration Hall",
-    bookingDate: "May 15, 2025",
-    bookingTime: "6:00 PM - 10:00 PM",
-    eventType: "Wedding Reception",
-    capacity: "250 Guests",
-    amenities: "Sound System, Projector, Catering",
-    bookingId: "BK-2025051501",
-  }
-
   const paymentDetails = {
-    fullAmount: 25000,
-    advanceAmount: 10000,
-    tax: paymentType === "advance" ? 1000 : 2500,
-    total: paymentType === "advance" ? 11000 : 27500,
+    fullAmount: parseInt(bookingData.totalAmount),
+    advanceAmount: parseInt(bookingData.advanceAmount),
+    tax: paymentType === "advance" ? parseInt(bookingData.advanceAmount) * 0.1 : parseInt(bookingData.totalAmount) * 0.1,
+    total: paymentType === "advance" ? 
+      parseInt(bookingData.advanceAmount) + (parseInt(bookingData.advanceAmount) * 0.1) : 
+      parseInt(bookingData.totalAmount) + (parseInt(bookingData.totalAmount) * 0.1),
   }
 
   return (
     <div className="min-h-screen bg-[#FDF8F1]">
       <Header />
-
       <div className="flex">
         {/* Sidebar */}
-        <div className="w-64 shrink-0  h-[calc(100vh-64px)]  sticky top-16 hidden md:block">
+        <div className="w-64 shrink-0 h-[calc(100vh-64px)] sticky top-16 hidden md:block">
           <Sidebar />
         </div>
-
         {/* Main Content */}
         <div className="flex-1">
           <div className="p-6">
-            {/* Header with Title and Payment Type Selection */}
+           
             <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 border-b border-[#b09d94] pb-4">
               <h1 className="text-2xl font-bold text-[#78533F]">Auditorium Booking Payment</h1>
-
               <div className="mt-4 md:mt-0 flex items-center space-x-4">
                 <span className="text-sm text-[#78533F]">Payment Type:</span>
                 <div className="flex bg-amber-50 rounded-md p-1">
@@ -88,7 +118,6 @@ export default function PaymentDetails() {
                 </div>
               </div>
             </div>
-
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Left Side - Booking Details */}
               <div className="lg:col-span-2 space-y-6">
@@ -98,14 +127,13 @@ export default function PaymentDetails() {
                       <Calendar className="h-5 w-5 text-[#78533F]" />
                       <span>Booking Details</span>
                     </CardTitle>
-                    {/* Highlighted Date and Time */}
                     <CardDescription className="flex flex-col sm:flex-row sm:items-center gap-2 mt-2">
                       <span className="bg-amber-100 text-[#78533F] px-3 py-1 rounded-md font-medium inline-flex items-center">
                         <Calendar className="h-4 w-4 mr-1" />
-                        {bookingDetails.bookingDate}
+                        {bookingData.selectedDate}
                       </span>
                       <span className="bg-amber-100 text-[#78533F] px-3 py-1 rounded-md font-medium">
-                        {bookingDetails.bookingTime}
+                        {bookingData.selectedTimeSlot}
                       </span>
                     </CardDescription>
                   </CardHeader>
@@ -114,33 +142,30 @@ export default function PaymentDetails() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <h3 className="text-sm font-medium text-muted-foreground">Auditorium</h3>
-                          <p className="text-base font-semibold">{bookingDetails.auditoriumName}</p>
+                          <p className="text-base font-semibold">{bookingData.venueName}</p>
                         </div>
                         <div>
                           <h3 className="text-sm font-medium text-muted-foreground">Booking ID</h3>
-                          <p className="text-base font-semibold">{bookingDetails.bookingId}</p>
+                          <p className="text-base font-semibold">{bookingData.venueId}</p>
                         </div>
                       </div>
-
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <h3 className="text-sm font-medium text-muted-foreground">Event Type</h3>
-                          <p className="text-base">{bookingDetails.eventType}</p>
+                          <p className="text-base">Not specified</p>
                         </div>
                         <div>
                           <h3 className="text-sm font-medium text-muted-foreground">Capacity</h3>
-                          <p className="text-base">{bookingDetails.capacity}</p>
+                          <p className="text-base">Not specified</p>
                         </div>
                       </div>
-
                       <div>
                         <h3 className="text-sm font-medium text-muted-foreground">Amenities</h3>
-                        <p className="text-base">{bookingDetails.amenities}</p>
+                        <p className="text-base">Not specified</p>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
-
                 <Card className="border-[#b09d94] shadow-md bg-white">
                   <CardHeader className="bg-gradient-to-r from-[#78533F]/10 to-[#ED695A]/10 rounded-t-lg border-b border-[#b09d94]">
                     <CardTitle className="flex items-center gap-2">
@@ -152,30 +177,45 @@ export default function PaymentDetails() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="name">Full Name</Label>
-                        <Input id="name" placeholder="John Doe" className="bg-white border-[#b09d94]" />
+                        <Input 
+                          id="name" 
+                          value={customer?.ownerName || ""} 
+                          readOnly 
+                          className="bg-white border-[#b09d94]" 
+                        />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="email">Email</Label>
                         <Input
                           id="email"
                           type="email"
-                          placeholder="john@example.com"
+                          value={bookingData.userEmail}
+                          readOnly
                           className="bg-white border-[#b09d94]"
                         />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="phone">Phone Number</Label>
-                        <Input id="phone" placeholder="+1 (555) 123-4567" className="bg-white border-[#b09d94]" />
+                        <Input 
+                          id="phone" 
+                          value={customer?.phone || ""} 
+                          readOnly 
+                          className="bg-white border-[#b09d94]" 
+                        />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="address">Address</Label>
-                        <Input id="address" placeholder="123 Main St" className="bg-white border-[#b09d94]" />
+                        <Input 
+                          id="address" 
+                          value={bookingData.address} 
+                          readOnly 
+                          className="bg-white border-[#b09d94]" 
+                        />
                       </div>
                     </div>
                   </CardContent>
                 </Card>
               </div>
-
               {/* Right Side - Payment Details */}
               <div className="lg:col-span-1">
                 <Card className="border-[#b09d94] shadow-md bg-white sticky top-20">
@@ -247,7 +287,6 @@ export default function PaymentDetails() {
                             </div>
                           </RadioGroup>
                         </div>
-
                         <div className="border-t border-[#b09d94] pt-4">
                           <div className="space-y-2">
                             <div className="flex justify-between">
@@ -278,7 +317,9 @@ export default function PaymentDetails() {
                         <div className="h-16 w-16 rounded-full bg-[#ED695A]/20 flex items-center justify-center">
                           <Check className="h-8 w-8 text-[#ED695A]" />
                         </div>
-                        <h3 className="text-xl font-bold text-[#78533F]">Payment Successful!</h3>
+                        <h3 className="text-xl font-bold text-[#78533F]">
+                          {paymentType === "advance" ? "Advance Payment Successful!" : "Full Payment Successful!"}
+                        </h3>
                         <p className="text-center text-muted-foreground">
                           Your {paymentType === "advance" ? "advance" : "full"} payment of ₹
                           {paymentDetails.total.toLocaleString()} has been received.
@@ -311,7 +352,6 @@ export default function PaymentDetails() {
                 </Card>
               </div>
             </div>
-
             {/* Back Button */}
             <div className="mt-8 mb-4">
               <Button
@@ -325,13 +365,11 @@ export default function PaymentDetails() {
             </div>
           </div>
         </div>
-
         {/* Mobile Sidebar Toggle - Only visible on mobile */}
         <div className="md:hidden fixed bottom-4 right-4 z-50">
           <Button
             className="rounded-full w-12 h-12 bg-[#78533F] hover:bg-[#5d3f30] shadow-lg"
             onClick={() => {
-              // This would typically open a mobile sidebar
               alert("Mobile sidebar would open here")
             }}
           >
