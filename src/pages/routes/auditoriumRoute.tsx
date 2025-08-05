@@ -13,6 +13,7 @@ import StaffManagementUI from "../auditorium/Staff";
 import InvoicePanel from "../auditorium/Invoice";
 import ProtectedRoute from "../../service/protectedRoute";
 import PublicRoute from "../../service/publicRoutes";
+import AuditoriumProfile from "../auditorium/profile";
 
 
 function AuditoriumRoute() {
@@ -33,6 +34,7 @@ function AuditoriumRoute() {
         
         <Route path='/staff' element={<StaffManagementUI/>}/>
         <Route path='/invoice' element={<InvoicePanel/>}/>
+        <Route path='/profile' element={<ProtectedRoute><AuditoriumProfile/></ProtectedRoute>}/>
       </Routes>
     </div>
   )

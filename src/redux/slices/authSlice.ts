@@ -14,12 +14,16 @@ interface AuthState {
   isAuthenticated: boolean | null;
 }
 
+// Get data from localStorage
+const storedUser = localStorage.getItem('currentUser');
+const storedToken = localStorage.getItem('accessToken');
+
 const initialState: AuthState = {
-  currentUser: null,
-  accessToken: null,
+  currentUser: storedUser ? JSON.parse(storedUser) : null,
+  accessToken: storedToken || null,
   loading: false,
   error: false,
-  isAuthenticated: null,
+  isAuthenticated: !!storedToken,
 };
 
 const authSlice = createSlice({
@@ -37,7 +41,9 @@ const authSlice = createSlice({
       state.isAuthenticated = true;
       state.error = false;
 
+      // Store in localStorage
       localStorage.setItem('accessToken', action.payload.accessToken);
+      localStorage.setItem('currentUser', JSON.stringify(action.payload.user));
     },
     loginFailure: (state) => {
       state.loading = false;
@@ -49,7 +55,9 @@ const authSlice = createSlice({
       state.accessToken = null;
       state.isAuthenticated = false;
 
+      // Clear localStorage
       localStorage.removeItem('accessToken');
+      localStorage.removeItem('currentUser');
     },
     refreshToken: (state, action) => {
       state.accessToken = action.payload.accessToken;

@@ -85,7 +85,7 @@ const Sidebar: React.FC = () => {
       ),
     },
     {
-      title: "Invoice",
+      title: "ALL Bookings",
       path: "/auditorium/invoice",
       icon: (
         <svg
@@ -124,6 +124,7 @@ const Sidebar: React.FC = () => {
         </svg>
       ),
     },
+    
     {
       title: "Support",
       path: "/support",
