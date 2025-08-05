@@ -1,10 +1,9 @@
-
-
 import { useEffect, useState } from "react"
 import Header from "../../component/user/Header"
 import { useSelector } from "react-redux"
 import type { RootState } from "../../redux/store"
 import { existingAllVenues, upComingEvents } from "../../api/userApi"
+import { X } from "lucide-react"
 
 const formatDate = (dateString: string) => {
   if (!dateString) return "Unknown Date"
@@ -44,6 +43,8 @@ const DashboardOverview = () => {
   const [upcomingEvents, setUpcomingEvents] = useState<any[]>([])
   const [auditoriumName, setAuditoriumName] = useState<string>("")
   const [showAllEvents, setShowAllEvents] = useState<boolean>(false)
+  const [showModal, setShowModal] = useState<boolean>(false)
+  const [selectedEvent, setSelectedEvent] = useState<any | null>(null)
   const { currentUser } = useSelector((state: RootState) => state.auth)
 
   const fetchAllVenues = async () => {
@@ -123,10 +124,14 @@ const DashboardOverview = () => {
             status: event.status ? event.status.charAt(0).toUpperCase() + event.status.slice(1) : "Unknown",
             venueId: event.venueId || event.venue_id || null,
             rawDate: event.bookeddate || event.eventDate || event.date,
+            timeSlot: event.timeSlot || "N/A",
+            totalAmount: event.totalAmount || "N/A",
+            paidAmount: event.paidAmount || "N/A",
+            balanceAmount: event.balanceAmount || "N/A",
+            address: event.address || "N/A",
           }
         })
         .sort((a, b) => {
-          // Sort by date (earliest first)
           const dateA = new Date(a.rawDate || 0)
           const dateB = new Date(b.rawDate || 0)
           return dateA.getTime() - dateB.getTime()
@@ -151,10 +156,14 @@ const DashboardOverview = () => {
             status: event.status ? event.status.charAt(0).toUpperCase() + event.status.slice(1) : "Unknown",
             venueId: event.venueId || event.venue_id || null,
             rawDate: event.bookeddate || event.eventDate || event.date,
+            timeSlot: event.timeSlot || "N/A",
+            totalAmount: event.totalAmount || "N/A",
+            paidAmount: event.paidAmount || "N/A",
+            balanceAmount: event.balanceAmount || "N/A",
+            address: event.address || "N/A",
           }
         })
         .sort((a, b) => {
-          // Sort by date (earliest first)
           const dateA = new Date(a.rawDate || 0)
           const dateB = new Date(b.rawDate || 0)
           return dateA.getTime() - dateB.getTime()
@@ -165,7 +174,6 @@ const DashboardOverview = () => {
     }
   }
 
- 
   useEffect(() => {
     setShowAllEvents(false)
   }, [selectedVenue])
@@ -180,7 +188,6 @@ const DashboardOverview = () => {
     upcomingEvents: getFilteredEvents(),
   }
 
- 
   const eventsToDisplay = showAllEvents ? currentVenueData.upcomingEvents : currentVenueData.upcomingEvents.slice(0, 4)
 
   const hasMoreEvents = currentVenueData.upcomingEvents.length > 4
@@ -188,6 +195,16 @@ const DashboardOverview = () => {
   console.log("Current venue data:", currentVenueData)
   console.log("Selected venue:", selectedVenue)
   console.log("Filtered events:", currentVenueData.upcomingEvents)
+
+  const handleEventClick = (event: any) => {
+    setSelectedEvent(event)
+    setShowModal(true)
+  }
+
+  const closeModal = () => {
+    setShowModal(false)
+    setSelectedEvent(null)
+  }
 
   return (
     <div className="px-4 py-6 w-full pt-0 max-w-7xl mx-auto sm:px-6 lg:px-8">
@@ -416,7 +433,8 @@ const DashboardOverview = () => {
                 {eventsToDisplay.map((event) => (
                   <div
                     key={event.id}
-                    className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-gray-100 pb-4 last:border-b-0 last:pb-0"
+                    className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-gray-100 pb-4 last:border-b-0 last:pb-0 cursor-pointer hover:bg-gray-50 transition-colors duration-200"
+                    onClick={() => handleEventClick(event)}
                   >
                     <div className="flex items-center space-x-4">
                       <div className="w-12 h-12 rounded-lg bg-[#ED695A] bg-opacity-10 flex items-center justify-center">
@@ -526,6 +544,62 @@ const DashboardOverview = () => {
           </div>
         )}
       </div>
+
+      {/* Event Details Modal */}
+      {showModal && selectedEvent && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 sm:p-8">
+              <div className="flex items-center justify-between mb-6 sm:mb-8">
+                <div className="text-center flex-1">
+                  <h2 className="text-2xl sm:text-3xl font-bold text-[#78533F]">Event Details</h2>
+                  <p className="text-gray-600">Details for {selectedEvent.name}</p>
+                </div>
+                <button
+                  onClick={closeModal}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <X className="w-6 h-6 text-gray-600" />
+                </button>
+              </div>
+              <div className="space-y-4">
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <p className="text-gray-700"><strong>Event Name:</strong> {selectedEvent.name}</p>
+                  <p className="text-gray-700"><strong>Client:</strong> {selectedEvent.client}</p>
+                  <p className="text-gray-700"><strong>Date:</strong> {selectedEvent.date}</p>
+                  <p className="text-gray-700"><strong>Time Slot:</strong> {selectedEvent.timeSlot}</p>
+                  <p className="text-gray-700"><strong>Venue:</strong> {venues.find((v) => v._id === selectedEvent.venueId)?.name || "Unknown Venue"}</p>
+                  <p className="text-gray-700"><strong>Status:</strong> 
+                    <span
+                      className={`inline-block px-2 py-1 text-xs rounded-full ml-2 ${
+                        selectedEvent.status.toLowerCase() === "pending"
+                          ? "bg-amber-100 text-amber-800"
+                          : selectedEvent.status.toLowerCase() === "approved"
+                            ? "bg-green-100 text-green-800"
+                            : selectedEvent.status.toLowerCase() === "rejected"
+                              ? "bg-red-100 text-red-800"
+                              : "bg-gray-100 text-gray-800"
+                      }`}
+                    >
+                      {selectedEvent.status}
+                    </span>
+                  </p>
+                  <p className="text-gray-700"><strong>Total Amount:</strong> ₹{selectedEvent.totalAmount}</p>
+                  <p className="text-gray-700"><strong>Paid Amount:</strong> ₹{selectedEvent.paidAmount}</p>
+                  <p className="text-gray-700"><strong>Balance Amount:</strong> ₹{selectedEvent.balanceAmount}</p>
+                  <p className="text-gray-700"><strong>Address:</strong> {selectedEvent.address}</p>
+                </div>
+                <button
+                  onClick={closeModal}
+                  className="w-full mt-6 bg-[#78533F] text-white py-3 px-6 rounded-lg font-semibold hover:bg-[#6e4e3d] transition-all shadow-md hover:shadow-lg"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

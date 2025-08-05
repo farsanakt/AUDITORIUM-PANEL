@@ -67,6 +67,8 @@ export const existingAllVenues = async (id: string) => {
   return response
 }
 
+
+
 export const userDetails = async (email: string) => {
   const response = await api.get('/userDetails', {
     params: { email },

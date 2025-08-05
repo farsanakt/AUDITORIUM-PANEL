@@ -44,6 +44,10 @@ interface BookingFormData {
   totalAmount: string;
   advanceAmount: string;
   venueId: string;
+  address: string;
+  paymentType: 'full' | 'advance';
+  paidAmount: string;
+  balanceAmount: string;
 }
 
 interface TimeSlot {
@@ -87,6 +91,10 @@ const Bookings: React.FC = () => {
     totalAmount: '',
     advanceAmount: '',
     venueId: id || '',
+    address: '',
+    paymentType: 'advance',
+    paidAmount: '',
+    balanceAmount: '',
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -126,6 +134,9 @@ const Bookings: React.FC = () => {
           totalAmount: venueData.totalamount || '',
           advanceAmount: venueData.advAmnt || '',
           venueId: id || '',
+          paidAmount: venueData.advAmnt || '',
+          balanceAmount: venueData.totalamount ? 
+            (parseFloat(venueData.totalamount) - parseFloat(venueData.advAmnt || '0')).toString() : '',
         }));
       } else {
         setError('No venue data received');
@@ -143,7 +154,6 @@ const Bookings: React.FC = () => {
       const response = await existingBkngs(id!);
       console.log('Existing bookings:', response);
       if (response.data) {
-        // Handle single object or array
         const bookingData = Array.isArray(response.data) ? response.data : [response.data];
         setBookings(bookingData);
       } else {
@@ -172,7 +182,6 @@ const Bookings: React.FC = () => {
     const firstDay = getFirstDayOfMonth(currentDate);
     const days = [];
 
-    // Add previous month's days
     const prevMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 0);
     const prevMonthDays = getDaysInMonth(prevMonth);
     for (let i = firstDay - 1; i >= 0; i--) {
@@ -183,7 +192,6 @@ const Bookings: React.FC = () => {
       });
     }
 
-    // Add current month's days
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
       days.push({
@@ -193,7 +201,6 @@ const Bookings: React.FC = () => {
       });
     }
 
-    // Add next month's days
     const remainingDays = 42 - days.length;
     for (let day = 1; day <= remainingDays; day++) {
       days.push({
@@ -251,7 +258,7 @@ const Bookings: React.FC = () => {
     }
     
     return isSelected 
-      ? `${baseClass} bg-blue-500 text-white cursor-pointer hover:scale-105`
+      ? `${baseClass} bg-blue-600 text-white cursor-pointer hover:scale-105`
       : `${baseClass} bg-green-100 text-green-800 cursor-pointer hover:bg-green-200 hover:scale-105`;
   };
 
@@ -294,7 +301,7 @@ const Bookings: React.FC = () => {
         ...prev,
         bookingDate: date.toISOString().split('T')[0],
       }));
-      setVenueTime(''); // Reset time slot when date changes
+      setVenueTime('');
     }
   };
 
@@ -326,7 +333,21 @@ const Bookings: React.FC = () => {
     }));
   };
 
+  const handlePaymentTypeChange = (type: 'full' | 'advance') => {
+    setFormData(prev => ({
+      ...prev,
+      paymentType: type,
+      paidAmount: type === 'full' ? prev.totalAmount : prev.advanceAmount,
+      balanceAmount: type === 'full' ? '0' : 
+        (parseFloat(prev.totalAmount || '0') - parseFloat(prev.advanceAmount || '0')).toString(),
+    }));
+  };
+
   const handleFormSubmit = async () => {
+    if (!formData.userEmail || !formData.address) {
+      alert('Please fill in all required fields');
+      return;
+    }
     try {
       setCurrentPage('payment');
     } catch (error) {
@@ -346,9 +367,19 @@ const Bookings: React.FC = () => {
     }
 
     try {
-      const response = await createBooking(formData);
+      const bookingData = {
+        venueName: formData.venueName,
+        venueId: formData.venueId,
+        totalAmount: formData.totalAmount,
+        paidAmount: formData.paidAmount,
+        balanceAmount: formData.balanceAmount,
+        userEmail: formData.userEmail,
+        bookedDate: formData.bookingDate,
+        timeSlot: formData.timeSlot,
+        address: formData.address,
+      };
+      const response = await createBooking(bookingData);
       console.log('Booking data sent to backend:', response);
-      // Refresh bookings to reflect the new booking
       await fetchExistingBookings();
       setCurrentPage('success');
     } catch (error) {
@@ -361,7 +392,7 @@ const Bookings: React.FC = () => {
     setShowModal(false);
     setCurrentPage('calendar');
     setSelectedPaymentMethod('');
-    setVenueTime(''); // Reset time slot on modal close
+    setVenueTime('');
   };
 
   if (loading) {
@@ -385,14 +416,14 @@ const Bookings: React.FC = () => {
 
   const renderCalendar = () => (
     <ErrorBoundary>
-      <div className="relative min-h-screen overflow-hidden">
+      <div className="relative min-h-screen overflow-hidden bg-gray-50">
         <img
           src={Lines}
           alt="Lines"
-          className="fixed top-0 right-0 h-full object-cover z-0 scale-140 sm:scale-100"
+          className="fixed top-0 right-0 h-full object-cover z-0 scale-140 sm:scale-100 opacity-10"
           style={{ maxWidth: 'none' }}
         />
-        <div className="relative z-10 p-4 sm:p-6">
+        <div className="relative z-10 p-4 sm:p-6 lg:p-8">
           <div className="max-w-7xl mx-auto">
             <Header />
             <div className="overflow-hidden">
@@ -419,10 +450,10 @@ const Bookings: React.FC = () => {
                 </div>
               </div>
 
-              <div className="p-4 sm:p-6">
+              <div className="p-4 sm:p-6 lg:p-8">
                 <div className="grid lg:grid-cols-2 gap-6 sm:gap-8">
                   <div className="space-y-6">
-                    <div className="bg-white rounded-2xl shadow-2xl p-4 sm:p-6 aspect-square flex flex-col">
+                    <div className="bg-white rounded-2xl shadow-xl p-4 sm:p-6 aspect-square flex flex-col border border-gray-100">
                       <div className="flex items-center justify-between mb-4 sm:mb-6">
                         <button 
                           onClick={() => navigateMonth('prev')}
@@ -488,12 +519,12 @@ const Bookings: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="rounded-2xl p-4 sm:p-6">
+                  <div className="rounded-2xl p-4 sm:p-6 bg-white shadow-xl border border-gray-100">
                     <div className="space-y-4">
                       <select 
                         value={acOption}
                         onChange={(e) => setAcOption(e.target.value)}
-                        className="w-full sm:w-90 p-3 sm:ml-44 mt-8 sm:mt-20 border border-[#b09d94] text-[#49516F] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553] focus:border-transparent"
+                        className="w-full p-3 border border-gray-300 text-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553] focus:border-transparent transition-all"
                       >
                         <option value="">Select AC Option</option>
                         {venue?.acType ? <option value={venue.acType}>{venue.acType}</option> : <option value="">No AC option available</option>}
@@ -505,7 +536,7 @@ const Bookings: React.FC = () => {
                           setVenueTime(e.target.value);
                           setFormData(prev => ({ ...prev, timeSlot: e.target.value }));
                         }}
-                        className="w-full sm:w-90 p-3 sm:ml-44 mt-8 border border-[#b09d94] text-[#49516F] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553] focus:border-transparent"
+                        className="w-full p-3 border border-gray-300 text-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553] focus:border-transparent transition-all"
                       >
                         <option value="">Select Time Slot</option>
                         {selectedDate ? (
@@ -527,7 +558,7 @@ const Bookings: React.FC = () => {
                       <select 
                         value={eventType}
                         onChange={(e) => setEventType(e.target.value)}
-                        className="w-full sm:w-90 p-3 sm:ml-44 mt-8 border border-[#b09d94] text-[#49516F] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553] focus:border-transparent"
+                        className="w-full p-3 border border-gray-300 text-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553] focus:border-transparent transition-all"
                       >
                         <option value="">Select Event Type</option>
                         {venue?.eventTypes?.map((type, index) => (
@@ -537,7 +568,7 @@ const Bookings: React.FC = () => {
 
                       <button
                         onClick={handleConfirmBooking}
-                        className="w-full sm:w-90 sm:ml-44 mt-8 bg-[#876553] text-white py-3 px-6 rounded-lg font-semibold transition-all shadow-lg hover:bg-[#6e4e3d]"
+                        className="w-full mt-6 bg-[#876553] text-white py-3 px-6 rounded-lg font-semibold transition-all shadow-md hover:bg-[#6e4e3d] hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                         disabled={!venue}
                       >
                         Confirm your Booking!
@@ -545,11 +576,11 @@ const Bookings: React.FC = () => {
                     </div>
 
                     {selectedDate && (
-                      <div className="mt-4 p-3 sm:ml-44 bg-blue-50 rounded-lg">
-                        <p className="text-sm text-blue-700">
+                      <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                        <p className="text-sm text-blue-700 font-medium">
                           Selected Date: {selectedDate.toLocaleDateString()}
                         </p>
-                        <p className="text-sm text-blue-700">
+                        <p className="text-sm text-blue-700 font-medium">
                           Available Slots: {getTimeSlotStatus(selectedDate).filter(slot => !slot.isBooked).length}
                         </p>
                       </div>
@@ -560,7 +591,7 @@ const Bookings: React.FC = () => {
             </div>
 
             {showModal && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
                 <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                   {currentPage === 'form' && (
                     <div className="p-6 sm:p-8">
@@ -584,7 +615,18 @@ const Bookings: React.FC = () => {
                             type="email"
                             value={formData.userEmail}
                             onChange={(e) => handleInputChange('userEmail', e.target.value)}
-                            className="w-full p-3 border border-[#b09d94] text-[#49516F] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553]"
+                            className="w-full p-3 border border-gray-300 text-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553] transition-all"
+                            placeholder="Enter your email"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                          <textarea
+                            value={formData.address}
+                            onChange={(e) => handleInputChange('address', e.target.value)}
+                            className="w-full p-3 border border-gray-300 text-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553] transition-all"
+                            placeholder="Enter your address"
+                            rows={4}
                           />
                         </div>
                         <div>
@@ -593,7 +635,7 @@ const Bookings: React.FC = () => {
                             type="text"
                             value={formData.venueName}
                             readOnly
-                            className="w-full p-3 border border-[#b09d94] text-[#49516F] rounded-lg bg-gray-50"
+                            className="w-full p-3 border border-gray-300 text-gray-700 rounded-lg bg-gray-50"
                           />
                         </div>
                         <div>
@@ -602,7 +644,7 @@ const Bookings: React.FC = () => {
                             type="text"
                             value={formData.bookingDate}
                             readOnly
-                            className="w-full p-3 border border-[#b09d94] text-[#49516F] rounded-lg bg-gray-50"
+                            className="w-full p-3 border border-gray-300 text-gray-700 rounded-lg bg-gray-50"
                           />
                         </div>
                         <div>
@@ -611,7 +653,7 @@ const Bookings: React.FC = () => {
                             type="text"
                             value={formData.timeSlot}
                             readOnly
-                            className="w-full p-3 border border-[#b09d94] text-[#49516F] rounded-lg bg-gray-50"
+                            className="w-full p-3 border border-gray-300 text-gray-700 rounded-lg bg-gray-50"
                           />
                         </div>
                         <div>
@@ -620,7 +662,7 @@ const Bookings: React.FC = () => {
                             type="text"
                             value={formData.totalAmount}
                             onChange={(e) => handleInputChange('totalAmount', e.target.value)}
-                            className="w-full p-3 border border-[#b09d94] text-[#49516F] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553]"
+                            className="w-full p-3 border border-gray-300 text-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553] transition-all"
                           />
                         </div>
                         <div>
@@ -629,14 +671,14 @@ const Bookings: React.FC = () => {
                             type="text"
                             value={formData.advanceAmount}
                             onChange={(e) => handleInputChange('advanceAmount', e.target.value)}
-                            className="w-full p-3 border border-[#b09d94] text-[#49516F] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553]"
+                            className="w-full p-3 border border-gray-300 text-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553] transition-all"
                           />
                         </div>
                         <button
                           onClick={handleFormSubmit}
-                          className="w-full mt-6 bg-[#876553] text-white py-3 px-6 rounded-lg font-semibold hover:bg-[#6e4e3d] transition-all shadow-lg"
+                          className="w-full mt-6 bg-[#876553] text-white py-3 px-6 rounded-lg font-semibold hover:bg-[#6e4e3d] transition-all shadow-md hover:shadow-lg"
                         >
-                          Confirm Booking
+                          Proceed to Payment
                         </button>
                       </div>
                     </div>
@@ -657,7 +699,7 @@ const Bookings: React.FC = () => {
                         </button>
                       </div>
                       
-                      <div className="space-y-4">
+                      <div className="space-y-6">
                         <div className="bg-gray-50 p-4 rounded-lg">
                           <p className="text-gray-700">Venue: {formData.venueName}</p>
                           <p className="text-gray-700">Date: {formData.bookingDate}</p>
@@ -666,16 +708,43 @@ const Bookings: React.FC = () => {
                           <p className="text-gray-700">Advance Amount: {formData.advanceAmount}</p>
                         </div>
                         <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Payment Type</label>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <label className="flex items-center gap-2 p-4 rounded-lg border border-gray-300 cursor-pointer hover:bg-gray-50">
+                              <input
+                                type="radio"
+                                name="paymentType"
+                                value="full"
+                                checked={formData.paymentType === 'full'}
+                                onChange={() => handlePaymentTypeChange('full')}
+                                className="text-[#876553] focus:ring-[#876553]"
+                              />
+                              <span>Full Payment ({formData.totalAmount})</span>
+                            </label>
+                            <label className="flex items-center gap-2 p-4 rounded-lg border border-gray-300 cursor-pointer hover:bg-gray-50">
+                              <input
+                                type="radio"
+                                name="paymentType"
+                                value="advance"
+                                checked={formData.paymentType === 'advance'}
+                                onChange={() => handlePaymentTypeChange('advance')}
+                                className="text-[#876553] focus:ring-[#876553]"
+                              />
+                              <span>Advance Payment ({formData.advanceAmount})</span>
+                            </label>
+                          </div>
+                        </div>
+                        <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             {['Credit/Debit Card', 'UPI', 'Net Banking'].map((method) => (
                               <button
                                 key={method}
                                 onClick={() => setSelectedPaymentMethod(method)}
-                                className={`p-4 rounded-lg border text-[#49516F] transition-all shadow-sm ${
+                                className={`p-4 rounded-lg border text-gray-700 transition-all shadow-sm ${
                                   selectedPaymentMethod === method
                                     ? 'bg-[#876553] text-white border-[#876553]'
-                                    : 'bg-white border-[#b09d94] hover:bg-[#f5e8df] hover:border-[#876553]'
+                                    : 'bg-white border-gray-300 hover:bg-[#f5e8df] hover:border-[#876553]'
                                 }`}
                               >
                                 {method}
@@ -685,7 +754,7 @@ const Bookings: React.FC = () => {
                         </div>
                         <button
                           onClick={handlePaymentSubmit}
-                          className="w-full mt-6 bg-[#876553] text-white py-3 px-6 rounded-lg font-semibold hover:bg-[#6e4e3d] transition-all shadow-lg"
+                          className="w-full mt-6 bg-[#876553] text-white py-3 px-6 rounded-lg font-semibold hover:bg-[#6e4e3d] transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                           disabled={!selectedPaymentMethod}
                         >
                           Complete Payment
@@ -722,8 +791,10 @@ const Bookings: React.FC = () => {
                           <p className="text-gray-700">Time: {formData.timeSlot}</p>
                           <p className="text-gray-700">Event Type: {eventType}</p>
                           <p className="text-gray-700">AC Option: {acOption}</p>
+                          <p className="text-gray-700">Address: {formData.address}</p>
                           <p className="text-gray-700">Total Amount: {formData.totalAmount}</p>
-                          <p className="text-gray-700">Advance Amount: {formData.advanceAmount}</p>
+                          <p className="text-gray-700">Paid Amount: {formData.paidAmount}</p>
+                          <p className="text-gray-700">Balance Amount: {formData.balanceAmount}</p>
                           <p className="text-gray-700">Payment Method: {selectedPaymentMethod}</p>
                           <p className="text-gray-700">Reference ID: {Math.random().toString(36).substr(2, 9).toUpperCase()}</p>
                         </div>
@@ -732,7 +803,7 @@ const Bookings: React.FC = () => {
                             closeModal();
                             navigate('/');
                           }}
-                          className="w-full mt-6 bg-[#876553] text-white py-3 px-6 rounded-lg font-semibold hover:bg-[#6e4e3d] transition-all shadow-lg"
+                          className="w-full mt-6 bg-[#876553] text-white py-3 px-6 rounded-lg font-semibold hover:bg-[#6e4e3d] transition-all shadow-md hover:shadow-lg"
                         >
                           Okay
                         </button>

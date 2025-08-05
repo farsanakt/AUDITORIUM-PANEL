@@ -10,7 +10,7 @@ import { cn } from "../../component/lib/utils"
 import Header from "../../component/user/Header"
 import Sidebar from "../../component/auditorium/Sidebar"
 import { useLocation, useNavigate } from "react-router-dom"
-import { userDetails } from "../../api/userApi"
+import {  createBooking, userDetails } from "../../api/userApi"
 import axios from "axios" // Added for backend API call
 
 export default function PaymentDetails() {
@@ -27,6 +27,7 @@ export default function PaymentDetails() {
       // Prepare payment data for backend
       const paymentData = {
         userEmail: bookingData.userEmail,
+        totalAmount:bookingData.totalAmount,
         venueId: bookingData.venueId,
         venueName: bookingData.venueName,
         paidAmount: paymentType === "advance" ? bookingData.advanceAmount : bookingData.totalAmount,
@@ -39,7 +40,10 @@ export default function PaymentDetails() {
       }
 
       // Send payment data to backend
-      await axios.post("/api/payment", paymentData)
+      const response=await createBooking(paymentData)
+
+      // console.log(response,'payment created')
+      
       setPaymentStatus("success")
     } catch (error) {
       console.error("Payment processing failed:", error)
