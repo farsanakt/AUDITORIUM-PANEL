@@ -1,5 +1,3 @@
-"use client"
-
 import type React from "react"
 import { useState, useRef, useEffect } from "react"
 import {
@@ -39,7 +37,6 @@ const signupUser = async (userData: any) => {
     throw error
   }
 }
-
 
 interface TimeSlot {
   id: string
@@ -98,6 +95,8 @@ const VenueBookingPage: React.FC = () => {
   const [showEmailModal, setShowEmailModal] = useState(false)
   const [showSignupModal, setShowSignupModal] = useState(false)
   const [email, setEmail] = useState("")
+  // NEW: State to control signup link visibility
+  const [showSignupLink, setShowSignupLink] = useState(false)
   const [signupData, setSignupData] = useState({
     firstName: "",
     lastName: "",
@@ -275,6 +274,8 @@ const VenueBookingPage: React.FC = () => {
       setSelectedTimeSlot(timeSlot)
       setShowTimeSlotsModal(false)
       setShowEmailModal(true)
+      // NEW: Reset signup link visibility when opening email modal
+      setShowSignupLink(false)
     }
   }
 
@@ -324,31 +325,32 @@ const VenueBookingPage: React.FC = () => {
     setTooltip(null)
   }
 
- 
   const handleEmailSubmit = async () => {
-  if (email.trim()) {
-   try {
-  const response = await checkUserExists(email);
-
-  if (response.data.success) {
-  
-    setConfirmedUserEmail(email);
-    setShowEmailModal(false);
-    setShowBookingModal(true);
-  } else {
-    
-    setEmailError(response.data.message || "User not found.");
+    if (email.trim()) {
+      try {
+        const response = await checkUserExists(email)
+        if (response.data.success) {
+          setConfirmedUserEmail(email)
+          setShowEmailModal(false)
+          setShowBookingModal(true)
+          // NEW: Ensure signup link is hidden when user exists
+          setShowSignupLink(false)
+        } else {
+          setEmailError(response.data.message || "User not found.")
+          // NEW: Show signup link only if user not found
+          setShowSignupLink(true)
+        }
+      } catch (error) {
+        console.error("Unexpected error:", error)
+        setEmailError("Something went wrong. Please try again.")
+        // NEW: Show signup link on error
+        setShowSignupLink(true)
+      }
+    } else {
+      setEmailError("Please enter a valid email.")
+    }
   }
-} catch (error) {
-  console.error("Unexpected error:", error);
-  setEmailError("Something went wrong. Please try again.");
-}
-  } else {
-    setEmailError("Please enter a valid email.")
-  }
-}
 
-  
   const handleSignupSubmit = async () => {
     if (signupData.password !== signupData.confirmPassword) {
       alert("Passwords don't match!")
@@ -418,7 +420,6 @@ const VenueBookingPage: React.FC = () => {
     }, 300)
   }
 
-  
   const handleBookingConfirm = async () => {
     if (!userAddress.trim()) {
       alert("Please enter your address")
@@ -442,11 +443,7 @@ const VenueBookingPage: React.FC = () => {
 
     try {
       console.log("Submitting booking data:", bookingData)
-
-      
       await new Promise((resolve) => setTimeout(resolve, 2000))
-
-      // Navigate to payment or success page
       navigate("/auditorium/payment", { state: bookingData })
     } catch (error) {
       console.error("Booking submission error:", error)
@@ -467,7 +464,6 @@ const VenueBookingPage: React.FC = () => {
 
     for (let day = 1; day <= daysInMonth; day++) {
       const status = getDateStatus(day, selectedVenue, currentMonth)
-
       const isSelected =
         selectedDate.getDate() === day &&
         selectedDate.getMonth() === currentMonth.getMonth() &&
@@ -788,231 +784,238 @@ const VenueBookingPage: React.FC = () => {
         </div>
       )}
 
-      {/* Clean Classic Booking Confirmation Modal */}
-     {showBookingModal && (
-  <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50 animate-fade-in">
-    <div className="bg-white rounded-lg shadow-lg max-w-lg w-full mx-4 overflow-hidden animate-scale-in">
-      {/* Header */}
-      <div className="bg-gray-100 px-6 py-4 border-b border-gray-200">
-        <div className="flex justify-between items-center">
-          <div>
-            <h2 className="text-xl font-semibold text-gray-800">Confirm Your Booking</h2>
-            <p className="text-sm text-gray-600 mt-1">Please review your booking details</p>
-          </div>
-          <button
-            onClick={() => setShowBookingModal(false)}
-            className="text-gray-500 hover:text-gray-700 transition-colors p-1 rounded-full hover:bg-gray-200"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-      </div>
-
-      <div className="p-6">
-        {/* Booking Summary Card */}
-        <div className="bg-white rounded-md p-5 mb-5 border border-gray-100 shadow-sm">
-          <h3 className="text-base font-medium text-gray-800 mb-3 flex items-center">
-            <Building2 className="h-4 w-4 mr-2 text-gray-500" />
-            Booking Details
-          </h3>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <div className="flex items-center">
-                <Mail className="h-4 w-4 text-gray-400 mr-2" />
+      {/* Booking Confirmation Modal */}
+      {showBookingModal && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50 animate-fade-in">
+          <div className="bg-white rounded-lg shadow-lg max-w-lg w-full mx-4 overflow-hidden animate-scale-in">
+            <div className="bg-gray-100 px-6 py-4 border-b border-gray-200">
+              <div className="flex justify-between items-center">
                 <div>
-                  <p className="text-xs text-gray-500 uppercase tracking-wide">Email</p>
-                  <p className="text-sm font-medium text-gray-800">{confirmedUserEmail}</p>
+                  <h2 className="text-xl font-semibold text-gray-800">Confirm Your Booking</h2>
+                  <p className="text-sm text-gray-600 mt-1">Please review your booking details</p>
                 </div>
-              </div>
-
-              <div className="flex items-center">
-                <Building2 className="h-4 w-4 text-gray-400 mr-2" />
-                <div>
-                  <p className="text-xs text-gray-500 uppercase tracking-wide">Venue</p>
-                  <p className="text-sm font-medium text-gray-800">{getCurrentVenue()?.name}</p>
-                </div>
-              </div>
-
-              <div className="flex items-center">
-                <Calendar className="h-4 w-4 text-gray-400 mr-2" />
-                <div>
-                  <p className="text-xs text-gray-500 uppercase tracking-wide">Date</p>
-                  <p className="text-sm font-medium text-gray-800">
-                    {selectedDate.toLocaleDateString("en-US", {
-                      weekday: "long",
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}
-                  </p>
-                </div>
+                <button
+                  onClick={() => setShowBookingModal(false)}
+                  className="text-gray-500 hover:text-gray-700 transition-colors p-1 rounded-full hover:bg-gray-200"
+                >
+                  <X className="h-5 w-5" />
+                </button>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <div className="flex items-center">
-                <Clock className="h-4 w-4 text-gray-400 mr-2" />
-                <div>
-                  <p className="text-xs text-gray-500 uppercase tracking-wide">Time Slot</p>
-                  <p className="text-sm font-medium text-gray-800 capitalize">{selectedTimeSlot?.label}</p>
-                  <p className="text-xs text-gray-600">
-                    {selectedTimeSlot?.startTime} - {selectedTimeSlot?.endTime}
-                  </p>
+            <div className="p-6">
+              <div className="bg-white rounded-md p-5 mb-5 border border-gray-100 shadow-sm">
+                <h3 className="text-base font-medium text-gray-800 mb-3 flex items-center">
+                  <Building2 className="h-4 w-4 mr-2 text-gray-500" />
+                  Booking Details
+                </h3>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center">
+                      <Mail className="h-4 w-4 text-gray-400 mr-2" />
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase tracking-wide">Email</p>
+                        <p className="text-sm font-medium text-gray-800">{confirmedUserEmail}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center">
+                      <Building2 className="h-4 w-4 text-gray-400 mr-2" />
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase tracking-wide">Venue</p>
+                        <p className="text-sm font-medium text-gray-800">{getCurrentVenue()?.name}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center">
+                      <Calendar className="h-4 w-4 text-gray-400 mr-2" />
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase tracking-wide">Date</p>
+                        <p className="text-sm font-medium text-gray-800">
+                          {selectedDate.toLocaleDateString("en-US", {
+                            weekday: "long",
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center">
+                      <Clock className="h-4 w-4 text-gray-400 mr-2" />
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase tracking-wide">Time Slot</p>
+                        <p className="text-sm font-medium text-gray-800 capitalize">{selectedTimeSlot?.label}</p>
+                        <p className="text-xs text-gray-600">
+                          {selectedTimeSlot?.startTime} - {selectedTimeSlot?.endTime}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="bg-gray-50 rounded-md p-3 border border-gray-100">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-xs text-gray-600">Total Amount</span>
+                        <span className="text-base font-semibold text-gray-800">₹{getCurrentVenue()?.totalamount}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-gray-600">Advance Amount</span>
+                        <span className="text-base font-semibold text-green-600">₹{getCurrentVenue()?.advAmnt}</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div className="bg-gray-50 rounded-md p-3 border border-gray-100">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-xs text-gray-600">Total Amount</span>
-                  <span className="text-base font-semibold text-gray-800">₹{getCurrentVenue()?.totalamount}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-gray-600">Advance Amount</span>
-                  <span className="text-base font-semibold text-green-600">₹{getCurrentVenue()?.advAmnt}</span>
-                </div>
+              <div className="mb-5">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <MapPin className="inline h-4 w-4 mr-1 text-gray-500" />
+                  Complete Address
+                </label>
+                <textarea
+                  value={userAddress}
+                  onChange={(e) => setUserAddress(e.target.value)}
+                  placeholder="Enter your complete address including city, state, and postal code"
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-600 text-sm resize-none transition-all duration-200 placeholder-gray-400"
+                  required
+                />
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-2 pt-4 border-t border-gray-100">
+                <button
+                  onClick={() => setShowBookingModal(false)}
+                  className="flex-1 px-4 py-2 border border-gray-200 rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-800 transition-all duration-200 text-sm font-medium"
+                  disabled={isSubmittingBooking}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleBookingConfirm}
+                  disabled={isSubmittingBooking || !userAddress.trim()}
+                  className="flex-1 px-4 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-900 transition-all duration-200 text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSubmittingBooking ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard className="h-4 w-4" />
+                      Proceed to Payment
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           </div>
         </div>
-
-        {/* Address Section */}
-        <div className="mb-5">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            <MapPin className="inline h-4 w-4 mr-1 text-gray-500" />
-            Complete Address
-          </label>
-          <textarea
-            value={userAddress}
-            onChange={(e) => setUserAddress(e.target.value)}
-            placeholder="Enter your complete address including city, state, and postal code"
-            rows={3}
-            className="w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-600 text-sm resize-none transition-all duration-200 placeholder-gray-400"
-            required
-          />
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-2 pt-4 border-t border-gray-100">
-          <button
-            onClick={() => setShowBookingModal(false)}
-            className="flex-1 px-4 py-2 border border-gray-200 rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-800 transition-all duration-200 text-sm font-medium"
-            disabled={isSubmittingBooking}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleBookingConfirm}
-            disabled={isSubmittingBooking || !userAddress.trim()}
-            className="flex-1 px-4 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-900 transition-all duration-200 text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isSubmittingBooking ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                Processing...
-              </>
-            ) : (
-              <>
-                <CreditCard className="h-4 w-4" />
-                Proceed to Payment
-              </>
-            )}
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-)}
-
-      {/* Email Modal */}
-     {showEmailModal && (
-      <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50 animate-fade-in">
-        <div className="bg-white rounded-lg shadow-lg max-w-md w-full mx-4 p-6 border border-gray-200 animate-scale-in">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-semibold text-gray-800">Enter Your Email</h3>
-            <button
-              onClick={() => {
-                setShowEmailModal(false)
-                setEmailError("") // ✅ clear error when modal closes
-              }}
-              className="p-1 hover:bg-gray-100 rounded-full"
-            >
-              <X className="h-4 w-4 text-gray-600" />
-            </button>
-          </div>
-
-          <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-600 mb-2">Booking Details:</p>
-            <div className="space-y-1">
-              <p className="text-sm">
-                <span className="font-medium">Date:</span> {selectedDate.toLocaleDateString()}
-              </p>
-              <p className="text-sm">
-                <span className="font-medium">Time Slot:</span> {selectedTimeSlot?.label}
-              </p>
-              <p className="text-sm">
-                <span className="font-medium">Time:</span> {selectedTimeSlot?.startTime} - {selectedTimeSlot?.endTime}
-              </p>
-              <p className="text-sm">
-                <span className="font-medium">Venue:</span> {getCurrentVenue()?.name}
-              </p>
-            </div>
-          </div>
-
-          <p className="mb-4 text-gray-600 text-sm">Please enter your email to proceed with the booking</p>
-
-          <div className="relative mb-2">
-            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value)
-                setEmailError("") // ✅ clear error when typing
-              }}
-              placeholder="Enter your email"
-              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 text-sm"
-            />
-            {emailError && (
-              <p className="text-red-600 text-sm mt-1 px-1">{emailError}</p>
-            )}
-          </div>
-
-          <div className="text-center mb-4">
-            <p className="text-sm text-gray-600">New user?</p>
-            <button
-              onClick={() => {
-                setShowEmailModal(false)
-                setEmailError("")
-                setShowSignupModal(true)
-              }}
-              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-            >
-              Sign up here
-            </button>
-          </div>
-
-          <div className="flex justify-end space-x-3">
-            <button
-              onClick={() => {
-                setShowEmailModal(false)
-                setEmailError("") // ✅ clear error
-              }}
-              className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-all duration-300 text-gray-700 text-sm"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleEmailSubmit}
-              className="px-4 py-2 bg-gray-900 text-white rounded-md hover:bg-gray-800 transition-all duration-300 text-sm"
-            >
-              Continue
-            </button>
-          </div>
-        </div>
-      </div>
       )}
 
+      {/* Email Modal */}
+      {showEmailModal && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50 animate-fade-in">
+          <div className="bg-white rounded-lg shadow-lg max-w-md w-full mx-4 p-6 border border-gray-200 animate-scale-in">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold text-gray-800">Enter Your Email</h3>
+              <button
+                onClick={() => {
+                  setShowEmailModal(false)
+                  setEmailError("")
+                  // NEW: Reset signup link visibility on modal close
+                  setShowSignupLink(false)
+                }}
+                className="p-1 hover:bg-gray-100 rounded-full"
+              >
+                <X className="h-4 w-4 text-gray-600" />
+              </button>
+            </div>
+
+            <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+              <p className="text-sm text-gray-600 mb-2">Booking Details:</p>
+              <div className="space-y-1">
+                <p className="text-sm">
+                  <span className="font-medium">Date:</span> {selectedDate.toLocaleDateString()}
+                </p>
+                <p className="text-sm">
+                  <span className="font-medium">Time Slot:</span> {selectedTimeSlot?.label}
+                </p>
+                <p className="text-sm">
+                  <span className="font-medium">Time:</span> {selectedTimeSlot?.startTime} - {selectedTimeSlot?.endTime}
+                </p>
+                <p className="text-sm">
+                  <span className="font-medium">Venue:</span> {getCurrentVenue()?.name}
+                </p>
+              </div>
+            </div>
+
+            {/* NEW: Added mandatory email field message */}
+            <p className="mb-4 text-gray-600 text-sm">
+              Please enter your email to proceed with the booking. This field is mandatory for future processing and mailing activities.
+            </p>
+
+            <div className="relative mb-2">
+              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value)
+                  setEmailError("")
+                  // NEW: Reset signup link visibility when typing
+                  setShowSignupLink(false)
+                }}
+                placeholder="Enter your email"
+                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 text-sm"
+              />
+              {emailError && (
+                <p className="text-red-600 text-sm mt-1 px-1">{emailError}</p>
+              )}
+            </div>
+
+            {/* NEW: Conditional rendering of signup link */}
+            {showSignupLink && (
+              <div className="text-center mb-4">
+                <p className="text-sm text-gray-600">New user?</p>
+                <button
+                  onClick={() => {
+                    setShowEmailModal(false)
+                    setEmailError("")
+                    setShowSignupModal(true)
+                  }}
+                  className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                >
+                  Sign up here
+                </button>
+              </div>
+            )}
+
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => {
+                  setShowEmailModal(false)
+                  setEmailError("")
+                  // NEW: Reset signup link visibility on cancel
+                  setShowSignupLink(false)
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-all duration-300 text-gray-700 text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleEmailSubmit}
+                className="px-4 py-2 bg-gray-900 text-white rounded-md hover:bg-gray-800 transition-all duration-300 text-sm"
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Signup Modal */}
       {showSignupModal && (

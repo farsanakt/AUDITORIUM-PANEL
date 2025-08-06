@@ -198,3 +198,11 @@ export const findAuditoriumById=async(id:string)=>{
   return await api.get(`/findauditorium/${id}`)
 
 }
+
+export const updateAuditoriumProfile=async(data:any)=>{
+
+}
+
+export const verifyPasswordAndChangeEmail=async(pass:string,email:string)=>{
+
+}
