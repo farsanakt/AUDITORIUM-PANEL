@@ -38,7 +38,7 @@ const isTodayOrFuture = (dateString: string) => {
 
 const DashboardOverview = () => {
   const [activeSection, setActiveSection] = useState<string>("upcoming")
-  const [selectedVenue, setSelectedVenue] = useState<string>("whole-auditorium")
+  const [selectedVenue, setSelectedVenue] = useState<string>("All Venues")
   const [venues, setVenues] = useState<any[]>([])
   const [upcomingEvents, setUpcomingEvents] = useState<any[]>([])
   const [auditoriumName, setAuditoriumName] = useState<string>("")
@@ -104,12 +104,12 @@ const DashboardOverview = () => {
   }, [upcomingEvents])
 
   const allVenues = [
-    { id: "whole-auditorium", name: "Whole Auditorium" },
+    { id: "All Venues", name: "All-Venues" },
     ...venues.map((venue) => ({ id: venue._id, name: venue.name })),
   ]
 
   const getFilteredEvents = () => {
-    if (selectedVenue === "whole-auditorium") {
+    if (selectedVenue === "All Venues") {
       const allEvents = upcomingEvents
         .filter((event) => {
           const eventDate = event.bookeddate || event.eventDate || event.date
@@ -180,11 +180,11 @@ const DashboardOverview = () => {
 
   const currentVenueData = {
     name:
-      selectedVenue === "whole-auditorium"
-        ? "Whole Auditorium"
+      selectedVenue === "All Venues"
+        ? "All-Venues"
         : venues.find((v) => v._id === selectedVenue)?.name || "Unknown Venue",
-    totalBookings: selectedVenue === "whole-auditorium" ? 128 : 0,
-    earnings: selectedVenue === "whole-auditorium" ? { monthly: 356000, yearly: 4250000 } : { monthly: 0, yearly: 0 },
+    totalBookings: selectedVenue === "All Venues" ? 128 : 0,
+    earnings: selectedVenue === "All Venues" ? { monthly: 356000, yearly: 4250000 } : { monthly: 0, yearly: 0 },
     upcomingEvents: getFilteredEvents(),
   }
 
@@ -212,7 +212,7 @@ const DashboardOverview = () => {
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-[#78533F] sm:text-3xl">Dashboard Overview</h2>
         <p className="text-gray-600 text-sm sm:text-base">
-          Auditorium: <span className="font-medium text-[#78533F]">{auditoriumName || "N/A"}</span>
+          Auditorium: <span className="font-extrabold text-2xl text-[#78533F]">{auditoriumName || "N/A"}</span>
         </p>
         <p className="text-gray-600 text-sm sm:text-base mt-1">
           Hello! Here's what's happening with your venues today.
@@ -404,7 +404,7 @@ const DashboardOverview = () => {
             <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">{currentVenueData.upcomingEvents.length}</h2>
           </div>
           <p className="text-gray-500 text-sm mt-2">
-            {selectedVenue === "whole-auditorium" ? "All venues" : "This venue"}
+            {selectedVenue === "All Venues" ? "All venues" : "This venue"}
           </p>
         </div>
       </div>
@@ -420,7 +420,7 @@ const DashboardOverview = () => {
               onClick={() => setActiveSection("upcoming")}
             >
               Upcoming Events
-              {selectedVenue === "whole-auditorium" && <span className="ml-2 text-sm text-gray-400">(All Venues)</span>}
+              {selectedVenue === "All Venues" && <span className="ml-2 text-sm text-gray-400">(All Venues)</span>}
             </button>
           </div>
         </div>
@@ -455,7 +455,7 @@ const DashboardOverview = () => {
                       </div>
                       <div>
                         <h4 className="font-medium text-gray-800">{event.name}</h4>
-                        {selectedVenue === "whole-auditorium" && event.venueId && (
+                        {selectedVenue === "All Venues" && event.venueId && (
                           <p className="text-xs text-gray-400">
                             Venue: {venues.find((v) => v._id === event.venueId)?.name || "Unknown Venue"}
                           </p>

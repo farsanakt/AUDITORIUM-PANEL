@@ -786,53 +786,54 @@ const VenueBookingPage: React.FC = () => {
 
       {/* Booking Confirmation Modal */}
       {showBookingModal && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50 animate-fade-in">
-          <div className="bg-white rounded-lg shadow-lg max-w-lg w-full mx-4 overflow-hidden animate-scale-in">
-            <div className="bg-gray-100 px-6 py-4 border-b border-gray-200">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h2 className="text-xl font-semibold text-gray-800">Confirm Your Booking</h2>
-                  <p className="text-sm text-gray-600 mt-1">Please review your booking details</p>
-                </div>
-                <button
-                  onClick={() => setShowBookingModal(false)}
-                  className="text-gray-500 hover:text-gray-700 transition-colors p-1 rounded-full hover:bg-gray-200"
-                >
-                  <X className="h-5 w-5" />
-                </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl mx-4 animate-fade-in overflow-hidden border border-[#b09d94]">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b bg-[#FDF8F1]">
+              <div>
+                <h2 className="text-xl font-bold text-[#78533F]">Confirm Your Booking</h2>
+                <p className="text-sm text-[#876553] mt-1">Please review your booking details before proceeding.</p>
               </div>
+              <button
+                onClick={() => setShowBookingModal(false)}
+                className="p-2 rounded-full hover:bg-[#f7e7dc] text-[#876553] hover:text-[#78533F] transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
             </div>
 
-            <div className="p-6">
-              <div className="bg-white rounded-md p-5 mb-5 border border-gray-100 shadow-sm">
-                <h3 className="text-base font-medium text-gray-800 mb-3 flex items-center">
-                  <Building2 className="h-4 w-4 mr-2 text-gray-500" />
+            {/* Modal Body */}
+            <div className="p-6 space-y-6">
+              {/* Booking Details */}
+              <div className="bg-[#FDF8F1] border border-[#b09d94] rounded-lg p-5 shadow-sm">
+                <h3 className="text-base font-semibold text-[#78533F] flex items-center mb-4">
+                  <Building2 className="h-4 w-4 mr-2 text-[#b09d94]" />
                   Booking Details
                 </h3>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center">
-                      <Mail className="h-4 w-4 text-gray-400 mr-2" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  {/* Left */}
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-3">
+                      <Mail className="h-5 w-5 mt-1 text-[#b09d94]" />
                       <div>
-                        <p className="text-xs text-gray-500 uppercase tracking-wide">Email</p>
-                        <p className="text-sm font-medium text-gray-800">{confirmedUserEmail}</p>
+                        <p className="text-xs text-[#876553] uppercase tracking-wide">Email</p>
+                        <p className="text-sm font-medium text-[#3C3A39]">{confirmedUserEmail}</p>
                       </div>
                     </div>
-
-                    <div className="flex items-center">
-                      <Building2 className="h-4 w-4 text-gray-400 mr-2" />
+                    <div className="flex items-start gap-3">
+                      <Building2 className="h-5 w-5 mt-1 text-[#b09d94]" />
                       <div>
-                        <p className="text-xs text-gray-500 uppercase tracking-wide">Venue</p>
-                        <p className="text-sm font-medium text-gray-800">{getCurrentVenue()?.name}</p>
+                        <p className="text-xs text-[#876553] uppercase tracking-wide">Venue</p>
+                        <p className="text-sm font-medium text-[#3C3A39]">{getCurrentVenue()?.name}</p>
                       </div>
                     </div>
-
-                    <div className="flex items-center">
-                      <Calendar className="h-4 w-4 text-gray-400 mr-2" />
+                    <div className="flex items-start gap-3">
+                      <Calendar className="h-5 w-5 mt-1 text-[#b09d94]" />
                       <div>
-                        <p className="text-xs text-gray-500 uppercase tracking-wide">Date</p>
-                        <p className="text-sm font-medium text-gray-800">
+                        <p className="text-xs text-[#876553] uppercase tracking-wide">Date</p>
+                        <p className="text-sm font-medium text-[#3C3A39]">
                           {selectedDate.toLocaleDateString("en-US", {
                             weekday: "long",
                             year: "numeric",
@@ -844,35 +845,37 @@ const VenueBookingPage: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <div className="flex items-center">
-                      <Clock className="h-4 w-4 text-gray-400 mr-2" />
+                  {/* Right */}
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-3">
+                      <Clock className="h-5 w-5 mt-1 text-[#b09d94]" />
                       <div>
-                        <p className="text-xs text-gray-500 uppercase tracking-wide">Time Slot</p>
-                        <p className="text-sm font-medium text-gray-800 capitalize">{selectedTimeSlot?.label}</p>
-                        <p className="text-xs text-gray-600">
+                        <p className="text-xs text-[#876553] uppercase tracking-wide">Time Slot</p>
+                        <p className="text-sm font-medium text-[#3C3A39] capitalize">{selectedTimeSlot?.label}</p>
+                        <p className="text-xs text-[#876553]">
                           {selectedTimeSlot?.startTime} - {selectedTimeSlot?.endTime}
                         </p>
                       </div>
                     </div>
 
-                    <div className="bg-gray-50 rounded-md p-3 border border-gray-100">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-xs text-gray-600">Total Amount</span>
-                        <span className="text-base font-semibold text-gray-800">₹{getCurrentVenue()?.totalamount}</span>
+                    <div className="bg-white border border-[#b09d94] rounded-lg p-3 shadow-sm">
+                      <div className="flex justify-between mb-2">
+                        <span className="text-xs text-[#876553]">Total Amount</span>
+                        <span className="text-sm font-semibold text-[#3C3A39]">₹{getCurrentVenue()?.totalamount}</span>
                       </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs text-gray-600">Advance Amount</span>
-                        <span className="text-base font-semibold text-green-600">₹{getCurrentVenue()?.advAmnt}</span>
+                      <div className="flex justify-between">
+                        <span className="text-xs text-[#876553]">Advance Amount</span>
+                        <span className="text-sm font-semibold text-[#ED695A]">₹{getCurrentVenue()?.advAmnt}</span>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="mb-5">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <MapPin className="inline h-4 w-4 mr-1 text-gray-500" />
+              {/* Address */}
+              <div>
+                <label className="block text-sm font-medium text-[#78533F] mb-2">
+                  <MapPin className="inline h-4 w-4 mr-1 text-[#b09d94]" />
                   Complete Address
                 </label>
                 <textarea
@@ -880,15 +883,16 @@ const VenueBookingPage: React.FC = () => {
                   onChange={(e) => setUserAddress(e.target.value)}
                   placeholder="Enter your complete address including city, state, and postal code"
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-600 text-sm resize-none transition-all duration-200 placeholder-gray-400"
+                  className="w-full px-3 py-2 border border-[#b09d94] rounded-md focus:outline-none focus:ring-2 focus:ring-[#876553] text-sm placeholder-[#b09d94] resize-none transition"
                   required
                 />
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-2 pt-4 border-t border-gray-100">
+              {/* Buttons */}
+              <div className="flex flex-col sm:flex-row gap-3 border-t border-[#b09d94] pt-4">
                 <button
                   onClick={() => setShowBookingModal(false)}
-                  className="flex-1 px-4 py-2 border border-gray-200 rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-800 transition-all duration-200 text-sm font-medium"
+                  className="flex-1 px-4 py-2 border border-[#b09d94] text-[#78533F] rounded-md hover:bg-[#f7e7dc] transition text-sm font-medium"
                   disabled={isSubmittingBooking}
                 >
                   Cancel
@@ -896,7 +900,7 @@ const VenueBookingPage: React.FC = () => {
                 <button
                   onClick={handleBookingConfirm}
                   disabled={isSubmittingBooking || !userAddress.trim()}
-                  className="flex-1 px-4 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-900 transition-all duration-200 text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-4 py-2 bg-[#ED695A] text-white rounded-md hover:bg-[#d85c4e] transition text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSubmittingBooking ? (
                     <>
@@ -916,12 +920,13 @@ const VenueBookingPage: React.FC = () => {
         </div>
       )}
 
+
       {/* Email Modal */}
       {showEmailModal && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50 animate-fade-in">
-          <div className="bg-white rounded-lg shadow-lg max-w-md w-full mx-4 p-6 border border-gray-200 animate-scale-in">
+          <div className="bg-[#FDF8F1] rounded-lg shadow-lg max-w-md w-full mx-4 p-6 border border-gray-200 animate-scale-in">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-semibold text-gray-800">Enter Your Email</h3>
+              <h3 className="text-xl font-semibold text-[#78533F]">Enter Your Email</h3>
               <button
                 onClick={() => {
                   setShowEmailModal(false)
@@ -959,35 +964,35 @@ const VenueBookingPage: React.FC = () => {
             </p>
 
             <div className="relative mb-2">
-              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400   h-4 w-4" />
               <input
                 type="email"
                 value={email}
                 onChange={(e) => {
                   setEmail(e.target.value)
                   setEmailError("")
-                  // NEW: Reset signup link visibility when typing
+                  
                   setShowSignupLink(false)
                 }}
                 placeholder="Enter your email"
-                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 text-sm"
+                className="w-full pl-10 pr-3 py-2 border-2 border-[#b09d94] border-opacity-50 rounded-md focus:outline-none focus:border-[#ED695A] focus:ring-1 focus:ring-[#ED695A] focus:ring-opacity-20 text-sm"
               />
               {emailError && (
                 <p className="text-red-600 text-sm mt-1 px-1">{emailError}</p>
               )}
             </div>
 
-            {/* NEW: Conditional rendering of signup link */}
+            
             {showSignupLink && (
               <div className="text-center mb-4">
-                <p className="text-sm text-gray-600">New user?</p>
+                <p className="text-sm text-gray-600">New Coustomer?</p>
                 <button
                   onClick={() => {
                     setShowEmailModal(false)
                     setEmailError("")
                     setShowSignupModal(true)
                   }}
-                  className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                  className="text-[#ED695A] font-semibold hover:underline hover:text-[#d85c4e]"
                 >
                   Sign up here
                 </button>
@@ -1008,7 +1013,7 @@ const VenueBookingPage: React.FC = () => {
               </button>
               <button
                 onClick={handleEmailSubmit}
-                className="px-4 py-2 bg-gray-900 text-white rounded-md hover:bg-gray-800 transition-all duration-300 text-sm"
+                className="px-4 py-2 bg-[#ED695A] text-white rounded-md hover:bg-[#fcaca4] transition-all duration-300 text-sm"
               >
                 Continue
               </button>
