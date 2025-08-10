@@ -1,3 +1,5 @@
+"use client"
+
 import type React from "react"
 import { useState, useRef, useEffect } from "react"
 import {
@@ -86,6 +88,14 @@ interface TooltipData {
 }
 
 const VenueBookingPage: React.FC = () => {
+  // Helper function to format date without timezone issues
+  const formatDateForBackend = (date: Date): string => {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, "0")
+    const day = String(date.getDate()).padStart(2, "0")
+    return `${year}-${month}-${day}`
+  }
+
   // Time slot selection states
   const [showTimeSlotsModal, setShowTimeSlotsModal] = useState(false)
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<TimeSlot | null>(null)
@@ -95,7 +105,6 @@ const VenueBookingPage: React.FC = () => {
   const [showEmailModal, setShowEmailModal] = useState(false)
   const [showSignupModal, setShowSignupModal] = useState(false)
   const [email, setEmail] = useState("")
-  // NEW: State to control signup link visibility
   const [showSignupLink, setShowSignupLink] = useState(false)
   const [signupData, setSignupData] = useState({
     firstName: "",
@@ -130,6 +139,21 @@ const VenueBookingPage: React.FC = () => {
   const hideTimeoutRef = useRef<number | null>(null)
   const tooltipRef = useRef<HTMLDivElement>(null)
 
+  const monthNames = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ]
+
   const fetchAllVenues = async () => {
     try {
       if (currentUser) {
@@ -148,6 +172,7 @@ const VenueBookingPage: React.FC = () => {
     try {
       if (currentUser) {
         const response = await existingBookings(currentUser.id)
+        console.log(response.data, "booking data")
         if (response.data && Array.isArray(response.data)) {
           setBookings(response.data)
         }
@@ -167,7 +192,7 @@ const VenueBookingPage: React.FC = () => {
   const getBookingsForDate = (date: number, venueId?: string, targetMonth?: Date): Booking[] => {
     const monthToUse = targetMonth || currentMonth
     const targetDate = new Date(monthToUse.getFullYear(), monthToUse.getMonth(), date)
-    const dateString = targetDate.toISOString().split("T")[0]
+    const dateString = formatDateForBackend(targetDate)
 
     return bookings.filter((booking) => {
       const matchesDate = booking.bookeddate === dateString
@@ -182,7 +207,7 @@ const VenueBookingPage: React.FC = () => {
       return []
     }
 
-    const dateString = date.toISOString().split("T")[0]
+    const dateString = formatDateForBackend(date)
     const dateBookings = bookings.filter(
       (booking) => booking.bookeddate === dateString && booking.venueId === venueId && booking.status !== "cancelled",
     )
@@ -193,7 +218,6 @@ const VenueBookingPage: React.FC = () => {
           booking.timeSlot.toLowerCase() === slot.id.toLowerCase() ||
           booking.timeSlot.toLowerCase() === slot.label.toLowerCase(),
       )
-
       return {
         ...slot,
         status: isSlotBooked ? "booked" : "available",
@@ -211,7 +235,7 @@ const VenueBookingPage: React.FC = () => {
 
       const monthToUse = targetMonth || currentMonth
       const targetDate = new Date(monthToUse.getFullYear(), monthToUse.getMonth(), date)
-      const dateString = targetDate.toISOString().split("T")[0]
+      const dateString = formatDateForBackend(targetDate)
 
       const dateBookings = bookings.filter(
         (booking) => booking.bookeddate === dateString && booking.venueId === venueId && booking.status !== "cancelled",
@@ -274,7 +298,6 @@ const VenueBookingPage: React.FC = () => {
       setSelectedTimeSlot(timeSlot)
       setShowTimeSlotsModal(false)
       setShowEmailModal(true)
-      // NEW: Reset signup link visibility when opening email modal
       setShowSignupLink(false)
     }
   }
@@ -294,8 +317,10 @@ const VenueBookingPage: React.FC = () => {
       window.clearTimeout(hideTimeoutRef.current)
       hideTimeoutRef.current = null
     }
+
     const status = getDateStatus(date, selectedVenue, currentMonth)
     const dayBookings = getBookingsForDate(date, selectedVenue, currentMonth)
+
     if (status !== "available" || dayBookings.length > 0) {
       const rect = event.currentTarget.getBoundingClientRect()
       setTooltip({
@@ -333,17 +358,14 @@ const VenueBookingPage: React.FC = () => {
           setConfirmedUserEmail(email)
           setShowEmailModal(false)
           setShowBookingModal(true)
-          // NEW: Ensure signup link is hidden when user exists
           setShowSignupLink(false)
         } else {
           setEmailError(response.data.message || "User not found.")
-          // NEW: Show signup link only if user not found
           setShowSignupLink(true)
         }
       } catch (error) {
         console.error("Unexpected error:", error)
         setEmailError("Something went wrong. Please try again.")
-        // NEW: Show signup link on error
         setShowSignupLink(true)
       }
     } else {
@@ -362,13 +384,11 @@ const VenueBookingPage: React.FC = () => {
       try {
         const response = await userSingUpRequest(signupData)
         console.log("Signup response:", response)
-
         if (response.success === true || response.data) {
           console.log("User registered successfully, going to booking modal")
           setConfirmedUserEmail(email)
           setShowSignupModal(false)
           setShowBookingModal(true)
-          // Clear signup data
           setSignupData({
             firstName: "",
             lastName: "",
@@ -404,6 +424,7 @@ const VenueBookingPage: React.FC = () => {
   const navigateMonth = (direction: "prev" | "next") => {
     setIsAnimating(true)
     setAnimationDirection(direction === "prev" ? "left" : "right")
+
     setTimeout(() => {
       setCurrentMonth((prev) => {
         const newMonth = new Date(prev)
@@ -427,13 +448,13 @@ const VenueBookingPage: React.FC = () => {
     }
 
     setIsSubmittingBooking(true)
-
     const currentVenue = getCurrentVenue()
+
     const bookingData = {
       userEmail: confirmedUserEmail,
       venueId: selectedVenue,
       venueName: currentVenue?.name,
-      selectedDate: selectedDate.toISOString().split("T")[0],
+      selectedDate: formatDateForBackend(selectedDate),
       selectedTimeSlot: selectedTimeSlot?.label,
       timeSlotId: selectedTimeSlot?.id,
       totalAmount: currentVenue?.totalamount,
@@ -503,7 +524,6 @@ const VenueBookingPage: React.FC = () => {
 
     for (let day = 1; day <= miniDaysInMonth; day++) {
       const status = getDateStatus(day, selectedVenue, miniDate)
-
       const getMiniStatusColor = (status: string) => {
         switch (status) {
           case "available":
@@ -590,6 +610,7 @@ const VenueBookingPage: React.FC = () => {
                 }),
               )}
             </div>
+
             <button
               onClick={() => navigateMonth("prev")}
               disabled={isAnimating}
@@ -597,6 +618,7 @@ const VenueBookingPage: React.FC = () => {
             >
               <ChevronLeft className="text-gray-700 hover:text-gray-900 w-5 h-5" />
             </button>
+
             <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-300">
               <div className="p-5">
                 <div className="flex justify-center items-center mb-4">
@@ -612,6 +634,7 @@ const VenueBookingPage: React.FC = () => {
                     {currentMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
                   </h2>
                 </div>
+
                 <div className="grid grid-cols-7 gap-2 mb-3">
                   {["S", "M", "T", "W", "T", "F", "S"].map((day, index) => (
                     <div key={`main-day-${index}`} className="text-center text-sm font-semibold text-gray-600 py-2">
@@ -619,6 +642,7 @@ const VenueBookingPage: React.FC = () => {
                     </div>
                   ))}
                 </div>
+
                 <div
                   className={`grid grid-cols-7 gap-2 transition-all duration-300 ease-in-out ${
                     isAnimating
@@ -632,6 +656,7 @@ const VenueBookingPage: React.FC = () => {
                 </div>
               </div>
             </div>
+
             <button
               onClick={() => navigateMonth("next")}
               disabled={isAnimating}
@@ -639,6 +664,7 @@ const VenueBookingPage: React.FC = () => {
             >
               <ChevronRight className="text-gray-700 hover:text-gray-900 w-5 h-5" />
             </button>
+
             <div className="hidden lg:block">
               {renderMiniCalendar(
                 1,
@@ -722,7 +748,6 @@ const VenueBookingPage: React.FC = () => {
                 <X className="h-4 w-4 text-gray-600" />
               </button>
             </div>
-
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {getCurrentVenue() &&
                 getTimeSlotsWithStatus(selectedVenue, selectedDateForSlots).map((slot, index) => {
@@ -770,7 +795,6 @@ const VenueBookingPage: React.FC = () => {
                   )
                 })}
             </div>
-
             {getCurrentVenue() &&
               getTimeSlotsWithStatus(selectedVenue, selectedDateForSlots).every((slot) => slot.status === "booked") && (
                 <div className="text-center py-8">
@@ -788,7 +812,6 @@ const VenueBookingPage: React.FC = () => {
       {showBookingModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl mx-4 animate-fade-in overflow-hidden border border-[#b09d94]">
-            
             {/* Modal Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b bg-[#FDF8F1]">
               <div>
@@ -811,7 +834,6 @@ const VenueBookingPage: React.FC = () => {
                   <Building2 className="h-4 w-4 mr-2 text-[#b09d94]" />
                   Booking Details
                 </h3>
-
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   {/* Left */}
                   <div className="space-y-4">
@@ -844,7 +866,6 @@ const VenueBookingPage: React.FC = () => {
                       </div>
                     </div>
                   </div>
-
                   {/* Right */}
                   <div className="space-y-4">
                     <div className="flex items-start gap-3">
@@ -857,7 +878,6 @@ const VenueBookingPage: React.FC = () => {
                         </p>
                       </div>
                     </div>
-
                     <div className="bg-white border border-[#b09d94] rounded-lg p-3 shadow-sm">
                       <div className="flex justify-between mb-2">
                         <span className="text-xs text-[#876553]">Total Amount</span>
@@ -920,7 +940,6 @@ const VenueBookingPage: React.FC = () => {
         </div>
       )}
 
-
       {/* Email Modal */}
       {showEmailModal && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50 animate-fade-in">
@@ -931,7 +950,6 @@ const VenueBookingPage: React.FC = () => {
                 onClick={() => {
                   setShowEmailModal(false)
                   setEmailError("")
-                  // NEW: Reset signup link visibility on modal close
                   setShowSignupLink(false)
                 }}
                 className="p-1 hover:bg-gray-100 rounded-full"
@@ -939,7 +957,6 @@ const VenueBookingPage: React.FC = () => {
                 <X className="h-4 w-4 text-gray-600" />
               </button>
             </div>
-
             <div className="mb-4 p-3 bg-gray-50 rounded-lg">
               <p className="text-sm text-gray-600 mb-2">Booking Details:</p>
               <div className="space-y-1">
@@ -957,35 +974,29 @@ const VenueBookingPage: React.FC = () => {
                 </p>
               </div>
             </div>
-
-            {/* NEW: Added mandatory email field message */}
             <p className="mb-4 text-gray-600 text-sm">
-              Please enter your email to proceed with the booking. This field is mandatory for future processing and mailing activities.
+              Please enter your email to proceed with the booking. This field is mandatory for future processing and
+              mailing activities.
             </p>
-
             <div className="relative mb-2">
-              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400   h-4 w-4" />
+              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <input
                 type="email"
                 value={email}
                 onChange={(e) => {
                   setEmail(e.target.value)
                   setEmailError("")
-                  
                   setShowSignupLink(false)
                 }}
                 placeholder="Enter your email"
                 className="w-full pl-10 pr-3 py-2 border-2 border-[#b09d94] border-opacity-50 rounded-md focus:outline-none focus:border-[#ED695A] focus:ring-1 focus:ring-[#ED695A] focus:ring-opacity-20 text-sm"
               />
-              {emailError && (
-                <p className="text-red-600 text-sm mt-1 px-1">{emailError}</p>
-              )}
+              {emailError && <p className="text-red-600 text-sm mt-1 px-1">{emailError}</p>}
             </div>
 
-            
             {showSignupLink && (
               <div className="text-center mb-4">
-                <p className="text-sm text-gray-600">New Coustomer?</p>
+                <p className="text-sm text-gray-600">New Customer?</p>
                 <button
                   onClick={() => {
                     setShowEmailModal(false)
@@ -998,13 +1009,11 @@ const VenueBookingPage: React.FC = () => {
                 </button>
               </div>
             )}
-
             <div className="flex justify-end space-x-3">
               <button
                 onClick={() => {
                   setShowEmailModal(false)
                   setEmailError("")
-                  // NEW: Reset signup link visibility on cancel
                   setShowSignupLink(false)
                 }}
                 className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-all duration-300 text-gray-700 text-sm"

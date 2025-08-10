@@ -193,6 +193,15 @@ export const deleteVenueAPI=async(id:string)=>{
 }
 
 
+export const fetchAllVendors=async()=>{
+
+  const response=await api.get('/allvendors')
+
+  return response
+
+}
+
+
 export const findAuditoriumById=async(id:string)=>{
 
   return await api.get(`/findauditorium/${id}`)

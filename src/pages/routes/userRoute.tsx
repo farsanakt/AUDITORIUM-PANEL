@@ -8,6 +8,7 @@ import UserLoginPage from '../user/Login'
 import HomePage from '../user/Home'
 import AuditoriumList from '../user/AuditoriumList'
 import VenuePage from '../user/VenueList'
+import VendorList from '../user/Vendor'
 // import DetailsForm from '../user/Details'
 
 const UserRoute = () => {
@@ -23,6 +24,7 @@ const UserRoute = () => {
         <Route path='/' element={<HomePage/>}/>
         <Route path='/auditoriumlist' element={<AuditoriumList/>}/>
         <Route path='/venuelist/:id' element={<VenuePage/>}/>
+        <Route path='/vendorslist/' element={<VendorList/>}/>
         </Routes> 
     </div>
   )

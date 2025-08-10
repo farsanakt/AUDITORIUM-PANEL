@@ -1,32 +1,22 @@
-
 import type React from "react";
 import { useState, useEffect, useRef } from "react";
 import {
-  Heart,
-  Camera,
-  Users,
+ 
   MapPin,
   Calendar,
   Flag,
   Search,
   ChevronLeft,
   ChevronRight,
-  Star, // Added Star icon import
+  Star,
 } from "lucide-react";
 import Header from "../../component/user/Header";
 import bgImg from "../../assets/Rectangle 50.png";
-import makeup1 from "../../assets/makeup1.png";
-import makeup2 from "../../assets/makeup2.png";
-import makeup3 from "../../assets/makeup3.png";
-import makeup4 from "../../assets/makeup4.png";
-import pic1 from "../../assets/pic1.png";
-import pic2 from "../../assets/pic2.png";
-import pic3 from "../../assets/pic3.png";
-import pic4 from "../../assets/pic4.png";
+
 import pjct from "../../assets/image 16.png";
 import pjct1 from "../../assets/Rectangle 30.png";
 import { useNavigate } from "react-router-dom";
-import { existingVenues } from "../../api/userApi";
+import { existingVenues, fetchAllVendors } from "../../api/userApi";
 
 interface Service {
   id: number;
@@ -70,13 +60,15 @@ const HomePage: React.FC = () => {
     event: "",
   });
   const [venues, setVenues] = useState<Venue[]>([]);
+  const [makeupArtists, setMakeupArtists] = useState<Artist[]>([]);
+  const [eventManagements, setEventManagements] = useState<Artist[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   
   const venuesRef = useRef<HTMLDivElement>(null);
-  const photographersRef = useRef<HTMLDivElement>(null);
+  const eventManagementsRef = useRef<HTMLDivElement>(null);
   const artistsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -100,6 +92,42 @@ const HomePage: React.FC = () => {
     console.log("Form submitted:", formData);
     navigate(`/auditoriumlist?place=${formData.place}&date=${formData.date}&event=${formData.event}`);
   };
+
+  const fetchVendors=async()=>{
+
+    const response=await fetchAllVendors()
+
+    console.log(response.data,'vendors data')
+
+    const vendors = response.data;
+
+    const mappedMakeupArtists = vendors
+      .filter((v: any) => v.vendorType === 'makeup artist')
+      .map((v: any) => ({
+        id: v._id,
+        name: v.name,
+        role: 'Makeup Artist',
+        image: v.images[0],
+        rating: 4.5, // Default rating as not provided in data
+        location: v.cities[0] || v.address.split(',').pop()?.trim() || 'Unknown',
+        review: '', // Not used
+      }));
+
+    const mappedEventManagements = vendors
+      .filter((v: any) => v.vendorType === 'event management')
+      .map((v: any) => ({
+        id: v._id,
+        name: v.name,
+        role: 'Event Management',
+        image: v.images[0],
+        rating: 4.5, // Default rating as not provided in data
+        location: v.cities[0] || v.address.split(',').pop()?.trim() || 'Unknown',
+        review: '', // Not used
+      }));
+
+    setMakeupArtists(mappedMakeupArtists);
+    setEventManagements(mappedEventManagements);
+  }
 
   const fetchVenues = async () => {
     try {
@@ -130,135 +158,10 @@ const HomePage: React.FC = () => {
 
   useEffect(() => {
     fetchVenues();
+    fetchVendors()
   }, []);
 
-  const services: Service[] = [
-    {
-      id: 1,
-      title: "Wedding Photography",
-      description:
-        "Capture your special moments with professional wedding photography that tells your unique love story.",
-      image: "/placeholder.svg?height=200&width=300",
-    },
-    {
-      id: 2,
-      title: "Event Planning",
-      description:
-        "Complete wedding planning services to make your dream wedding come true with attention to every detail.",
-      image: "/placeholder.svg?height=200&width=300",
-    },
-    {
-      id: 3,
-      title: "Venue Decoration",
-      description:
-        "Transform any space into a magical wedding venue with our expert decoration and design services.",
-      image: "/placeholder.svg?height=200&width=300",
-    },
-    {
-      id: 4,
-      title: "Catering Services",
-      description:
-        "Delicious cuisine and professional catering services to satisfy all your guests' culinary needs.",
-      image: "/placeholder.svg?height=200&width=300",
-    },
-  ];
-
-  const artists: Artist[] = [
-    {
-      id: 1,
-      name: "Sarah Johnson",
-      role: "Wedding Photographer",
-      image: makeup1,
-      rating: 4.9,
-      location: "Kochi",
-      review: "Transformed my wedding look with stunning makeup!",
-    },
-    {
-      id: 2,
-      name: "Michael Chen",
-      role: "Event Planner",
-      image: makeup2,
-      rating: 4.8,
-      location: "Delhi",
-      review: "Organized everything perfectly, stress-free experience!",
-    },
-    {
-      id: 3,
-      name: "Emily Rodriguez",
-      role: "Decorator",
-      image: makeup3,
-      rating: 4.9,
-      location: "Trivandrum",
-      review: "Created a magical ambiance for our big day!",
-    },
-    {
-      id: 4,
-      name: "David Kim",
-      role: "Videographer",
-      image: makeup4,
-      rating: 4.7,
-      location: "Kochui",
-      review: "Captured every moment beautifully!",
-    },
-    {
-      id: 5,
-      name: "Lisa Wong",
-      role: "Makeup Artist",
-      image: makeup1,
-      rating: 4.8,
-      location: "Mumbai",
-      review: "Flawless makeup that lasted all day!",
-    },
-  ];
-
-  const photos: Artist[] = [
-    {
-      id: 1,
-      name: "Sarah Johnson",
-      role: "Wedding Photographer",
-      image: pic1,
-      rating: 4.9,
-      location: "Kochi",
-      review: "Amazing photos that captured our love story!",
-    },
-    {
-      id: 2,
-      name: "Michael Chen",
-      role: "Event Planner",
-      image: pic2,
-      rating: 4.8,
-      location: "Delhi",
-      review: "Professional and creative, highly recommend!",
-    },
-    {
-      id: 3,
-      name: "Emily Rodriguez",
-      role: "Decorator",
-      image: pic3,
-      rating: 4.9,
-      location: "Trivandrum",
-      review: "Turned our venue into a fairytale!",
-    },
-    {
-      id: 4,
-      name: "David Kim",
-      role: "Videographer",
-      image: pic4,
-      rating: 4.7,
-      location: "Kochui",
-      review: "Stunning video quality, captured every detail!",
-    },
-    {
-      id: 5,
-      name: "Anna Lee",
-      role: "Photographer",
-      image: pic1,
-      rating: 4.8,
-      location: "Bangalore",
-      review: "Creative shots that exceeded expectations!",
-    },
-  ];
-
+  
   const projects: Project[] = [
     {
       id: 1,
@@ -629,23 +532,22 @@ const HomePage: React.FC = () => {
         </div>
       </section>
 
-      <section id="photographers" className="py-12 sm:py-16 lg:py-20 bg-gradient-to-b">
+      <section id="eventManagement" className="py-12 sm:py-16 lg:py-20 bg-gradient-to-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-left mb-12 sm:mb-16">
             <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#5B4336] mb-4">
-              Latest Photographers
+              Event Management
             </h2>
             <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl">
-              Whether you love classic, candid, documentary, or artistic
-              photography, we have the perfect match for your vision.
+              Our expert event management teams ensure every detail of your special day is perfectly executed.
             </p>
           </div>
 
           <div className="relative">
-            {photos.length > 4 && (
+            {eventManagements.length > 4 && (
               <div className="absolute top-1/2 -left-4 sm:-left-6 transform -translate-y-1/2 z-10">
                 <button
-                  onClick={() => scrollLeft(photographersRef)}
+                  onClick={() => scrollLeft(eventManagementsRef)}
                   className="scroll-button bg-[#9c7c5d] text-white rounded-full p-2 sm:p-3 hover:bg-[#8b6b4a] transition duration-300"
                 >
                   <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -653,10 +555,10 @@ const HomePage: React.FC = () => {
               </div>
             )}
             <div
-              ref={photographersRef}
+              ref={eventManagementsRef}
               className="scroll-container flex overflow-x-auto space-x-4 sm:space-x-6 pb-4"
             >
-              {photos.map((artist, index) => (
+              {eventManagements.map((artist, index) => (
                 <div
                   key={artist.id}
                   className="group rounded-xl overflow-hidden hover:shadow-xl transition duration-300 transform opacity-0 scale-95 flex-shrink-0 w-[240px] sm:w-[280px]"
@@ -691,10 +593,10 @@ const HomePage: React.FC = () => {
                 </div>
               ))}
             </div>
-            {photos.length > 4 && (
+            {eventManagements.length > 4 && (
               <div className="absolute top-1/2 -right-4 sm:-right-6 transform -translate-y-1/2 z-10">
                 <button
-                  onClick={() => scrollRight(photographersRef)}
+                  onClick={() => scrollRight(eventManagementsRef)}
                   className="scroll-button bg-[#9c7c5d] text-white rounded-full p-2 sm:p-3 hover:bg-[#8b6b4a] transition duration-300"
                 >
                   <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -703,7 +605,9 @@ const HomePage: React.FC = () => {
             )}
           </div>
           <div className="text-right mt-6">
-            <button className="px-4 py-2 bg-gray-200 text-[#9c7c5d] rounded-lg hover:bg-gray-300 transition duration-300">
+            <button 
+              onClick={() => navigate('/vendorslist?type=event management')}
+              className="px-4 py-2 bg-gray-200 text-[#9c7c5d] rounded-lg hover:bg-gray-300 transition duration-300">
               View All
             </button>
           </div>
@@ -723,7 +627,7 @@ const HomePage: React.FC = () => {
           </div>
 
           <div className="relative">
-            {artists.length > 4 && (
+            {makeupArtists.length > 4 && (
               <div className="absolute top-1/2 -left-4 sm:-left-6 transform -translate-y-1/2 z-10">
                 <button
                   onClick={() => scrollLeft(artistsRef)}
@@ -737,7 +641,7 @@ const HomePage: React.FC = () => {
               ref={artistsRef}
               className="scroll-container flex overflow-x-auto space-x-4 sm:space-x-6 pb-4"
             >
-              {artists.map((artist, index) => (
+              {makeupArtists.map((artist, index) => (
                 <div
                   key={artist.id}
                   className="group rounded-xl overflow-hidden hover:shadow-xl transition duration-300 transform opacity-0 scale-95 flex-shrink-0 w-[240px] sm:w-[280px]"
@@ -772,7 +676,7 @@ const HomePage: React.FC = () => {
                 </div>
               ))}
             </div>
-            {artists.length > 4 && (
+            {makeupArtists.length > 4 && (
               <div className="absolute top-1/2 -right-4 sm:-right-6 transform -translate-y-1/2 z-10">
                 <button
                   onClick={() => scrollRight(artistsRef)}
@@ -784,7 +688,9 @@ const HomePage: React.FC = () => {
             )}
           </div>
           <div className="text-right mt-6">
-            <button className="px-4 py-2 bg-gray-200 text-[#9c7c5d] rounded-lg hover:bg-gray-300 transition duration-300">
+            <button 
+              onClick={() => navigate('/vendorslist?type=makeup artist')}
+              className="px-4 py-2 bg-gray-200 text-[#9c7c5d] rounded-lg hover:bg-gray-300 transition duration-300">
               View All
             </button>
           </div>
