@@ -213,6 +213,7 @@ const VendorList: React.FC = () => {
                 <div
                   key={vendor.id}
                   className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 group cursor-pointer"
+                  onClick={() => navigate(`/vendordetails/${vendor.id}`)}
                 >
                   <div className="relative">
                     <img

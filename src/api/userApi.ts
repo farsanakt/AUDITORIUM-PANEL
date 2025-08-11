@@ -201,6 +201,14 @@ export const fetchAllVendors=async()=>{
 
 }
 
+export const singleVendorDetails=async(id:string)=>{
+
+  const response=await api.get(`/singlevendor/${id}`)
+
+  return response
+
+}
+
 
 export const findAuditoriumById=async(id:string)=>{
 

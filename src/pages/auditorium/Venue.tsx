@@ -1,4 +1,3 @@
-
 import type React from "react"
 import { useState, useEffect } from "react"
 import {
@@ -177,30 +176,31 @@ export default function VenueManagement() {
     setIsEditModalOpen(true)
   }
 
-  const deleteVenue = async (id: string): Promise<void> => {
-    const result = await Swal.fire({
-      title: "Are you sure?",
-      text: "Do you want to delete this venue? This action cannot be undone.",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#d33",
-      cancelButtonColor: "#3085d6",
-      confirmButtonText: "Yes, delete it!",
-      cancelButtonText: "Cancel",
-    })
+ const deleteVenue = async (id: string, name: string): Promise<void> => {
+  const result = await Swal.fire({
+    title: "Are you sure?",
+    html: `Do you want to delete <b>${name}</b>? This action cannot be undone.`,
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#d33",
+    cancelButtonColor: "#3085d6",
+    confirmButtonText: "Yes, delete it!",
+    cancelButtonText: "Cancel",
+  })
 
-    if (result.isConfirmed) {
-      try {
-        await deleteVenueAPI(id)
-        setVenues(venues.filter((venue) => venue._id !== id))
-        if (selectedVenue?._id === id) setSelectedVenue(null)
-        toast.success("Venue deleted successfully!")
-      } catch (error) {
-        console.error("Error deleting venue:", error)
-        toast.error("Failed to delete venue.")
-      }
+  if (result.isConfirmed) {
+    try {
+      await deleteVenueAPI(id)
+      setVenues(venues.filter((venue) => venue._id !== id))
+      if (selectedVenue?._id === id) setSelectedVenue(null)
+      toast.success(`Venue "${name}" deleted successfully!`)
+    } catch (error) {
+      console.error("Error deleting venue:", error)
+      toast.error("Failed to delete venue.")
     }
   }
+}
+
 
   const resetAddModal = (): void => {
     setNewVenue({
@@ -623,7 +623,7 @@ export default function VenueManagement() {
                         <button
                           onClick={(e) => {
                             e.stopPropagation()
-                            deleteVenue(venue._id)
+                            deleteVenue(venue._id, venue.name)
                           }}
                           className="p-2 hover:bg-red-50 rounded-lg transition-colors text-red-600"
                         >

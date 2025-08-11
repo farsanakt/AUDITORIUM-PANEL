@@ -9,6 +9,7 @@ import HomePage from '../user/Home'
 import AuditoriumList from '../user/AuditoriumList'
 import VenuePage from '../user/VenueList'
 import VendorList from '../user/Vendor'
+import VendorDetails from '../user/vendorDetails'
 // import DetailsForm from '../user/Details'
 
 const UserRoute = () => {
@@ -25,6 +26,7 @@ const UserRoute = () => {
         <Route path='/auditoriumlist' element={<AuditoriumList/>}/>
         <Route path='/venuelist/:id' element={<VenuePage/>}/>
         <Route path='/vendorslist/' element={<VendorList/>}/>
+        <Route path='/vendordetails/:id' element={<VendorDetails/>} />
         </Routes> 
     </div>
   )
