@@ -149,6 +149,26 @@ export const createBooking=async(formData:any)=>{
 
 }
 
+export const createVendorBooking=async(formData:any)=>{
+
+  console.log('i am reaching',formData)
+
+  const response =await api.post('/vendorbookings',formData)
+
+  console.log('form data,',formData)
+
+  return response
+
+}
+
+export const fetchExistingVendorBookings=async(id:string)=>{
+
+  const response=await api.get(`/existingVendorBookings/${id}`)
+
+  return response
+
+}
+
 export const existingBkngs=async(id:string)=>{
 
   const response=await api.get(`/existingBookings/${id}`)

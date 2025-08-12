@@ -1,32 +1,28 @@
 "use client"
 
-import type React from "react"
-import { useEffect, useState } from "react"
+import React, { useEffect, useState } from "react"
 import { useParams } from "react-router-dom"
 import Header from "../../component/user/Header"
 import Lines from "../../assets/Group 52 (1).png"
 import Bshape from "../../assets/02 2.png"
-import { singleVendorDetails } from "../../api/userApi"
+import { singleVendorDetails, createVendorBooking, fetchExistingVendorBookings } from "../../api/userApi"
+import Swal from 'sweetalert2'
 
 interface Vendor {
   _id: string
   name: string
   address: string
-  audiUserId: string
   phone: string
   advAmnt: string
   altPhone: string
   cancellationPolicy: string
   cities: string[]
-  createdAt: string
   email: string
   images: string[]
   pincode: string
   timeSlots: { label: string; startTime: string; endTime: string }[]
   totalamount: string
-  updatedAt: string
   vendorType: string
-  __v: number
 }
 
 interface Booking {
@@ -35,19 +31,28 @@ interface Booking {
   status: string
 }
 
+interface BookingData {
+  vendorName: string
+  userEmail: string
+  vendorId: string
+  totalAmount: number
+  advanceAmount: number
+  address: string
+  bookedDate: string
+  timeSlot: string
+}
+
 const VendorDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const [vendor, setVendor] = useState<Vendor | null>(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [currentDate, setCurrentDate] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState("")
-  const [paymentType, setPaymentType] = useState("advance")
-  const [bookingData, setBookingData] = useState<any>(null)
+  const [paymentType, setPaymentType] = useState<"advance" | "full">("advance")
+  const [bookingData, setBookingData] = useState<BookingData | null>(null)
   const [formData, setFormData] = useState({
     email: "",
     address: "",
@@ -58,14 +63,20 @@ const VendorDetails: React.FC = () => {
   const fetchVendorDetails = async () => {
     try {
       setLoading(true)
-      const response = await singleVendorDetails(id!)
-      setVendor(response.data)
-      // Mock fetching bookings (replace with actual API call if available)
-      setBookings([]) // Placeholder: Add actual booking fetch logic here
-      setLoading(false)
+      const [vendorResponse, bookingsResponse] = await Promise.all([
+        singleVendorDetails(id!),
+        fetchExistingVendorBookings(id!)
+      ])
+      setVendor(vendorResponse.data)
+      setBookings(bookingsResponse.data || [])
     } catch (err) {
-      console.error("Error fetching vendor details:", err)
-      setError("Failed to load vendor details.")
+      console.error("Error fetching vendor details or bookings:", err)
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Failed to load vendor details or bookings.',
+      })
+    } finally {
       setLoading(false)
     }
   }
@@ -99,7 +110,7 @@ const VendorDetails: React.FC = () => {
   const generateCalendarDays = () => {
     const daysInMonth = getDaysInMonth(currentDate)
     const firstDay = getFirstDayOfMonth(currentDate)
-    const days = []
+    const days: { day: number; date: Date; isCurrentMonth: boolean }[] = []
     const prevMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 0)
     const prevMonthDays = getDaysInMonth(prevMonth)
 
@@ -168,7 +179,7 @@ const VendorDetails: React.FC = () => {
 
   const getDateClassName = (date: Date | null, isCurrentMonth: boolean) => {
     const baseClass =
-      "w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-xs sm:text-sm font-medium transition-all relative group"
+      "w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center text-xs sm:text-sm md:text-base font-medium transition-all relative group"
 
     if (!isCurrentMonth || !date) {
       return `${baseClass} text-gray-400 cursor-not-allowed`
@@ -188,7 +199,6 @@ const VendorDetails: React.FC = () => {
         ? `${baseClass} bg-blue-600 text-white cursor-pointer hover:scale-105`
         : `${baseClass} bg-yellow-400 text-yellow-900 cursor-pointer hover:bg-yellow-500 hover:scale-105`
     }
-
     return isSelected
       ? `${baseClass} bg-blue-600 text-white cursor-pointer hover:scale-105`
       : `${baseClass} bg-green-100 text-green-800 cursor-pointer hover:bg-green-200 hover:scale-105`
@@ -197,15 +207,15 @@ const VendorDetails: React.FC = () => {
   const getTooltipContent = (date: Date) => {
     const slots = getTimeSlotStatus(date)
     return (
-      <div className="absolute z-20 bg-white p-3 rounded-lg shadow-xl border border-gray-200 top-full mt-2 text-sm max-w-xs sm:max-w-sm bg-opacity-95 transform -translate-x-1/2 left-1/2">
-        <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-8 border-r-8 border-b-8 border-l-transparent border-r-transparent border-b-white"></div>
+      <div className="absolute z-20 bg-white p-3 rounded-lg shadow-xl border border-gray-200 bottom-full mb-2 text-xs sm:text-sm max-w-[90vw] sm:max-w-xs bg-opacity-95 transform -translate-x-1/2 left-1/2">
+        <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-8 border-r-8 border-t-8 border-l-transparent border-r-transparent border-t-white"></div>
         <p className="font-semibold text-gray-800 mb-2">Time Slots:</p>
         {slots.length > 0 ? (
           slots.map((slot) => (
             <div key={slot.label} className="flex items-center gap-2">
-              <div className={`w-3 h-3 rounded-full ${slot.isBooked ? "bg-red-500" : "bg-green-500"}`}></div>
+              <div className={`w-3 h-3 sm:w-4 sm:h-4 rounded-full ${slot.isBooked ? "bg-red-500" : "bg-green-500"}`}></div>
               <p className={slot.isBooked ? "text-red-600" : "text-green-600"}>
-                {slot.label}: {slot.isBooked ? "Booked" : "Available"}
+                {slot.label}: {slot.startTime} - {slot.endTime} {slot.isBooked ? "(Booked)" : "(Available)"}
               </p>
             </div>
           ))
@@ -221,7 +231,7 @@ const VendorDetails: React.FC = () => {
       setSelectedDate(date)
       setFormData((prev) => ({
         ...prev,
-        timeSlot: "", // Reset time slot when selecting a new date
+        timeSlot: "",
       }))
       setIsModalOpen(true)
     }
@@ -249,14 +259,14 @@ const VendorDetails: React.FC = () => {
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!selectedDate) return
+    if (!selectedDate || !vendor) return
     const bookedDate = formatDateForBackend(selectedDate)
     setBookingData({
-      vendorName: vendor?.name,
+      vendorName: vendor.name,
       userEmail: formData.email,
-      vendorId: vendor?._id,
-      totalAmount: vendor?.totalamount,
-      advanceAmount: vendor?.advAmnt,
+      vendorId: vendor._id,
+      totalAmount: Number(vendor.totalamount),
+      advanceAmount: Number(vendor.advAmnt),
       address: formData.address,
       bookedDate,
       timeSlot: formData.timeSlot,
@@ -270,24 +280,44 @@ const VendorDetails: React.FC = () => {
     if (!paymentMethod || !bookingData) return
 
     const paidAmount = paymentType === "advance" ? bookingData.advanceAmount : bookingData.totalAmount
-    const balanceAmount =
-      paymentType === "advance" ? (Number(bookingData.totalAmount) - Number(bookingData.advanceAmount)).toString() : "0"
+    const balanceAmount = paymentType === "advance" ? (bookingData.totalAmount - bookingData.advanceAmount) : 0
 
     const dataToSend = {
       ...bookingData,
       paidAmount,
       balanceAmount,
+      paymentMethod,
+      paymentType,
     }
 
     try {
-      console.log("Booking sent to backend:", dataToSend)
+      const response = await createVendorBooking(dataToSend)
       setIsPaymentModalOpen(false)
       setFormData({ email: "", address: "", timeSlot: "" })
       setPaymentMethod("")
       setPaymentType("advance")
       setBookingData(null)
+      if (response.status) {
+        Swal.fire({
+          icon: 'success',
+          title: 'Booking Confirmed',
+          text: response.message || 'Your booking has been successfully created!',
+        })
+        await fetchVendorDetails()
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'Booking Failed',
+          text: response.message || 'There was an issue with your booking. Please try again.',
+        })
+      }
     } catch (err) {
       console.error("Error submitting booking:", err)
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'An unexpected error occurred. Please try again later.',
+      })
     }
   }
 
@@ -298,8 +328,8 @@ const VendorDetails: React.FC = () => {
     return <div className="text-center py-8">Loading...</div>
   }
 
-  if (error || !vendor) {
-    return <div className="text-center py-8 text-red-600">{error || "No vendor found."}</div>
+  if (!vendor) {
+    return <div className="text-center py-8 text-red-600">No vendor found.</div>
   }
 
   return (
@@ -333,27 +363,10 @@ const VendorDetails: React.FC = () => {
           <div className="mb-6 sm:mb-8">
             <div className="relative bg-white rounded-lg shadow-lg overflow-hidden max-w-6xl mx-auto">
               <img
-                src={vendor.images[currentImageIndex] || "/placeholder.svg?height=400&width=600"}
-                alt={`Slide ${currentImageIndex + 1}`}
+                src={vendor.images[0] || "/placeholder.svg?height=400&width=600"}
+                alt="Vendor"
                 className="w-full h-48 sm:h-64 md:h-80 lg:h-[400px] object-cover transition-all duration-700 ease-in-out"
               />
-            </div>
-            <div className="mt-3 sm:mt-4 flex justify-center items-center gap-2 sm:gap-3 overflow-x-auto px-2 sm:px-4 scrollbar-hide">
-              {vendor.images.map((img, index) => (
-                <button
-                  key={index}
-                  onClick={() => setCurrentImageIndex(index)}
-                  className={`h-12 w-16 sm:h-16 sm:w-24 md:h-20 md:w-28 rounded-md overflow-hidden border transition-all duration-200 ${
-                    index === currentImageIndex ? "border-[#b09d94] shadow-md" : "border-gray-200 hover:border-gray-400"
-                  }`}
-                >
-                  <img
-                    src={img || "/placeholder.svg"}
-                    alt={`Thumbnail ${index + 1}`}
-                    className="w-full h-full object-cover"
-                  />
-                </button>
-              ))}
             </div>
           </div>
           <div className="flex flex-col lg:flex-row justify-between items-start mb-6 sm:mb-8 gap-4 lg:gap-6">
@@ -438,18 +451,18 @@ const VendorDetails: React.FC = () => {
                       disabled={currentDate.getFullYear() === new Date().getFullYear() && 
                                currentDate.getMonth() === new Date().getMonth()}
                     >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                       </svg>
                     </button>
-                    <div className="text-center font-medium text-gray-600 text-base sm:text-lg">
+                    <div className="text-center font-medium text-gray-600 text-base sm:text-lg md:text-xl">
                       {monthName} {year}
                     </div>
                     <button 
                       onClick={() => navigateMonth("next")} 
                       className="p-1 sm:p-2 hover:bg-gray-100 rounded-full transition-colors"
                     >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
                     </button>
@@ -502,44 +515,44 @@ const VendorDetails: React.FC = () => {
       </div>
 
       {isModalOpen && selectedDate && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 px-4 backdrop-blur-sm">
-          <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl shadow-2xl border-2 border-amber-200 p-6 sm:p-8 w-full max-w-2xl overflow-auto max-h-[90vh] transform transition-all">
-            <div className="text-center mb-6 pb-4 border-b-2 border-amber-300">
-              <h2 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-amber-800 to-orange-700 bg-clip-text text-transparent mb-2">
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 px-2 sm:px-4 backdrop-blur-sm">
+          <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl shadow-2xl border-2 border-amber-200 p-4 sm:p-6 md:p-8 w-full max-w-2xl overflow-auto max-h-[90vh] transform transition-all">
+            <div className="text-center mb-4 sm:mb-6 pb-4 border-b-2 border-amber-300">
+              <h2 className="text-lg sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-amber-800 to-orange-700 bg-clip-text text-transparent mb-2">
                 📅 Book {vendor.name}
               </h2>
-              <p className="text-amber-700 text-sm font-medium">Complete your booking details below</p>
+              <p className="text-amber-700 text-xs sm:text-sm font-medium">Complete your booking details below</p>
             </div>
 
-            <form onSubmit={handleFormSubmit} className="space-y-6">
+            <form onSubmit={handleFormSubmit} className="space-y-4 sm:space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-amber-800 flex items-center">
+                  <label className="block text-xs sm:text-sm font-semibold text-amber-800 flex items-center">
                     <span className="mr-2">🏪</span>Vendor Name
                   </label>
                   <input
                     type="text"
                     value={vendor.name}
                     disabled
-                    className="w-full rounded-xl border-2 border-amber-200 bg-gradient-to-r from-amber-100 to-orange-100 p-3 text-sm font-medium text-amber-900 shadow-inner"
+                    className="w-full rounded-xl border-2 border-amber-200 bg-gradient-to-r from-amber-100 to-orange-100 p-2 sm:p-3 text-xs sm:text-sm font-medium text-amber-900 shadow-inner"
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-amber-800 flex items-center">
+                  <label className="block text-xs sm:text-sm font-semibold text-amber-800 flex items-center">
                     <span className="mr-2">📅</span>Selected Date
                   </label>
                   <input
                     type="text"
                     value={`${monthName} ${selectedDate.getDate()}, ${year}`}
                     disabled
-                    className="w-full rounded-xl border-2 border-amber-200 bg-gradient-to-r from-amber-100 to-orange-100 p-3 text-sm font-medium text-amber-900 shadow-inner"
+                    className="w-full rounded-xl border-2 border-amber-200 bg-gradient-to-r from-amber-100 to-orange-100 p-2 sm:p-3 text-xs sm:text-sm font-medium text-amber-900 shadow-inner"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-amber-800 flex items-center">
+                  <label className="block text-xs sm:text-sm font-semibold text-amber-800 flex items-center">
                     <span className="mr-2">⏰</span>Time Slot
                   </label>
                   <select
@@ -547,7 +560,7 @@ const VendorDetails: React.FC = () => {
                     value={formData.timeSlot}
                     onChange={handleFormChange}
                     required
-                    className="w-full rounded-xl border-2 border-amber-300 bg-white p-3 text-sm font-medium text-amber-900 focus:border-orange-400 focus:ring-2 focus:ring-orange-200 transition-all"
+                    className="w-full rounded-xl border-2 border-amber-300 bg-white p-2 sm:p-3 text-xs sm:text-sm font-medium text-amber-900 focus:border-orange-400 focus:ring-2 focus:ring-orange-200 transition-all"
                   >
                     <option value="" disabled>
                       Select a time slot
@@ -565,7 +578,7 @@ const VendorDetails: React.FC = () => {
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-amber-800 flex items-center">
+                  <label className="block text-xs sm:text-sm font-semibold text-amber-800 flex items-center">
                     <span className="mr-2">📧</span>Email
                   </label>
                   <input
@@ -574,13 +587,13 @@ const VendorDetails: React.FC = () => {
                     value={formData.email}
                     onChange={handleFormChange}
                     required
-                    className="w-full rounded-xl border-2 border-amber-300 bg-white p-3 text-sm font-medium text-amber-900 focus:border-orange-400 focus:ring-2 focus:ring-orange-200 transition-all"
+                    className="w-full rounded-xl border-2 border-amber-300 bg-white p-2 sm:p-3 text-xs sm:text-sm font-medium text-amber-900 focus:border-orange-400 focus:ring-2 focus:ring-orange-200 transition-all"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="block text-sm font-semibold text-amber-800 flex items-center">
+                <label className="block text-xs sm:text-sm font-semibold text-amber-800 flex items-center">
                   <span className="mr-2">📍</span>Address
                 </label>
                 <input
@@ -589,44 +602,44 @@ const VendorDetails: React.FC = () => {
                   value={formData.address}
                   onChange={handleFormChange}
                   required
-                  className="w-full rounded-xl border-2 border-amber-300 bg-white p-3 text-sm font-medium text-amber-900 focus:border-orange-400 focus:ring-2 focus:ring-orange-200 transition-all"
+                  className="w-full rounded-xl border-2 border-amber-300 bg-white p-2 sm:p-3 text-xs sm:text-sm font-medium text-amber-900 focus:border-orange-400 focus:ring-2 focus:ring-orange-200 transition-all"
                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-amber-800 flex items-center">
+                  <label className="block text-xs sm:text-sm font-semibold text-amber-800 flex items-center">
                     <span className="mr-2">💰</span>Total Amount
                   </label>
-                  <div className="bg-gradient-to-r from-green-100 to-emerald-100 rounded-xl border-2 border-green-300 p-3">
-                    <span className="text-base sm:text-lg font-bold text-green-800">
+                  <div className="bg-gradient-to-r from-green-100 to-emerald-100 rounded-xl border-2 border-green-300 p-2 sm:p-3">
+                    <span className="text-sm sm:text-base md:text-lg font-bold text-green-800">
                       ₹{Number(vendor.totalamount).toLocaleString("en-IN")}
                     </span>
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-amber-800 flex items-center">
+                  <label className="block text-xs sm:text-sm font-semibold text-amber-800 flex items-center">
                     <span className="mr-2">💳</span>Advance Amount
                   </label>
-                  <div className="bg-gradient-to-r from-blue-100 to-cyan-100 rounded-xl border-2 border-blue-300 p-3">
-                    <span className="text-base sm:text-lg font-bold text-blue-800">
+                  <div className="bg-gradient-to-r from-blue-100 to-cyan-100 rounded-xl border-2 border-blue-300 p-2 sm:p-3">
+                    <span className="text-sm sm:text-base md:text-lg font-bold text-blue-800">
                       ₹{Number(vendor.advAmnt).toLocaleString("en-IN")}
                     </span>
                   </div>
                 </div>
               </div>
 
-              <div className="flex justify-end gap-4 pt-6 border-t-2 border-amber-200">
+              <div className="flex justify-end gap-4 pt-4 sm:pt-6 border-t-2 border-amber-200">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-gray-200 to-gray-300 hover:from-gray-300 hover:to-gray-400 text-gray-800 font-semibold rounded-xl transition-all transform hover:scale-105 shadow-lg"
+                  className="px-3 sm:px-4 md:px-6 py-2 sm:py-3 bg-gradient-to-r from-gray-200 to-gray-300 hover:from-gray-300 hover:to-gray-400 text-gray-800 font-semibold rounded-xl transition-all transform hover:scale-105 shadow-lg text-xs sm:text-sm"
                 >
                   ❌ Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-semibold rounded-xl transition-all transform hover:scale-105 shadow-lg"
+                  className="px-3 sm:px-4 md:px-6 py-2 sm:py-3 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-semibold rounded-xl transition-all transform hover:scale-105 shadow-lg text-xs sm:text-sm"
                 >
                   💳 Proceed to Payment
                 </button>
@@ -636,18 +649,18 @@ const VendorDetails: React.FC = () => {
         </div>
       )}
 
-      {isPaymentModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 px-4 backdrop-blur-sm">
-          <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl shadow-2xl border-2 border-emerald-200 p-6 sm:p-8 w-full max-w-2xl overflow-auto max-h-[90vh] transform transition-all">
-            <div className="text-center mb-6 pb-4 border-b-2 border-emerald-300">
-              <h2 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-emerald-800 to-teal-700 bg-clip-text text-transparent mb-2">
+      {isPaymentModalOpen && bookingData && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 px-2 sm:px-4 backdrop-blur-sm">
+          <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl shadow-2xl border-2 border-emerald-200 p-4 sm:p-6 md:p-8 w-full max-w-2xl overflow-auto max-h-[90vh] transform transition-all">
+            <div className="text-center mb-4 sm:mb-6 pb-4 border-b-2 border-emerald-200">
+              <h2 className="text-lg sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-emerald-800 to-teal-700 bg-clip-text text-transparent mb-2">
                 💳 Payment for Booking
               </h2>
-              <p className="text-emerald-700 text-sm font-medium">Secure payment gateway</p>
+              <p className="text-emerald-700 text-xs sm:text-sm font-medium">Secure payment gateway</p>
             </div>
 
-            <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border-2 border-blue-200">
-              <h3 className="text-base sm:text-lg font-bold text-blue-800 mb-3 flex items-center">
+            <div className="mb-4 sm:mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-3 sm:p-4 border-2 border-blue-200">
+              <h3 className="text-sm sm:text-base md:text-lg font-bold text-blue-800 mb-3 flex items-center">
                 <span className="mr-2">📋</span>Booking Summary
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs sm:text-sm">
@@ -673,13 +686,13 @@ const VendorDetails: React.FC = () => {
                   <p className="flex justify-between">
                     <span className="font-semibold text-green-700">Total:</span>{" "}
                     <span className="text-green-900 font-bold">
-                      ₹{Number(bookingData.totalAmount).toLocaleString("en-IN")}
+                      ₹{bookingData.totalAmount.toLocaleString("en-IN")}
                     </span>
                   </p>
                   <p className="flex justify-between">
                     <span className="font-semibold text-blue-700">Advance:</span>{" "}
                     <span className="text-blue-900 font-bold">
-                      ₹{Number(bookingData.advanceAmount).toLocaleString("en-IN")}
+                      ₹{bookingData.advanceAmount.toLocaleString("en-IN")}
                     </span>
                   </p>
                   <p className="flex justify-between">
@@ -687,8 +700,8 @@ const VendorDetails: React.FC = () => {
                     <span className="text-purple-900 font-bold">
                       ₹
                       {paymentType === "advance"
-                        ? Number(bookingData.advanceAmount).toLocaleString("en-IN")
-                        : Number(bookingData.totalAmount).toLocaleString("en-IN")}
+                        ? bookingData.advanceAmount.toLocaleString("en-IN")
+                        : bookingData.totalAmount.toLocaleString("en-IN")}
                     </span>
                   </p>
                   <p className="flex justify-between">
@@ -696,7 +709,7 @@ const VendorDetails: React.FC = () => {
                     <span className="text-orange-900 font-bold">
                       ₹
                       {paymentType === "advance"
-                        ? (Number(bookingData.totalAmount) - Number(bookingData.advanceAmount)).toLocaleString("en-IN")
+                        ? (bookingData.totalAmount - bookingData.advanceAmount).toLocaleString("en-IN")
                         : "0"}
                     </span>
                   </p>
@@ -704,9 +717,9 @@ const VendorDetails: React.FC = () => {
               </div>
             </div>
 
-            <form onSubmit={handlePaymentSubmit} className="space-y-6">
+            <form onSubmit={handlePaymentSubmit} className="space-y-4 sm:space-y-6">
               <div className="space-y-4">
-                <label className="block text-base sm:text-lg font-bold text-emerald-800 flex items-center">
+                <label className="block text-sm sm:text-base md:text-lg font-bold text-emerald-800 flex items-center">
                   <span className="mr-2">💰</span>Payment Type
                 </label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -717,20 +730,20 @@ const VendorDetails: React.FC = () => {
                       type="radio"
                       value="advance"
                       checked={paymentType === "advance"}
-                      onChange={(e) => setPaymentType(e.target.value)}
+                      onChange={(e) => setPaymentType(e.target.value as "advance" | "full")}
                       className="sr-only"
                     />
                     <label
                       htmlFor="advance"
-                      className={`block p-4 rounded-xl border-2 cursor-pointer transition-all transform hover:scale-105 ${paymentType === "advance" ? "border-blue-400 bg-gradient-to-r from-blue-100 to-cyan-100 shadow-lg" : "border-gray-300 bg-white hover:border-blue-300"}`}
+                      className={`block p-3 sm:p-4 rounded-xl border-2 cursor-pointer transition-all transform hover:scale-105 ${paymentType === "advance" ? "border-blue-400 bg-gradient-to-r from-blue-100 to-cyan-100 shadow-lg" : "border-gray-300 bg-white hover:border-blue-300"}`}
                     >
                       <div className="flex items-center justify-between">
                         <div>
-                          <span className="text-base sm:text-lg font-bold text-blue-800">💳 Advance</span>
+                          <span className="text-sm sm:text-base md:text-lg font-bold text-blue-800">💳 Advance</span>
                           <p className="text-xs sm:text-sm text-blue-600">Pay partial amount</p>
                         </div>
-                        <span className="text-base sm:text-lg font-bold text-blue-900">
-                          ₹{Number(bookingData.advanceAmount).toLocaleString("en-IN")}
+                        <span className="text-sm sm:text-base md:text-lg font-bold text-blue-900">
+                          ₹{bookingData.advanceAmount.toLocaleString("en-IN")}
                         </span>
                       </div>
                     </label>
@@ -742,20 +755,20 @@ const VendorDetails: React.FC = () => {
                       type="radio"
                       value="full"
                       checked={paymentType === "full"}
-                      onChange={(e) => setPaymentType(e.target.value)}
+                      onChange={(e) => setPaymentType(e.target.value as "advance" | "full")}
                       className="sr-only"
                     />
                     <label
                       htmlFor="full"
-                      className={`block p-4 rounded-xl border-2 cursor-pointer transition-all transform hover:scale-105 ${paymentType === "full" ? "border-green-400 bg-gradient-to-r from-green-100 to-emerald-100 shadow-lg" : "border-gray-300 bg-white hover:border-green-300"}`}
+                      className={`block p-3 sm:p-4 rounded-xl border-2 cursor-pointer transition-all transform hover:scale-105 ${paymentType === "full" ? "border-green-400 bg-gradient-to-r from-green-100 to-emerald-100 shadow-lg" : "border-gray-300 bg-white hover:border-green-300"}`}
                     >
                       <div className="flex items-center justify-between">
                         <div>
-                          <span className="text-base sm:text-lg font-bold text-green-800">💰 Full Payment</span>
+                          <span className="text-sm sm:text-base md:text-lg font-bold text-green-800">💰 Full Payment</span>
                           <p className="text-xs sm:text-sm text-green-600">Pay complete amount</p>
                         </div>
-                        <span className="text-base sm:text-lg font-bold text-green-900">
-                          ₹{Number(bookingData.totalAmount).toLocaleString("en-IN")}
+                        <span className="text-sm sm:text-base md:text-lg font-bold text-green-900">
+                          ₹{bookingData.totalAmount.toLocaleString("en-IN")}
                         </span>
                       </div>
                     </label>
@@ -764,7 +777,7 @@ const VendorDetails: React.FC = () => {
               </div>
 
               <div className="space-y-4">
-                <label className="block text-base sm:text-lg font-bold text-emerald-800 flex items-center">
+                <label className="block text-sm sm:text-base md:text-lg font-bold text-emerald-800 flex items-center">
                   <span className="mr-2">🏦</span>Payment Method
                 </label>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -786,9 +799,9 @@ const VendorDetails: React.FC = () => {
                       />
                       <label
                         htmlFor={method.id}
-                        className={`block p-3 rounded-xl border-2 cursor-pointer transition-all transform hover:scale-105 text-center ${paymentMethod === method.id ? `border-${method.color}-400 bg-gradient-to-r from-${method.color}-100 to-${method.color}-200 shadow-lg` : "border-gray-300 bg-white hover:border-gray-400"}`}
+                        className={`block p-2 sm:p-3 rounded-xl border-2 cursor-pointer transition-all transform hover:scale-105 text-center ${paymentMethod === method.id ? `border-${method.color}-400 bg-gradient-to-r from-${method.color}-100 to-${method.color}-200 shadow-lg` : "border-gray-300 bg-white hover:border-gray-400"}`}
                       >
-                        <div className="text-xl sm:text-2xl mb-1">{method.icon}</div>
+                        <div className="text-lg sm:text-xl md:text-2xl mb-1">{method.icon}</div>
                         <div className="text-xs sm:text-sm font-semibold text-gray-800">{method.label}</div>
                       </label>
                     </div>
@@ -796,17 +809,17 @@ const VendorDetails: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex justify-end gap-4 pt-6 border-t-2 border-emerald-200">
+              <div className="flex justify-end gap-4 pt-4 sm:pt-6 border-t-2 border-emerald-200">
                 <button
                   type="button"
                   onClick={() => setIsPaymentModalOpen(false)}
-                  className="px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-gray-200 to-gray-300 hover:from-gray-300 hover:to-gray-400 text-gray-800 font-semibold rounded-xl transition-all transform hover:scale-105 shadow-lg"
+                  className="px-3 sm:px-4 md:px-6 py-2 sm:py-3 bg-gradient-to-r from-gray-200 to-gray-300 hover:from-gray-300 hover:to-gray-400 text-gray-800 font-semibold rounded-xl transition-all transform hover:scale-105 shadow-lg text-xs sm:text-sm"
                 >
                   ❌ Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold rounded-xl transition-all transform hover:scale-105 shadow-lg flex items-center"
+                  className="px-3 sm:px-4 md:px-6 py-2 sm:py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold rounded-xl transition-all transform hover:scale-105 shadow-lg flex items-center text-xs sm:text-sm"
                 >
                   <span className="mr-2">🔒</span>Pay Now
                 </button>
