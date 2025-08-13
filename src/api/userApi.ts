@@ -196,6 +196,14 @@ export const userSingUpRequest=async(formData:any)=>{
 
 }
 
+export const vendorSingUpRequest=async(formData:any)=>{
+
+  const response=await api.post('/vendorregistration',formData)
+
+  return response
+
+}
+
 
 export const existingVenues=async()=>{
 
