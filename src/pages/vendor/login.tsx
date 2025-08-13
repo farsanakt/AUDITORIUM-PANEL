@@ -11,7 +11,7 @@ import Header from '../../component/user/Header';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { loginFailure, loginStart, loginSuccess } from '../../redux/slices/authSlice';
-import { userLogin } from '../../api/userApi';
+import { userLogin, venodrLogin } from '../../api/userApi';
 import { toast } from 'react-toastify';
 
 const images: string[] = [bg, bg1, bg2, bg3];
@@ -33,7 +33,7 @@ const Login: React.FC = () => {
     e.preventDefault();
     try {
       dispatch(loginStart());
-      const response = await userLogin(email, password);
+      const response = await venodrLogin(email, password);
       if (response.data.success === false) {
         dispatch(loginFailure());
         toast.error(response.data.message);
@@ -45,7 +45,7 @@ const Login: React.FC = () => {
           })
         );
         toast.success(response.data.message);
-        navigate('/vendor/dashboar');
+        navigate('/vendor/dashboard');
       }
     } catch (error: any) {
       dispatch(loginFailure());

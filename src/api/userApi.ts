@@ -137,6 +137,14 @@ export const userLogin =async (email:string,password:string)=>{
 
 }
 
+export const venodrLogin=async(email:string,password:string)=>{
+
+  const response=await api.post('/vendorsignin',{email,password}, { withCredentials: true })
+
+  return response
+
+}
+
 export const createBooking=async(formData:any)=>{
 
   console.log('i am reaching',formData)
