@@ -14,11 +14,16 @@ import {
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
 import { useSelector } from "react-redux";
+import { addVendorAPI, existingAllVendors } from "../../api/userApi";
+import Header from "../../component/user/Header";
+import Sidebar from "../../component/user/VendorSidebar";
 
 // Define interfaces
 interface TimeSlot {
   id: string;
   label: string;
+  startTime?: string;
+  endTime?: string;
 }
 
 interface Vendor {
@@ -47,34 +52,8 @@ interface RootState {
 }
 
 // Mock API functions (replace with actual implementations)
-const addVendorAPI = async (formData: FormData) => ({ success: true });
 const deleteVendorAPI = async (id: string) => ({ success: true });
-const existingAllVendors = async (userId: string) => ({
-  data: [
-    // Sample data for testing
-    {
-      _id: "1",
-      name: "Sample Vendor",
-      address: "123 Main St",
-      phone: "1234567890",
-      altPhone: "0987654321",
-      pincode: "123456",
-      email: "vendor@example.com",
-      cities: ["Trivandrum", "Kollam"],
-      cancellationPolicy: "No refunds within 48 hours",
-      totalAmount: 10000,
-      advanceAmount: 2000,
-      images: [
-        "https://via.placeholder.com/150",
-        "https://via.placeholder.com/150",
-        "https://via.placeholder.com/150",
-        "https://via.placeholder.com/150",
-      ],
-      timeSlots: [{ id: "morning", label: "Morning" }],
-      vendorType: "Caterer",
-    },
-  ],
-});
+
 const updateVendorAPI = async (formData: FormData, id: string) => ({
   data: { success: true, message: "Vendor updated successfully" },
 });
@@ -103,6 +82,7 @@ export default function VendorManagement() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // State for mobile sidebar toggle
   const [newVendor, setNewVendor] = useState<Partial<Vendor>>({
     name: "",
     address: "",
@@ -136,19 +116,21 @@ export default function VendorManagement() {
     fetchVendors();
   }, [currentUser.id]);
 
-  // Toggle expand for vendor details
+  // Toggle sidebar for mobile
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
   const toggleVendorExpand = (id: string) => {
     setExpandedVendor(expandedVendor === id ? null : id);
   };
 
-  // Select vendor for editing
   const selectVendor = (vendor: Vendor) => {
     setSelectedVendor(vendor);
     setEditImages([]);
     setIsEditModalOpen(true);
   };
 
-  // Delete vendor
   const deleteVendor = async (id: string, name: string) => {
     const result = await Swal.fire({
       title: "Are you sure?",
@@ -172,7 +154,6 @@ export default function VendorManagement() {
     }
   };
 
-  // Reset add modal
   const resetAddModal = () => {
     setNewVendor({
       name: "",
@@ -193,7 +174,6 @@ export default function VendorManagement() {
     setIsAddModalOpen(false);
   };
 
-  // Handle input changes
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
     isNewVendor = false
@@ -211,7 +191,6 @@ export default function VendorManagement() {
     }
   };
 
-  // Handle city toggle
   const handleCityToggle = (city: string) => {
     setNewVendor((prev) => ({
       ...prev,
@@ -221,29 +200,33 @@ export default function VendorManagement() {
     }));
   };
 
-  // Handle time slot toggle
   const handleTimeSlotToggle = (timeSlot: TimeSlot) => {
     setNewVendor((prev) => ({
       ...prev,
       timeSlots: prev.timeSlots?.some((s) => s.id === timeSlot.id)
         ? prev.timeSlots.filter((s) => s.id !== timeSlot.id)
-        : [...(prev.timeSlots || []), timeSlot],
+        : [...(prev.timeSlots || []), { ...timeSlot, startTime: "", endTime: "" }],
     }));
   };
 
-  // Handle image upload
+  const updateAddTimeSlot = (index: number, field: "startTime" | "endTime", value: string) => {
+    setNewVendor((prev) => {
+      const newSlots = [...(prev.timeSlots || [])];
+      newSlots[index] = { ...newSlots[index], [field]: value };
+      return { ...prev, timeSlots: newSlots };
+    });
+  };
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     setSelectedImages((prev) => [...prev, ...files].slice(0, 4));
   };
 
-  // Handle edit image upload
   const handleEditImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     setEditImages((prev) => [...prev, ...files].slice(0, 4 - (selectedVendor?.images.length || 0)));
   };
 
-  // Remove existing image
   const removeExistingImage = (index: number) => {
     if (selectedVendor) {
       setSelectedVendor({
@@ -253,7 +236,6 @@ export default function VendorManagement() {
     }
   };
 
-  // Add vendor
   const handleAddVendor = async () => {
     if (!validateForm(newVendor, selectedImages)) return;
 
@@ -276,8 +258,8 @@ export default function VendorManagement() {
       selectedImages.forEach((file) => formData.append("images", file));
 
       const response = await addVendorAPI(formData);
-      if (response.success) {
-        toast.success("Vendor added successfully!");
+      if (response.data.success) {
+        toast.success(response.data.success || "Vendor added successfully!");
         resetAddModal();
         const updatedVendors = await existingAllVendors(currentUser.id);
         setVendors(updatedVendors.data);
@@ -289,7 +271,6 @@ export default function VendorManagement() {
     }
   };
 
-  // Update vendor
   const handleUpdateVendor = async () => {
     if (!selectedVendor || !validateForm(selectedVendor, editImages)) return;
 
@@ -328,7 +309,6 @@ export default function VendorManagement() {
     }
   };
 
-  // Form validation
   const validateForm = (vendor: Partial<Vendor>, images: File[]) => {
     if (!vendor.name) {
       toast.error("Vendor name is required.");
@@ -370,6 +350,16 @@ export default function VendorManagement() {
       toast.error("At least one time slot must be selected.");
       return false;
     }
+    for (const slot of vendor.timeSlots) {
+      if (!slot.startTime || !slot.endTime) {
+        toast.error("Start and end times are required for all selected time slots.");
+        return false;
+      }
+      if (slot.startTime >= slot.endTime) {
+        toast.error("Start time must be before end time for all time slots.");
+        return false;
+      }
+    }
     if (!vendor.vendorType) {
       toast.error("Vendor type is required.");
       return false;
@@ -381,7 +371,6 @@ export default function VendorManagement() {
     return true;
   };
 
-  // Handle city toggle for edit modal
   const handleCityToggleEdit = (city: string) => {
     if (selectedVendor) {
       setSelectedVendor({
@@ -393,19 +382,28 @@ export default function VendorManagement() {
     }
   };
 
-  // Handle time slot toggle for edit modal
   const handleTimeSlotToggleEdit = (timeSlot: TimeSlot) => {
     if (selectedVendor) {
       setSelectedVendor({
         ...selectedVendor,
         timeSlots: selectedVendor.timeSlots.some((s) => s.id === timeSlot.id)
           ? selectedVendor.timeSlots.filter((s) => s.id !== timeSlot.id)
-          : [...selectedVendor.timeSlots, timeSlot],
+          : [...selectedVendor.timeSlots, { ...timeSlot, startTime: "", endTime: "" }],
       });
     }
   };
 
-  // Filter vendors
+  const updateEditTimeSlot = (index: number, field: "startTime" | "endTime", value: string) => {
+    if (selectedVendor) {
+      setSelectedVendor((prev) => {
+        if (!prev) return null;
+        const newSlots = [...prev.timeSlots];
+        newSlots[index] = { ...newSlots[index], [field]: value };
+        return { ...prev, timeSlots: newSlots };
+      });
+    }
+  };
+
   const filteredVendors = vendors.filter(
     (vendor) =>
       vendor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -436,124 +434,151 @@ export default function VendorManagement() {
       `}</style>
 
       {/* Header */}
-      <header className="bg-white shadow-sm p-4">
-        <h1 className="text-2xl font-bold text-gray-800">Vendor Management</h1>
-        <p className="text-gray-600 text-sm">Manage your vendors efficiently</p>
-      </header>
+      <Header />
 
-      <main className="flex-1 p-4">
-        <div className="bg-white p-6 rounded-lg shadow-sm mb-6 border border-gray-100">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
-            <div>
-              <h2 className="text-xl font-semibold text-gray-800">Vendors ({filteredVendors.length})</h2>
-            </div>
-            <button
-              onClick={() => setIsAddModalOpen(true)}
-              className="w-full sm:w-auto px-6 py-2 bg-orange-500 text-white rounded-lg flex items-center justify-center hover:bg-orange-600 transition-all text-sm"
-            >
-              <Plus size={16} className="mr-2" /> Add New Vendor
-            </button>
-          </div>
-
-          {/* Search */}
-          <div className="relative mb-4">
-            <input
-              type="text"
-              placeholder="Search vendors..."
-              className="w-full sm:w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <Search className="absolute left-3 top-2.5 text-gray-400" size={16} />
-          </div>
+      <div className="flex flex-1">
+        {/* Sidebar */}
+        <div
+          className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:static lg:transform-none ${
+            isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+          } lg:translate-x-0`}
+        >
+          <Sidebar />
+          <button
+            className="lg:hidden absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+            onClick={toggleSidebar}
+          >
+            <X size={24} />
+          </button>
         </div>
 
-        {/* Vendors List */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-100">
-          {filteredVendors.length === 0 ? (
-            <div className="py-12 text-center">
-              <ImageIcon size={48} className="mx-auto text-gray-400 mb-4" />
-              <p className="text-gray-500 text-lg">No vendors found</p>
-            </div>
-          ) : (
-            filteredVendors.map((vendor) => (
-              <div key={vendor._id} className="p-4 hover:bg-gray-50 transition-colors">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                  <div
-                    className="flex items-center cursor-pointer flex-1 min-w-0"
-                    onClick={() => toggleVendorExpand(vendor._id)}
-                  >
-                    <div className="mr-3 flex-shrink-0">
-                      {expandedVendor === vendor._id ? (
-                        <ChevronDown size={16} className="text-gray-400" />
-                      ) : (
-                        <ChevronRight size={16} className="text-gray-400" />
-                      )}
-                    </div>
-                    <div className="flex mr-4 flex-shrink-0">
-                      {vendor.images.map((image, index) => (
-                        <div
-                          key={index}
-                          className="w-12 h-12 rounded-lg overflow-hidden border-2 border-white shadow-sm -ml-2 first:ml-0"
-                        >
-                          <img src={image} alt={`${vendor.name} ${index + 1}`} className="w-full h-full object-cover" />
-                        </div>
-                      ))}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <h3 className="font-semibold text-lg text-gray-800 truncate">{vendor.name}</h3>
-                      <div className="flex items-center text-gray-600 mt-1">
-                        <MapPin size={12} className="mr-1 flex-shrink-0" />
-                        <span className="text-sm truncate">{vendor.address}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-3 flex-shrink-0">
-                    <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
-                      {vendor.vendorType}
-                    </span>
-                    <button
-                      onClick={() => selectVendor(vendor)}
-                      className="p-2 hover:bg-blue-50 rounded-lg text-blue-600"
-                    >
-                      <Edit size={16} />
-                    </button>
-                    <button
-                      onClick={() => deleteVendor(vendor._id, vendor.name)}
-                      className="p-2 hover:bg-red-50 rounded-lg text-red-600"
-                    >
-                      <Trash size={16} />
-                    </button>
-                  </div>
-                </div>
-                {expandedVendor === vendor._id && (
-                  <div className="mt-4 pl-8 border-l-2 border-orange-200">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm font-medium text-gray-700">Contact</p>
-                        <p className="text-sm text-gray-600">{vendor.phone}</p>
-                        {vendor.altPhone && <p className="text-sm text-gray-600">{vendor.altPhone}</p>}
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-700">Email</p>
-                        <p className="text-sm text-gray-600">{vendor.email}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-700">Cities</p>
-                        <p className="text-sm text-gray-600">{vendor.cities.join(", ")}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-700">Time Slots</p>
-                        <p className="text-sm text-gray-600">{vendor.timeSlots.map((s) => s.label).join(", ")}</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
+        {/* Mobile Sidebar Toggle Button */}
+        <button
+          className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-orange-500 text-white rounded-lg"
+          onClick={toggleSidebar}
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+
+        {/* Main Content */}
+        <main className="flex-1 p-4 lg:ml-4 overflow-x-auto">
+          <div className="bg-white p-6 rounded-lg shadow-sm mb-6 border border-gray-100">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-800">Vendors ({filteredVendors.length})</h2>
               </div>
-            ))
-          )}
-        </div>
-      </main>
+              <button
+                onClick={() => setIsAddModalOpen(true)}
+                className="w-full sm:w-auto px-6 py-2 bg-orange-500 text-white rounded-lg flex items-center justify-center hover:bg-orange-600 transition-all text-sm"
+              >
+                <Plus size={16} className="mr-2" /> Add New Vendor
+              </button>
+            </div>
+
+            {/* Search */}
+            <div className="relative mb-4">
+              <input
+                type="text"
+                placeholder="Search vendors..."
+                className="w-full sm:w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              <Search className="absolute left-3 top-2.5 text-gray-400" size={16} />
+            </div>
+          </div>
+
+          {/* Vendors List */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-100">
+            {filteredVendors.length === 0 ? (
+              <div className="py-12 text-center">
+                <ImageIcon size={48} className="mx-auto text-gray-400 mb-4" />
+                <p className="text-gray-500 text-lg">No vendors found</p>
+              </div>
+            ) : (
+              filteredVendors.map((vendor) => (
+                <div key={vendor._id} className="p-4 hover:bg-gray-50 transition-colors">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div
+                      className="flex items-center cursor-pointer flex-1 min-w-0"
+                      onClick={() => toggleVendorExpand(vendor._id)}
+                    >
+                      <div className="mr-3 flex-shrink-0">
+                        {expandedVendor === vendor._id ? (
+                          <ChevronDown size={16} className="text-gray-400" />
+                        ) : (
+                          <ChevronRight size={16} className="text-gray-400" />
+                        )}
+                      </div>
+                      <div className="flex mr-4 flex-shrink-0">
+                        {vendor.images.map((image, index) => (
+                          <div
+                            key={index}
+                            className="w-12 h-12 rounded-lg overflow-hidden border-2 border-white shadow-sm -ml-2 first:ml-0"
+                          >
+                            <img src={image} alt={`${vendor.name} ${index + 1}`} className="w-full h-full object-cover" />
+                          </div>
+                        ))}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="font-semibold text-lg text-gray-800 truncate">{vendor.name}</h3>
+                        <div className="flex items-center text-gray-600 mt-1">
+                          <MapPin size={12} className="mr-1 flex-shrink-0" />
+                          <span className="text-sm truncate">{vendor.address}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3 flex-shrink-0">
+                      <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                        {vendor.vendorType}
+                      </span>
+                      <button
+                        onClick={() => selectVendor(vendor)}
+                        className="p-2 hover:bg-blue-50 rounded-lg text-blue-600"
+                      >
+                        <Edit size={16} />
+                      </button>
+                      <button
+                        onClick={() => deleteVendor(vendor._id, vendor.name)}
+                        className="p-2 hover:bg-red-50 rounded-lg text-red-600"
+                      >
+                        <Trash size={16} />
+                      </button>
+                    </div>
+                  </div>
+                  {expandedVendor === vendor._id && (
+                    <div className="mt-4 pl-8 border-l-2 border-orange-200">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-sm font-medium text-gray-700">Contact</p>
+                          <p className="text-sm text-gray-600">{vendor.phone}</p>
+                          {vendor.altPhone && <p className="text-sm text-gray-600">{vendor.altPhone}</p>}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-700">Email</p>
+                          <p className="text-sm text-gray-600">{vendor.email}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-700">Cities</p>
+                          <p className="text-sm text-gray-600">{vendor.cities.join(", ")}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-700">Time Slots</p>
+                          <p className="text-sm text-gray-600">
+                            {vendor.timeSlots.map((s) => `${s.label} (${s.startTime} - ${s.endTime})`).join(", ")}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </main>
+      </div>
 
       {/* Add Vendor Modal */}
       {isAddModalOpen && (
@@ -704,7 +729,7 @@ export default function VendorManagement() {
                 </div>
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-semibold text-gray-700 mb-2">Time Slots *</label>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-2 mb-4">
                     {fixedTimeSlots.map((slot) => (
                       <button
                         key={slot.id}
@@ -720,6 +745,31 @@ export default function VendorManagement() {
                       </button>
                     ))}
                   </div>
+                  {newVendor.timeSlots?.length > 0 && (
+                    <div className="mt-4">
+                      <p className="text-sm font-medium text-gray-700 mb-2">Set Times for Selected Slots *</p>
+                      {newVendor.timeSlots.map((slot, index) => (
+                        <div key={slot.id} className="flex flex-wrap items-center gap-2 mb-2">
+                          <span className="w-24 text-sm text-gray-600">{slot.label}</span>
+                          <input
+                            type="time"
+                            value={slot.startTime || ""}
+                            onChange={(e) => updateAddTimeSlot(index, "startTime", e.target.value)}
+                            className="px-2 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                            required
+                          />
+                          <span className="text-sm text-gray-600">to</span>
+                          <input
+                            type="time"
+                            value={slot.endTime || ""}
+                            onChange={(e) => updateAddTimeSlot(index, "endTime", e.target.value)}
+                            className="px-2 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                            required
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-semibold text-gray-700 mb-2">Vendor Images (exactly 4) *</label>
@@ -742,7 +792,7 @@ export default function VendorManagement() {
                     <p className="text-sm text-red-500 mt-2">Exactly 4 images are required.</p>
                   )}
                   {selectedImages.length > 0 && (
-                    <div className="grid grid-cols-4 gap-3 mt-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
                       {selectedImages.map((file, index) => (
                         <div key={index} className="relative group">
                           <div className="aspect-square rounded-lg overflow-hidden border-2 border-gray-200">
@@ -788,7 +838,8 @@ export default function VendorManagement() {
                     !newVendor.advanceAmount ||
                     !newVendor.timeSlots?.length ||
                     !newVendor.vendorType ||
-                    selectedImages.length !== 4
+                    selectedImages.length !== 4 ||
+                    newVendor.timeSlots?.some((slot) => !slot.startTime || !slot.endTime)
                   }
                   className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-sm"
                 >
@@ -931,7 +982,7 @@ export default function VendorManagement() {
                 </div>
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-semibold text-gray-700 mb-2">Time Slots</label>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-2 mb-4">
                     {fixedTimeSlots.map((slot) => (
                       <button
                         key={slot.id}
@@ -947,13 +998,36 @@ export default function VendorManagement() {
                       </button>
                     ))}
                   </div>
+                  {selectedVendor.timeSlots.length > 0 && (
+                    <div className="mt-4">
+                      <p className="text-sm font-medium text-gray-700 mb-2">Set Times for Selected Slots</p>
+                      {selectedVendor.timeSlots.map((slot, index) => (
+                        <div key={slot.id} className="flex flex-wrap items-center gap-2 mb-2">
+                          <span className="w-24 text-sm text-gray-600">{slot.label}</span>
+                          <input
+                            type="time"
+                            value={slot.startTime || ""}
+                            onChange={(e) => updateEditTimeSlot(index, "startTime", e.target.value)}
+                            className="px-2 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                          />
+                          <span className="text-sm text-gray-600">to</span>
+                          <input
+                            type="time"
+                            value={slot.endTime || ""}
+                            onChange={(e) => updateEditTimeSlot(index, "endTime", e.target.value)}
+                            className="px-2 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-semibold text-gray-700 mb-2">Vendor Images (exactly 4)</label>
                   {selectedVendor.images.length > 0 && (
                     <div className="mb-4">
                       <p className="text-sm text-gray-600 mb-2">Current Images:</p>
-                      <div className="grid grid-cols-4 gap-3">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         {selectedVendor.images.map((image, index) => (
                           <div key={index} className="relative group">
                             <div className="aspect-square rounded-lg overflow-hidden border-2 border-gray-200">
@@ -988,7 +1062,7 @@ export default function VendorManagement() {
                   {editImages.length > 0 && (
                     <div className="mt-3">
                       <p className="text-sm text-gray-600 mb-2">New Images:</p>
-                      <div className="grid grid-cols-4 gap-3">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         {editImages.map((file, index) => (
                           <div key={index} className="relative group">
                             <div className="aspect-square rounded-lg overflow-hidden border-2 border-green-200">

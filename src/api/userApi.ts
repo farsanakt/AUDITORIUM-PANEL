@@ -145,6 +145,22 @@ export const venodrLogin=async(email:string,password:string)=>{
 
 }
 
+export const addVendorAPI=async(formData:FormData)=>{
+
+  return await api.post('/addvendor',formData)
+
+}
+
+export const existingAllVendors =async(id:string)=>{
+
+  return await api.get(`/allVendorss`, {
+
+    params: { vndrUserId: id },
+
+  })
+
+}
+
 export const createBooking=async(formData:any)=>{
 
   console.log('i am reaching',formData)
