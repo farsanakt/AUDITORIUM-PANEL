@@ -443,7 +443,10 @@ export default function VendorManagement() {
             isSidebarOpen ? "translate-x-0" : "-translate-x-full"
           } lg:translate-x-0`}
         >
-          <Sidebar />
+            <div className="fixed top-0 left-0 w-64 h-full">
+    <Sidebar />
+  </div>
+
           <button
             className="lg:hidden absolute top-4 right-4 text-gray-500 hover:text-gray-700"
             onClick={toggleSidebar}
