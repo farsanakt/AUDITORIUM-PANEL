@@ -1,7 +1,6 @@
 import type React from "react";
 import { useState, useEffect, useRef } from "react";
 import {
- 
   MapPin,
   Calendar,
   Flag,
@@ -12,7 +11,6 @@ import {
 } from "lucide-react";
 import Header from "../../component/user/Header";
 import bgImg from "../../assets/Rectangle 50.png";
-
 import pjct from "../../assets/image 16.png";
 import pjct1 from "../../assets/Rectangle 30.png";
 import { useNavigate } from "react-router-dom";
@@ -64,9 +62,9 @@ const HomePage: React.FC = () => {
   const [eventManagements, setEventManagements] = useState<Artist[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeSection, setActiveSection] = useState<string>("all"); // State to track active section
   const navigate = useNavigate();
 
-  
   const venuesRef = useRef<HTMLDivElement>(null);
   const eventManagementsRef = useRef<HTMLDivElement>(null);
   const artistsRef = useRef<HTMLDivElement>(null);
@@ -93,41 +91,38 @@ const HomePage: React.FC = () => {
     navigate(`/auditoriumlist?place=${formData.place}&date=${formData.date}&event=${formData.event}`);
   };
 
-  const fetchVendors=async()=>{
-
-    const response=await fetchAllVendors()
-
-    console.log(response.data,'vendors data')
-
+  const fetchVendors = async () => {
+    const response = await fetchAllVendors();
+    console.log(response.data, "vendors data");
     const vendors = response.data;
 
     const mappedMakeupArtists = vendors
-      .filter((v: any) => v.vendorType === 'makeup artist')
+      .filter((v: any) => v.vendorType === "makeup artist")
       .map((v: any) => ({
         id: v._id,
         name: v.name,
-        role: 'Makeup Artist',
+        role: "Makeup Artist",
         image: v.images[0],
-        rating: 4.5, // Default rating as not provided in data
-        location: v.cities[0] || v.address.split(',').pop()?.trim() || 'Unknown',
-        review: '', // Not used
+        rating: 4.5,
+        location: v.cities[0] || v.address.split(",").pop()?.trim() || "Unknown",
+        review: "",
       }));
 
     const mappedEventManagements = vendors
-      .filter((v: any) => v.vendorType === 'event management')
+      .filter((v: any) => v.vendorType === "event management")
       .map((v: any) => ({
         id: v._id,
         name: v.name,
-        role: 'Event Management',
+        role: "Event Management",
         image: v.images[0],
-        rating: 4.5, // Default rating as not provided in data
-        location: v.cities[0] || v.address.split(',').pop()?.trim() || 'Unknown',
-        review: '', // Not used
+        rating: 4.5,
+        location: v.cities[0] || v.address.split(",").pop()?.trim() || "Unknown",
+        review: "",
       }));
 
     setMakeupArtists(mappedMakeupArtists);
     setEventManagements(mappedEventManagements);
-  }
+  };
 
   const fetchVenues = async () => {
     try {
@@ -158,10 +153,9 @@ const HomePage: React.FC = () => {
 
   useEffect(() => {
     fetchVenues();
-    fetchVendors()
+    fetchVendors();
   }, []);
 
-  
   const projects: Project[] = [
     {
       id: 1,
@@ -195,8 +189,13 @@ const HomePage: React.FC = () => {
     }
   };
 
+  // Handle section click
+  const handleSectionClick = (section: string) => {
+    setActiveSection(section);
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-pink-50 to-white overflow-x-hidden">
+    <div className="min-h-screen bg-gradient-to-b from-pink-50 to-transparent overflow-x-hidden">
       <style>
         {`
           .scroll-container {
@@ -405,16 +404,17 @@ const HomePage: React.FC = () => {
             </div>
 
             <div
-              className={`text-[#9c7c5d] text-xs sm:text-sm font-medium space-y-1 transition-all duration-1000 delay-800 ${
+              className={`text-[#9c7c5d] text-xs sm:text-sm font-medium space-y-1 transition-all duration-1000 delay-800 cursor-pointer ${
                 isVisible
                   ? "opacity-100 translate-y-0"
                   : "opacity-0 translate-y-10"
               }`}
             >
-              <div>VENUE</div>
-              <div>PHOTOGRAPHERS</div>
-              <div>MAKEUP-ARTISTS</div>
-              <div>DESIGNS</div>
+              <div onClick={() => handleSectionClick("venues")}>VENUE</div>
+              <div onClick={() => handleSectionClick("eventManagement")}>EVENT-MANAGEMENT</div>
+              <div onClick={() => handleSectionClick("artists")}>MAKEUP-ARTISTS</div>
+              <div onClick={() => handleSectionClick("projects")}>DESIGNS</div>
+              <div onClick={() => handleSectionClick("all")} className="mt-2">SHOW ALL</div>
             </div>
           </div>
         </div>
@@ -432,46 +432,127 @@ const HomePage: React.FC = () => {
         </div>
       </section>
 
-      <section id="services" className="py-12 sm:py-16 lg:py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-left mb-12 sm:mb-16">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#5B4336] mb-4">
-              Our Services
-            </h2>
-            <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl">
-              We specialize in creating seamless, unforgettable events tailored
-              to your vision. From corporate gatherings and weddings to private
-              celebrations and brand activations, our expert team ensures every
-              detail is flawlessly executed.
-            </p>
+      {(activeSection === "all" || activeSection === "services") && (
+        <section id="services" className="py-12 sm:py-16 lg:py-20">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-left mb-12 sm:mb-16">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#5B4336] mb-4">
+                Our Services
+              </h2>
+              <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl">
+                We specialize in creating seamless, unforgettable events tailored
+                to your vision. From corporate gatherings and weddings to private
+                celebrations and brand activations, our expert team ensures every
+                detail is flawlessly executed.
+              </p>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
-      <section id="venues" className="py-12 sm:py-16 lg:py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-right mb-12 sm:mb-16">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#5B4336] mb-4">
-              Perfect Venues
-            </h2>
-            <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl ml-auto">
-              Choose from our collection of stunning venues that will provide
-              the perfect backdrop for your wedding
-            </p>
+      {(activeSection === "all" || activeSection === "venues") && (
+        <section id="venues" className="py-12 sm:py-16 lg:py-20">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-right mb-12 sm:mb-16">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#5B4336] mb-4">
+                Perfect Venues
+              </h2>
+              <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl ml-auto">
+                Choose from our collection of stunning venues that will provide
+                the perfect backdrop for your wedding
+              </p>
+            </div>
+
+            {loading ? (
+              <div className="text-center text-gray-600">Loading venues...</div>
+            ) : error ? (
+              <div className="text-center text-red-600">{error}</div>
+            ) : venues.length === 0 ? (
+              <div className="text-center text-gray-600">No venues available.</div>
+            ) : (
+              <div className="relative">
+                {venues.length > 4 && (
+                  <div className="absolute top-1/2 -left-4 sm:-left-6 transform -translate-y-1/2 z-10">
+                    <button
+                      onClick={() => scrollLeft(venuesRef)}
+                      className="scroll-button bg-[#9c7c5d] text-white rounded-full p-2 sm:p-3 hover:bg-[#8b6b4a] transition duration-300"
+                    >
+                      <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
+                    </button>
+                  </div>
+                )}
+                <div
+                  ref={venuesRef}
+                  className="scroll-container flex overflow-x-auto space-x-4 sm:space-x-6 pb-4"
+                >
+                  {venues.map((venue, index) => (
+                    <div
+                      key={venue.id}
+                      className="group rounded-xl overflow-hidden hover:shadow-xl transition duration-300 transform opacity-0 scale-95 flex-shrink-0 w-[240px] sm:w-[280px]"
+                      style={{
+                        animation: `fadeInScale 0.6s ease ${index * 0.15}s forwards`,
+                      }}
+                    >
+                      <div
+                        className="relative h-48 sm:h-56 bg-cover bg-center rounded-xl"
+                        style={{ backgroundImage: `url(${venue.images[0]})` }}
+                      >
+                        <div className="absolute inset-0 bg-black opacity-20 group-hover:opacity-30 transition duration-300"></div>
+                        <img
+                          src={venue.images[0]}
+                          alt={venue.name}
+                          className="w-full h-full object-cover rounded-xl"
+                        />
+                      </div>
+                      <div className="p-3 text-left card-content transition-transform duration-300">
+                        <h3 className="text-lg sm:text-xl font-medium text-[#5B4336]">
+                          {venue.name}
+                        </h3>
+                        <p className="text-gray-600 text-sm flex items-center mb-1">
+                          <MapPin className="h-4 w-4 text-gray-600 mr-1" />
+                          {venue.location}
+                        </p>
+                        <div className="flex items-center text-sm text-gray-600">
+                          <Star className="h-4 w-4 text-yellow-500 mr-1" />
+                          <span>{venue.rating.toFixed(1)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {venues.length > 4 && (
+                  <div className="absolute top-1/2 -right-4 sm:-right-6 transform -translate-y-1/2 z-10">
+                    <button
+                      onClick={() => scrollRight(venuesRef)}
+                      className="scroll-button bg-[#9c7c5d] text-white rounded-full p-2 sm:p-3 hover:bg-[#8b6b4a] transition duration-300"
+                    >
+                      <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
+        </section>
+      )}
 
-          {loading ? (
-            <div className="text-center text-gray-600">Loading venues...</div>
-          ) : error ? (
-            <div className="text-center text-red-600">{error}</div>
-          ) : venues.length === 0 ? (
-            <div className="text-center text-gray-600">No venues available.</div>
-          ) : (
+      {(activeSection === "all" || activeSection === "eventManagement") && (
+        <section id="eventManagement" className="py-12 sm:py-16 lg:py-20 bg-gradient-to-b">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-left mb-12 sm:mb-16">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#5B4336] mb-4">
+                Event Management
+              </h2>
+              <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl">
+                Our expert event management teams ensure every detail of your special day is perfectly executed.
+              </p>
+            </div>
+
             <div className="relative">
-              {venues.length > 4 && (
+              {eventManagements.length > 4 && (
                 <div className="absolute top-1/2 -left-4 sm:-left-6 transform -translate-y-1/2 z-10">
                   <button
-                    onClick={() => scrollLeft(venuesRef)}
+                    onClick={() => scrollLeft(eventManagementsRef)}
                     className="scroll-button bg-[#9c7c5d] text-white rounded-full p-2 sm:p-3 hover:bg-[#8b6b4a] transition duration-300"
                   >
                     <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -479,12 +560,12 @@ const HomePage: React.FC = () => {
                 </div>
               )}
               <div
-                ref={venuesRef}
+                ref={eventManagementsRef}
                 className="scroll-container flex overflow-x-auto space-x-4 sm:space-x-6 pb-4"
               >
-                {venues.map((venue, index) => (
+                {eventManagements.map((artist, index) => (
                   <div
-                    key={venue.id}
+                    key={artist.id}
                     className="group rounded-xl overflow-hidden hover:shadow-xl transition duration-300 transform opacity-0 scale-95 flex-shrink-0 w-[240px] sm:w-[280px]"
                     style={{
                       animation: `fadeInScale 0.6s ease ${index * 0.15}s forwards`,
@@ -492,35 +573,35 @@ const HomePage: React.FC = () => {
                   >
                     <div
                       className="relative h-48 sm:h-56 bg-cover bg-center rounded-xl"
-                      style={{ backgroundImage: `url(${venue.images[0]})` }}
+                      style={{ backgroundImage: `url(${artist.image})` }}
                     >
                       <div className="absolute inset-0 bg-black opacity-20 group-hover:opacity-30 transition duration-300"></div>
                       <img
-                        src={venue.images[0]}
-                        alt={venue.name}
+                        src={artist.image}
+                        alt={artist.name}
                         className="w-full h-full object-cover rounded-xl"
                       />
                     </div>
                     <div className="p-3 text-left card-content transition-transform duration-300">
                       <h3 className="text-lg sm:text-xl font-medium text-[#5B4336]">
-                        {venue.name}
+                        {artist.name}
                       </h3>
                       <p className="text-gray-600 text-sm flex items-center mb-1">
                         <MapPin className="h-4 w-4 text-gray-600 mr-1" />
-                        {venue.location}
+                        {artist.location}
                       </p>
                       <div className="flex items-center text-sm text-gray-600">
                         <Star className="h-4 w-4 text-yellow-500 mr-1" />
-                        <span>{venue.rating.toFixed(1)}</span>
+                        <span>{artist.rating.toFixed(1)}</span>
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
-              {venues.length > 4 && (
+              {eventManagements.length > 4 && (
                 <div className="absolute top-1/2 -right-4 sm:-right-6 transform -translate-y-1/2 z-10">
                   <button
-                    onClick={() => scrollRight(venuesRef)}
+                    onClick={() => scrollRight(eventManagementsRef)}
                     className="scroll-button bg-[#9c7c5d] text-white rounded-full p-2 sm:p-3 hover:bg-[#8b6b4a] transition duration-300"
                   >
                     <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -528,218 +609,149 @@ const HomePage: React.FC = () => {
                 </div>
               )}
             </div>
-          )}
-        </div>
-      </section>
-
-      <section id="eventManagement" className="py-12 sm:py-16 lg:py-20 bg-gradient-to-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-left mb-12 sm:mb-16">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#5B4336] mb-4">
-              Event Management
-            </h2>
-            <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl">
-              Our expert event management teams ensure every detail of your special day is perfectly executed.
-            </p>
-          </div>
-
-          <div className="relative">
-            {eventManagements.length > 4 && (
-              <div className="absolute top-1/2 -left-4 sm:-left-6 transform -translate-y-1/2 z-10">
-                <button
-                  onClick={() => scrollLeft(eventManagementsRef)}
-                  className="scroll-button bg-[#9c7c5d] text-white rounded-full p-2 sm:p-3 hover:bg-[#8b6b4a] transition duration-300"
-                >
-                  <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
-                </button>
-              </div>
-            )}
-            <div
-              ref={eventManagementsRef}
-              className="scroll-container flex overflow-x-auto space-x-4 sm:space-x-6 pb-4"
-            >
-              {eventManagements.map((artist, index) => (
-                <div
-                  key={artist.id}
-                  className="group rounded-xl overflow-hidden hover:shadow-xl transition duration-300 transform opacity-0 scale-95 flex-shrink-0 w-[240px] sm:w-[280px]"
-                  style={{
-                    animation: `fadeInScale 0.6s ease ${index * 0.15}s forwards`,
-                  }}
-                >
-                  <div
-                    className="relative h-48 sm:h-56 bg-cover bg-center rounded-xl"
-                    style={{ backgroundImage: `url(${artist.image})` }}
-                  >
-                    <div className="absolute inset-0 bg-black opacity-20 group-hover:opacity-30 transition duration-300"></div>
-                    <img
-                      src={artist.image}
-                      alt={artist.name}
-                      className="w-full h-full object-cover rounded-xl"
-                    />
-                  </div>
-                  <div className="p-3 text-left card-content transition-transform duration-300">
-                    <h3 className="text-lg sm:text-xl font-medium text-[#5B4336]">
-                      {artist.name}
-                    </h3>
-                    <p className="text-gray-600 text-sm flex items-center mb-1">
-                      <MapPin className="h-4 w-4 text-gray-600 mr-1" />
-                      {artist.location}
-                    </p>
-                    <div className="flex items-center text-sm text-gray-600">
-                      <Star className="h-4 w-4 text-yellow-500 mr-1" />
-                      <span>{artist.rating.toFixed(1)}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            {eventManagements.length > 4 && (
-              <div className="absolute top-1/2 -right-4 sm:-right-6 transform -translate-y-1/2 z-10">
-                <button
-                  onClick={() => scrollRight(eventManagementsRef)}
-                  className="scroll-button bg-[#9c7c5d] text-white rounded-full p-2 sm:p-3 hover:bg-[#8b6b4a] transition duration-300"
-                >
-                  <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
-                </button>
-              </div>
-            )}
-          </div>
-          <div className="text-right mt-6">
-            <button 
-              onClick={() => navigate('/vendorslist?type=event management')}
-              className="px-4 py-2 bg-gray-200 text-[#9c7c5d] rounded-lg hover:bg-gray-300 transition duration-300">
-              View All
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <section id="artists" className="py-12 sm:py-16 lg:py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-left mb-12 sm:mb-16">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#5B4336] mb-4">
-              Our Makeup Artists
-            </h2>
-            <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl">
-              Whether you love classic, candid, documentary, or artistic
-              photography, we have the perfect match for your vision.
-            </p>
-          </div>
-
-          <div className="relative">
-            {makeupArtists.length > 4 && (
-              <div className="absolute top-1/2 -left-4 sm:-left-6 transform -translate-y-1/2 z-10">
-                <button
-                  onClick={() => scrollLeft(artistsRef)}
-                  className="scroll-button bg-[#9c7c5d] text-white rounded-full p-2 sm:p-3 hover:bg-[#8b6b4a] transition duration-300"
-                >
-                  <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
-                </button>
-              </div>
-            )}
-            <div
-              ref={artistsRef}
-              className="scroll-container flex overflow-x-auto space-x-4 sm:space-x-6 pb-4"
-            >
-              {makeupArtists.map((artist, index) => (
-                <div
-                  key={artist.id}
-                  className="group rounded-xl overflow-hidden hover:shadow-xl transition duration-300 transform opacity-0 scale-95 flex-shrink-0 w-[240px] sm:w-[280px]"
-                  style={{
-                    animation: `fadeInScale 0.6s ease ${index * 0.15}s forwards`,
-                  }}
-                >
-                  <div
-                    className="relative h-48 sm:h-56 bg-cover bg-center rounded-xl"
-                    style={{ backgroundImage: `url(${artist.image})` }}
-                  >
-                    <div className="absolute inset-0 bg-black opacity-20 group-hover:opacity-30 transition duration-300"></div>
-                    <img
-                      src={artist.image}
-                      alt={artist.name}
-                      className="w-full h-full object-cover rounded-xl"
-                    />
-                  </div>
-                  <div className="p-3 text-left card-content transition-transform duration-300">
-                    <h3 className="text-lg sm:text-xl font-medium text-[#5B4336]">
-                      {artist.name}
-                    </h3>
-                    <p className="text-gray-600 text-sm flex items-center mb-1">
-                      <MapPin className="h-4 w-4 text-gray-600 mr-1" />
-                      {artist.location}
-                    </p>
-                    <div className="flex items-center text-sm text-gray-600">
-                      <Star className="h-4 w-4 text-yellow-500 mr-1" />
-                      <span>{artist.rating.toFixed(1)}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            {makeupArtists.length > 4 && (
-              <div className="absolute top-1/2 -right-4 sm:-right-6 transform -translate-y-1/2 z-10">
-                <button
-                  onClick={() => scrollRight(artistsRef)}
-                  className="scroll-button bg-[#9c7c5d] text-white rounded-full p-2 sm:p-3 hover:bg-[#8b6b4a] transition duration-300"
-                >
-                  <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
-                </button>
-              </div>
-            )}
-          </div>
-          <div className="text-right mt-6">
-            <button 
-              onClick={() => navigate('/vendorslist?type=makeup artist')}
-              className="px-4 py-2 bg-gray-200 text-[#9c7c5d] rounded-lg hover:bg-gray-300 transition duration-300">
-              View All
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <section id="projects" className="py-12 sm:py-16 lg:py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-left mb-12 sm:mb-16">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#5B4336] mb-4">
-              Our Projects
-            </h2>
-            <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl">
-              Take a look at some of our recent wedding projects and get
-              inspired for your own special day
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-            {projects.map((project) => (
-              <div
-                key={project.id}
-                className="group rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition duration-300 transform hover:-translate-y-2"
+            <div className="text-right mt-6">
+              <button
+                onClick={() => navigate("/vendorslist?type=event management")}
+                className="px-4 py-2 bg-gray-200 text-[#9c7c5d] rounded-lg hover:bg-gray-300 transition duration-300"
               >
-                <div className="relative h-48 sm:h-56 lg:h-64">
-                  <img
-                    src={project.image}
-                    alt={project.title}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-black opacity-10 group-hover:opacity-20 transition duration-300"></div>
-                </div>
+                View All
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
 
-                <div className="p-4 sm:p-6 text-left">
-                  <h3 className="text-lg sm:text-xl font-semibold text-[#5B4336] mb-2">
-                    {project.title}
-                  </h3>
-                  <p className="text-gray-600 text-sm mb-4">
-                    {project.category}
-                  </p>
-                  <button className="bg-[#9c7c5d] text-white px-4 sm:px-6 py-2 rounded-full text-xs sm:text-sm hover:bg-[#8b6b4a] transition duration-300">
-                    View Gallery
+      {(activeSection === "all" || activeSection === "artists") && (
+        <section id="artists" className="py-12 sm:py-16 lg:py-20">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-left mb-12 sm:mb-16">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#5B4336] mb-4">
+                Our Makeup Artists
+              </h2>
+              <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl">
+                Whether you love classic, candid, documentary, or artistic
+                photography, we have the perfect match for your vision.
+              </p>
+            </div>
+
+            <div className="relative">
+              {makeupArtists.length > 4 && (
+                <div className="absolute top-1/2 -left-4 sm:-left-6 transform -translate-y-1/2 z-10">
+                  <button
+                    onClick={() => scrollLeft(artistsRef)}
+                    className="scroll-button bg-[#9c7c5d] text-white rounded-full p-2 sm:p-3 hover:bg-[#8b6b4a] transition duration-300"
+                  >
+                    <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
                   </button>
                 </div>
+              )}
+              <div
+                ref={artistsRef}
+                className="scroll-container flex overflow-x-auto space-x-4 sm:space-x-6 pb-4"
+              >
+                {makeupArtists.map((artist, index) => (
+                  <div
+                    key={artist.id}
+                    className="group rounded-xl overflow-hidden hover:shadow-xl transition duration-300 transform opacity-0 scale-95 flex-shrink-0 w-[240px] sm:w-[280px]"
+                    style={{
+                      animation: `fadeInScale 0.6s ease ${index * 0.15}s forwards`,
+                    }}
+                  >
+                    <div
+                      className="relative h-48 sm:h-56 bg-cover bg-center rounded-xl"
+                      style={{ backgroundImage: `url(${artist.image})` }}
+                    >
+                      <div className="absolute inset-0 bg-black opacity-20 group-hover:opacity-30 transition duration-300"></div>
+                      <img
+                        src={artist.image}
+                        alt={artist.name}
+                        className="w-full h-full object-cover rounded-xl"
+                      />
+                    </div>
+                    <div className="p-3 text-left card-content transition-transform duration-300">
+                      <h3 className="text-lg sm:text-xl font-medium text-[#5B4336]">
+                        {artist.name}
+                      </h3>
+                      <p className="text-gray-600 text-sm flex items-center mb-1">
+                        <MapPin className="h-4 w-4 text-gray-600 mr-1" />
+                        {artist.location}
+                      </p>
+                      <div className="flex items-center text-sm text-gray-600">
+                        <Star className="h-4 w-4 text-yellow-500 mr-1" />
+                        <span>{artist.rating.toFixed(1)}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
+              {makeupArtists.length > 4 && (
+                <div className="absolute top-1/2 -right-4 sm:-right-6 transform -translate-y-1/2 z-10">
+                  <button
+                    onClick={() => scrollRight(artistsRef)}
+                    className="scroll-button bg-[#9c7c5d] text-white rounded-full p-2 sm:p-3 hover:bg-[#8b6b4a] transition duration-300"
+                  >
+                    <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
+                  </button>
+                </div>
+              )}
+            </div>
+            <div className="text-right mt-6">
+              <button
+                onClick={() => navigate("/vendorslist?type=makeup artist")}
+                className="px-4 py-2 bg-gray-200 text-[#9c7c5d] rounded-lg hover:bg-gray-300 transition duration-300"
+              >
+                View All
+              </button>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
+
+      {(activeSection === "all" || activeSection === "projects") && (
+        <section id="projects" className="py-12 sm:py-16 lg:py-20">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-left mb-12 sm:mb-16">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#5B4336] mb-4">
+                Our Projects
+              </h2>
+              <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl">
+                Take a look at some of our recent wedding projects and get
+                inspired for your own special day
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+              {projects.map((project) => (
+                <div
+                  key={project.id}
+                  className="group rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition duration-300 transform hover:-translate-y-2"
+                >
+                  <div className="relative h-48 sm:h-56 lg:h-64">
+                    <img
+                      src={project.image}
+                      alt={project.title}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black opacity-10 group-hover:opacity-20 transition duration-300"></div>
+                  </div>
+
+                  <div className="p-4 sm:p-6 text-left">
+                    <h3 className="text-lg sm:text-xl font-semibold text-[#5B4336] mb-2">
+                      {project.title}
+                    </h3>
+                    <p className="text-gray-600 text-sm mb-4">
+                      {project.category}
+                    </p>
+                    <button className="bg-[#9c7c5d] text-white px-4 sm:px-6 py-2 rounded-full text-xs sm:text-sm hover:bg-[#8b6b4a] transition duration-300">
+                      View Gallery
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
     </div>
   );
 };
