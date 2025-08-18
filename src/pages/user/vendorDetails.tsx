@@ -514,320 +514,321 @@ const VendorDetails: React.FC = () => {
         </div>
       </div>
 
-      {isModalOpen && selectedDate && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 px-2 sm:px-4 backdrop-blur-sm">
-          <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl shadow-2xl border-2 border-amber-200 p-4 sm:p-6 md:p-8 w-full max-w-2xl overflow-auto max-h-[90vh] transform transition-all">
-            <div className="text-center mb-4 sm:mb-6 pb-4 border-b-2 border-amber-300">
-              <h2 className="text-lg sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-amber-800 to-orange-700 bg-clip-text text-transparent mb-2">
-                📅 Book {vendor.name}
-              </h2>
-              <p className="text-amber-700 text-xs sm:text-sm font-medium">Complete your booking details below</p>
-            </div>
+     {isModalOpen && selectedDate && (
+  <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 px-2 sm:px-4 backdrop-blur-sm">
+    <div className="bg-[#FDF8F1] rounded-2xl shadow-2xl border-2 border-[#b09d94] p-4 sm:p-6 md:p-8 w-full max-w-2xl overflow-auto max-h-[90vh] transform transition-all">
+      <div className="text-center mb-4 sm:mb-6 pb-4 border-b-2 border-[#b09d94]">
+        <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-[#78533F] mb-2">
+          📅 Book {vendor.name}
+        </h2>
+        <p className="text-[#3C3A39] text-xs sm:text-sm font-medium">Complete your booking details below</p>
+      </div>
 
-            <form onSubmit={handleFormSubmit} className="space-y-4 sm:space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                <div className="space-y-2">
-                  <label className="block text-xs sm:text-sm font-semibold text-amber-800 flex items-center">
-                    <span className="mr-2">🏪</span>Vendor Name
-                  </label>
-                  <input
-                    type="text"
-                    value={vendor.name}
-                    disabled
-                    className="w-full rounded-xl border-2 border-amber-200 bg-gradient-to-r from-amber-100 to-orange-100 p-2 sm:p-3 text-xs sm:text-sm font-medium text-amber-900 shadow-inner"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="block text-xs sm:text-sm font-semibold text-amber-800 flex items-center">
-                    <span className="mr-2">📅</span>Selected Date
-                  </label>
-                  <input
-                    type="text"
-                    value={`${monthName} ${selectedDate.getDate()}, ${year}`}
-                    disabled
-                    className="w-full rounded-xl border-2 border-amber-200 bg-gradient-to-r from-amber-100 to-orange-100 p-2 sm:p-3 text-xs sm:text-sm font-medium text-amber-900 shadow-inner"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                <div className="space-y-2">
-                  <label className="block text-xs sm:text-sm font-semibold text-amber-800 flex items-center">
-                    <span className="mr-2">⏰</span>Time Slot
-                  </label>
-                  <select
-                    name="timeSlot"
-                    value={formData.timeSlot}
-                    onChange={handleFormChange}
-                    required
-                    className="w-full rounded-xl border-2 border-amber-300 bg-white p-2 sm:p-3 text-xs sm:text-sm font-medium text-amber-900 focus:border-orange-400 focus:ring-2 focus:ring-orange-200 transition-all"
-                  >
-                    <option value="" disabled>
-                      Select a time slot
-                    </option>
-                    {getTimeSlotStatus(selectedDate).map((slot, index) => (
-                      <option
-                        key={index}
-                        value={`${slot.label}: ${slot.startTime} - ${slot.endTime}`}
-                        disabled={slot.isBooked}
-                        className={slot.isBooked ? "text-red-500" : "text-green-500"}
-                      >
-                        {slot.label}: {slot.startTime} - {slot.endTime} {slot.isBooked ? "(Booked)" : "(Available)"}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="block text-xs sm:text-sm font-semibold text-amber-800 flex items-center">
-                    <span className="mr-2">📧</span>Email
-                  </label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleFormChange}
-                    required
-                    className="w-full rounded-xl border-2 border-amber-300 bg-white p-2 sm:p-3 text-xs sm:text-sm font-medium text-amber-900 focus:border-orange-400 focus:ring-2 focus:ring-orange-200 transition-all"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="block text-xs sm:text-sm font-semibold text-amber-800 flex items-center">
-                  <span className="mr-2">📍</span>Address
-                </label>
-                <input
-                  type="text"
-                  name="address"
-                  value={formData.address}
-                  onChange={handleFormChange}
-                  required
-                  className="w-full rounded-xl border-2 border-amber-300 bg-white p-2 sm:p-3 text-xs sm:text-sm font-medium text-amber-900 focus:border-orange-400 focus:ring-2 focus:ring-orange-200 transition-all"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                <div className="space-y-2">
-                  <label className="block text-xs sm:text-sm font-semibold text-amber-800 flex items-center">
-                    <span className="mr-2">💰</span>Total Amount
-                  </label>
-                  <div className="bg-gradient-to-r from-green-100 to-emerald-100 rounded-xl border-2 border-green-300 p-2 sm:p-3">
-                    <span className="text-sm sm:text-base md:text-lg font-bold text-green-800">
-                      ₹{Number(vendor.totalamount).toLocaleString("en-IN")}
-                    </span>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <label className="block text-xs sm:text-sm font-semibold text-amber-800 flex items-center">
-                    <span className="mr-2">💳</span>Advance Amount
-                  </label>
-                  <div className="bg-gradient-to-r from-blue-100 to-cyan-100 rounded-xl border-2 border-blue-300 p-2 sm:p-3">
-                    <span className="text-sm sm:text-base md:text-lg font-bold text-blue-800">
-                      ₹{Number(vendor.advAmnt).toLocaleString("en-IN")}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-4 pt-4 sm:pt-6 border-t-2 border-amber-200">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-3 sm:px-4 md:px-6 py-2 sm:py-3 bg-gradient-to-r from-gray-200 to-gray-300 hover:from-gray-300 hover:to-gray-400 text-gray-800 font-semibold rounded-xl transition-all transform hover:scale-105 shadow-lg text-xs sm:text-sm"
-                >
-                  ❌ Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-3 sm:px-4 md:px-6 py-2 sm:py-3 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-semibold rounded-xl transition-all transform hover:scale-105 shadow-lg text-xs sm:text-sm"
-                >
-                  💳 Proceed to Payment
-                </button>
-              </div>
-            </form>
+      <form onSubmit={handleFormSubmit} className="space-y-4 sm:space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+          <div className="space-y-2">
+            <label className="block text-xs sm:text-sm font-semibold text-[#78533F] flex items-center">
+              <span className="mr-2">🏪</span>Vendor Name
+            </label>
+            <input
+              type="text"
+              value={vendor.name}
+              disabled
+              className="w-full rounded-xl border-2 border-[#b09d94] bg-white p-2 sm:p-3 text-xs sm:text-sm font-medium text-[#3C3A39] shadow-inner"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="block text-xs sm:text-sm font-semibold text-[#78533F] flex items-center">
+              <span className="mr-2">📅</span>Selected Date
+            </label>
+            <input
+              type="text"
+              value={`${monthName} ${selectedDate.getDate()}, ${year}`}
+              disabled
+              className="w-full rounded-xl border-2 border-[#b09d94] bg-white p-2 sm:p-3 text-xs sm:text-sm font-medium text-[#3C3A39] shadow-inner"
+            />
           </div>
         </div>
-      )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+          <div className="space-y-2">
+            <label className="block text-xs sm:text-sm font-semibold text-[#78533F] flex items-center">
+              <span className="mr-2">⏰</span>Time Slot
+            </label>
+            <select
+              name="timeSlot"
+              value={formData.timeSlot}
+              onChange={handleFormChange}
+              required
+              className="w-full rounded-xl border-2 border-[#b09d94] bg-white p-2 sm:p-3 text-xs sm:text-sm font-medium text-[#3C3A39] focus:border-[#ED695A] focus:ring-2 focus:ring-[#ED695A] transition-all appearance-none"
+            >
+              <option value="" disabled>
+                Select a time slot
+              </option>
+              {getTimeSlotStatus(selectedDate).map((slot, index) => (
+                <option
+                  key={index}
+                  value={`${slot.label}: ${slot.startTime} - ${slot.endTime}`}
+                  disabled={slot.isBooked}
+                  className={slot.isBooked ? "text-red-500" : "text-green-500"}
+                  style={{ color: slot.isBooked ? '#ef4444' : '#22c55e' }}
+                >
+                  {slot.label}: {slot.startTime} - {slot.endTime} {slot.isBooked ? "(Booked)" : "(Available)"}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-2">
+            <label className="block text-xs sm:text-sm font-semibold text-[#78533F] flex items-center">
+              <span className="mr-2">📧</span>Email
+            </label>
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleFormChange}
+              required
+              className="w-full rounded-xl border-2 border-[#b09d94] bg-white p-2 sm:p-3 text-xs sm:text-sm font-medium text-[#3C3A39] focus:border-[#ED695A] focus:ring-2 focus:ring-[#ED695A] transition-all"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <label className="block text-xs sm:text-sm font-semibold text-[#78533F] flex items-center">
+            <span className="mr-2">📍</span>Address
+          </label>
+          <input
+            type="text"
+            name="address"
+            value={formData.address}
+            onChange={handleFormChange}
+            required
+            className="w-full rounded-xl border-2 border-[#b09d94] bg-white p-2 sm:p-3 text-xs sm:text-sm font-medium text-[#3C3A39] focus:border-[#ED695A] focus:ring-2 focus:ring-[#ED695A] transition-all"
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+          <div className="space-y-2">
+            <label className="block text-xs sm:text-sm font-semibold text-[#78533F] flex items-center">
+              <span className="mr-2">💰</span>Total Amount
+            </label>
+            <div className="bg-white rounded-xl border-2 border-[#b09d94] p-2 sm:p-3">
+              <span className="text-sm sm:text-base md:text-lg font-bold text-[#78533F]">
+                ₹{Number(vendor.totalamount).toLocaleString("en-IN")}
+              </span>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <label className="block text-xs sm:text-sm font-semibold text-[#78533F] flex items-center">
+              <span className="mr-2">💳</span>Advance Amount
+            </label>
+            <div className="bg-white rounded-xl border-2 border-[#b09d94] p-2 sm:p-3">
+              <span className="text-sm sm:text-base md:text-lg font-bold text-[#78533F]">
+                ₹{Number(vendor.advAmnt).toLocaleString("en-IN")}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-4 pt-4 sm:pt-6 border-t-2 border-[#b09d94]">
+          <button
+            type="button"
+            onClick={() => setIsModalOpen(false)}
+            className="px-3 sm:px-4 md:px-6 py-2 sm:py-3 bg-white hover:bg-gray-100 text-[#3C3A39] font-semibold rounded-xl transition-all transform hover:scale-105 shadow-lg text-xs sm:text-sm"
+          >
+            ❌ Cancel
+          </button>
+          <button
+            type="submit"
+            className="px-3 sm:px-4 md:px-6 py-2 sm:py-3 bg-[#ED695A] hover:bg-[#d85c4e] text-white font-semibold rounded-xl transition-all transform hover:scale-105 shadow-lg text-xs sm:text-sm"
+          >
+            💳 Proceed to Payment
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+)}
 
       {isPaymentModalOpen && bookingData && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 px-2 sm:px-4 backdrop-blur-sm">
-          <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl shadow-2xl border-2 border-emerald-200 p-4 sm:p-6 md:p-8 w-full max-w-2xl overflow-auto max-h-[90vh] transform transition-all">
-            <div className="text-center mb-4 sm:mb-6 pb-4 border-b-2 border-emerald-200">
-              <h2 className="text-lg sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-emerald-800 to-teal-700 bg-clip-text text-transparent mb-2">
-                💳 Payment for Booking
-              </h2>
-              <p className="text-emerald-700 text-xs sm:text-sm font-medium">Secure payment gateway</p>
-            </div>
+  <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 px-2 sm:px-4 backdrop-blur-sm">
+    <div className="bg-[#FDF8F1] rounded-2xl shadow-2xl border-2 border-[#b09d94] p-4 sm:p-6 md:p-8 w-full max-w-2xl overflow-auto max-h-[90vh] transform transition-all">
+      <div className="text-center mb-4 sm:mb-6 pb-4 border-b-2 border-[#b09d94]">
+        <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-[#78533F] mb-2">
+          💳 Payment for Booking
+        </h2>
+        <p className="text-[#3C3A39] text-xs sm:text-sm font-medium">Secure payment gateway</p>
+      </div>
 
-            <div className="mb-4 sm:mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-3 sm:p-4 border-2 border-blue-200">
-              <h3 className="text-sm sm:text-base md:text-lg font-bold text-blue-800 mb-3 flex items-center">
-                <span className="mr-2">📋</span>Booking Summary
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs sm:text-sm">
-                <div className="space-y-2">
-                  <p className="flex justify-between">
-                    <span className="font-semibold text-blue-700">Vendor:</span>{" "}
-                    <span className="text-blue-900">{bookingData.vendorName}</span>
-                  </p>
-                  <p className="flex justify-between">
-                    <span className="font-semibold text-blue-700">Email:</span>{" "}
-                    <span className="text-blue-900">{bookingData.userEmail}</span>
-                  </p>
-                  <p className="flex justify-between">
-                    <span className="font-semibold text-blue-700">Date:</span>{" "}
-                    <span className="text-blue-900">{bookingData.bookedDate}</span>
-                  </p>
-                  <p className="flex justify-between">
-                    <span className="font-semibold text-blue-700">Time:</span>{" "}
-                    <span className="text-blue-900">{bookingData.timeSlot}</span>
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <p className="flex justify-between">
-                    <span className="font-semibold text-green-700">Total:</span>{" "}
-                    <span className="text-green-900 font-bold">
-                      ₹{bookingData.totalAmount.toLocaleString("en-IN")}
-                    </span>
-                  </p>
-                  <p className="flex justify-between">
-                    <span className="font-semibold text-blue-700">Advance:</span>{" "}
-                    <span className="text-blue-900 font-bold">
-                      ₹{bookingData.advanceAmount.toLocaleString("en-IN")}
-                    </span>
-                  </p>
-                  <p className="flex justify-between">
-                    <span className="font-semibold text-purple-700">Paying:</span>{" "}
-                    <span className="text-purple-900 font-bold">
-                      ₹
-                      {paymentType === "advance"
-                        ? bookingData.advanceAmount.toLocaleString("en-IN")
-                        : bookingData.totalAmount.toLocaleString("en-IN")}
-                    </span>
-                  </p>
-                  <p className="flex justify-between">
-                    <span className="font-semibold text-orange-700">Balance:</span>{" "}
-                    <span className="text-orange-900 font-bold">
-                      ₹
-                      {paymentType === "advance"
-                        ? (bookingData.totalAmount - bookingData.advanceAmount).toLocaleString("en-IN")
-                        : "0"}
-                    </span>
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <form onSubmit={handlePaymentSubmit} className="space-y-4 sm:space-y-6">
-              <div className="space-y-4">
-                <label className="block text-sm sm:text-base md:text-lg font-bold text-emerald-800 flex items-center">
-                  <span className="mr-2">💰</span>Payment Type
-                </label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="relative">
-                    <input
-                      id="advance"
-                      name="paymentType"
-                      type="radio"
-                      value="advance"
-                      checked={paymentType === "advance"}
-                      onChange={(e) => setPaymentType(e.target.value as "advance" | "full")}
-                      className="sr-only"
-                    />
-                    <label
-                      htmlFor="advance"
-                      className={`block p-3 sm:p-4 rounded-xl border-2 cursor-pointer transition-all transform hover:scale-105 ${paymentType === "advance" ? "border-blue-400 bg-gradient-to-r from-blue-100 to-cyan-100 shadow-lg" : "border-gray-300 bg-white hover:border-blue-300"}`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <span className="text-sm sm:text-base md:text-lg font-bold text-blue-800">💳 Advance</span>
-                          <p className="text-xs sm:text-sm text-blue-600">Pay partial amount</p>
-                        </div>
-                        <span className="text-sm sm:text-base md:text-lg font-bold text-blue-900">
-                          ₹{bookingData.advanceAmount.toLocaleString("en-IN")}
-                        </span>
-                      </div>
-                    </label>
-                  </div>
-                  <div className="relative">
-                    <input
-                      id="full"
-                      name="paymentType"
-                      type="radio"
-                      value="full"
-                      checked={paymentType === "full"}
-                      onChange={(e) => setPaymentType(e.target.value as "advance" | "full")}
-                      className="sr-only"
-                    />
-                    <label
-                      htmlFor="full"
-                      className={`block p-3 sm:p-4 rounded-xl border-2 cursor-pointer transition-all transform hover:scale-105 ${paymentType === "full" ? "border-green-400 bg-gradient-to-r from-green-100 to-emerald-100 shadow-lg" : "border-gray-300 bg-white hover:border-green-300"}`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <span className="text-sm sm:text-base md:text-lg font-bold text-green-800">💰 Full Payment</span>
-                          <p className="text-xs sm:text-sm text-green-600">Pay complete amount</p>
-                        </div>
-                        <span className="text-sm sm:text-base md:text-lg font-bold text-green-900">
-                          ₹{bookingData.totalAmount.toLocaleString("en-IN")}
-                        </span>
-                      </div>
-                    </label>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <label className="block text-sm sm:text-base md:text-lg font-bold text-emerald-800 flex items-center">
-                  <span className="mr-2">🏦</span>Payment Method
-                </label>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {[
-                    { id: "credit", label: "Credit Card", icon: "💳", color: "purple" },
-                    { id: "debit", label: "Debit Card", icon: "💳", color: "blue" },
-                    { id: "upi", label: "UPI", icon: "📱", color: "green" },
-                    { id: "netbanking", label: "Net Banking", icon: "🏦", color: "orange" },
-                  ].map((method) => (
-                    <div key={method.id} className="relative">
-                      <input
-                        id={method.id}
-                        name="paymentMethod"
-                        type="radio"
-                        value={method.id}
-                        checked={paymentMethod === method.id}
-                        onChange={(e) => setPaymentMethod(e.target.value)}
-                        className="sr-only"
-                      />
-                      <label
-                        htmlFor={method.id}
-                        className={`block p-2 sm:p-3 rounded-xl border-2 cursor-pointer transition-all transform hover:scale-105 text-center ${paymentMethod === method.id ? `border-${method.color}-400 bg-gradient-to-r from-${method.color}-100 to-${method.color}-200 shadow-lg` : "border-gray-300 bg-white hover:border-gray-400"}`}
-                      >
-                        <div className="text-lg sm:text-xl md:text-2xl mb-1">{method.icon}</div>
-                        <div className="text-xs sm:text-sm font-semibold text-gray-800">{method.label}</div>
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-4 pt-4 sm:pt-6 border-t-2 border-emerald-200">
-                <button
-                  type="button"
-                  onClick={() => setIsPaymentModalOpen(false)}
-                  className="px-3 sm:px-4 md:px-6 py-2 sm:py-3 bg-gradient-to-r from-gray-200 to-gray-300 hover:from-gray-300 hover:to-gray-400 text-gray-800 font-semibold rounded-xl transition-all transform hover:scale-105 shadow-lg text-xs sm:text-sm"
-                >
-                  ❌ Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-3 sm:px-4 md:px-6 py-2 sm:py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold rounded-xl transition-all transform hover:scale-105 shadow-lg flex items-center text-xs sm:text-sm"
-                >
-                  <span className="mr-2">🔒</span>Pay Now
-                </button>
-              </div>
-            </form>
+      <div className="mb-4 sm:mb-6 bg-white rounded-xl p-3 sm:p-4 border-2 border-[#b09d94]">
+        <h3 className="text-sm sm:text-base md:text-lg font-bold text-[#78533F] mb-3 flex items-center">
+          <span className="mr-2">📋</span>Booking Summary
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs sm:text-sm">
+          <div className="space-y-2">
+            <p className="flex justify-between">
+              <span className="font-semibold text-[#78533F]">Vendor:</span>{" "}
+              <span className="text-[#3C3A39]">{bookingData.vendorName}</span>
+            </p>
+            <p className="flex justify-between">
+              <span className="font-semibold text-[#78533F]">Email:</span>{" "}
+              <span className="text-[#3C3A39]">{bookingData.userEmail}</span>
+            </p>
+            <p className="flex justify-between">
+              <span className="font-semibold text-[#78533F]">Date:</span>{" "}
+              <span className="text-[#3C3A39]">{bookingData.bookedDate}</span>
+            </p>
+            <p className="flex justify-between">
+              <span className="font-semibold text-[#78533F]">Time:</span>{" "}
+              <span className="text-[#3C3A39]">{bookingData.timeSlot}</span>
+            </p>
+          </div>
+          <div className="space-y-2">
+            <p className="flex justify-between">
+              <span className="font-semibold text-[#78533F]">Total:</span>{" "}
+              <span className="text-[#3C3A39] font-bold">
+                ₹{bookingData.totalAmount.toLocaleString("en-IN")}
+              </span>
+            </p>
+            <p className="flex justify-between">
+              <span className="font-semibold text-[#78533F]">Advance:</span>{" "}
+              <span className="text-[#3C3A39] font-bold">
+                ₹{bookingData.advanceAmount.toLocaleString("en-IN")}
+              </span>
+            </p>
+            <p className="flex justify-between">
+              <span className="font-semibold text-[#78533F]">Paying:</span>{" "}
+              <span className="text-[#3C3A39] font-bold">
+                ₹
+                {paymentType === "advance"
+                  ? bookingData.advanceAmount.toLocaleString("en-IN")
+                  : bookingData.totalAmount.toLocaleString("en-IN")}
+              </span>
+            </p>
+            <p className="flex justify-between">
+              <span className="font-semibold text-[#78533F]">Balance:</span>{" "}
+              <span className="text-[#3C3A39] font-bold">
+                ₹
+                {paymentType === "advance"
+                  ? (bookingData.totalAmount - bookingData.advanceAmount).toLocaleString("en-IN")
+                  : "0"}
+              </span>
+            </p>
           </div>
         </div>
-      )}
+      </div>
+
+      <form onSubmit={handlePaymentSubmit} className="space-y-4 sm:space-y-6">
+        <div className="space-y-4">
+          <label className="block text-sm sm:text-base md:text-lg font-bold text-[#78533F] flex items-center">
+            <span className="mr-2">💰</span>Payment Type
+          </label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="relative">
+              <input
+                id="advance"
+                name="paymentType"
+                type="radio"
+                value="advance"
+                checked={paymentType === "advance"}
+                onChange={(e) => setPaymentType(e.target.value as "advance" | "full")}
+                className="sr-only"
+              />
+              <label
+                htmlFor="advance"
+                className={`block p-3 sm:p-4 rounded-xl border-2 cursor-pointer transition-all transform hover:scale-105 ${paymentType === "advance" ? "border-[#ED695A] bg-[#FDF8F1] shadow-lg" : "border-[#b09d94] bg-white hover:border-[#ED695A]"}`}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-sm sm:text-base md:text-lg font-bold text-[#78533F]">💳 Advance</span>
+                    <p className="text-xs sm:text-sm text-[#3C3A39]">Pay partial amount</p>
+                  </div>
+                  <span className="text-sm sm:text-base md:text-lg font-bold text-[#3C3A39]">
+                    ₹{bookingData.advanceAmount.toLocaleString("en-IN")}
+                  </span>
+                </div>
+              </label>
+            </div>
+            <div className="relative">
+              <input
+                id="full"
+                name="paymentType"
+                type="radio"
+                value="full"
+                checked={paymentType === "full"}
+                onChange={(e) => setPaymentType(e.target.value as "advance" | "full")}
+                className="sr-only"
+              />
+              <label
+                htmlFor="full"
+                className={`block p-3 sm:p-4 rounded-xl border-2 cursor-pointer transition-all transform hover:scale-105 ${paymentType === "full" ? "border-[#ED695A] bg-[#FDF8F1] shadow-lg" : "border-[#b09d94] bg-white hover:border-[#ED695A]"}`}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-sm sm:text-base md:text-lg font-bold text-[#78533F]">💰 Full Payment</span>
+                    <p className="text-xs sm:text-sm text-[#3C3A39]">Pay complete amount</p>
+                  </div>
+                  <span className="text-sm sm:text-base md:text-lg font-bold text-[#3C3A39]">
+                    ₹{bookingData.totalAmount.toLocaleString("en-IN")}
+                  </span>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <label className="block text-sm sm:text-base md:text-lg font-bold text-[#78533F] flex items-center">
+            <span className="mr-2">🏦</span>Payment Method
+          </label>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[
+              { id: "credit", label: "Credit Card", icon: "💳", color: "ED695A" },
+              { id: "debit", label: "Debit Card", icon: "💳", color: "ED695A" },
+              { id: "upi", label: "UPI", icon: "📱", color: "ED695A" },
+              { id: "netbanking", label: "Net Banking", icon: "🏦", color: "ED695A" },
+            ].map((method) => (
+              <div key={method.id} className="relative">
+                <input
+                  id={method.id}
+                  name="paymentMethod"
+                  type="radio"
+                  value={method.id}
+                  checked={paymentMethod === method.id}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                  className="sr-only"
+                />
+                <label
+                  htmlFor={method.id}
+                  className={`block p-2 sm:p-3 rounded-xl border-2 cursor-pointer transition-all transform hover:scale-105 text-center ${paymentMethod === method.id ? `border-[#${method.color}] bg-[#FDF8F1] shadow-lg` : "border-[#b09d94] bg-white hover:border-[#ED695A]"}`}
+                >
+                  <div className="text-lg sm:text-xl md:text-2xl mb-1">{method.icon}</div>
+                  <div className="text-xs sm:text-sm font-semibold text-[#3C3A39]">{method.label}</div>
+                </label>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-4 pt-4 sm:pt-6 border-t-2 border-[#b09d94]">
+          <button
+            type="button"
+            onClick={() => setIsPaymentModalOpen(false)}
+            className="px-3 sm:px-4 md:px-6 py-2 sm:py-3 bg-white hover:bg-gray-100 text-[#3C3A39] font-semibold rounded-xl transition-all transform hover:scale-105 shadow-lg text-xs sm:text-sm"
+          >
+            ❌ Cancel
+          </button>
+          <button
+            type="submit"
+            className="px-3 sm:px-4 md:px-6 py-2 sm:py-3 bg-[#ED695A] hover:bg-[#d85c4e] text-white font-semibold rounded-xl transition-all transform hover:scale-105 shadow-lg flex items-center text-xs sm:text-sm"
+          >
+            <span className="mr-2">🔒</span>Pay Now
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+)}
     </div>
   )
 }

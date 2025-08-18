@@ -22,6 +22,7 @@ const formatDate = (dateString: string) => {
 }
 
 const isTodayOrFuture = (dateString: string) => {
+  console.log('hiiii')
   if (!dateString) return false
   try {
     const eventDate = new Date(dateString)
