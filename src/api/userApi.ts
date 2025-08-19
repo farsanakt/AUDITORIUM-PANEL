@@ -85,6 +85,23 @@ export const existingBookings=async(id:string)=>{
 
 }
 
+export const fetchAuditoriumUserdetails=async(id:string)=>{
+
+  
+  const response=await api.get(`/auditoriumUserdetatils/${id}`)
+  
+  return response
+
+}
+
+export const verifyPswrd=async(id:string,password:string)=>{
+
+  const response=await api.post(`/verify-password/${id}`,{password})
+
+  return response
+
+}
+
 export const updateVenues=async(id:any,data:any)=>{
 
   const response=await api.put('/updatevenues ',{id,data})
@@ -160,6 +177,8 @@ export const existingAllVendors =async(id:string)=>{
   })
 
 }
+
+
 
 export const createBooking=async(formData:any)=>{
 

@@ -1,486 +1,521 @@
-import React, { useEffect, useState } from 'react';
-import { User, Mail, Phone, MapPin, Calendar, Edit2, Save, X, Building2, Crown, LogOut } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Edit2, Save, X, Mail, Lock } from 'lucide-react';
+import { useSelector } from 'react-redux';
+import { fetchAuditoriumUserdetails, verifyPswrd } from '../../api/userApi';
 
-interface AuditoriumProfileProps {
-  onLogout?: () => void;
-  onRedirect?: (path: string) => void;
-}
-
-interface ProfileData {
+// Types
+interface AuditoriumUser {
+  _id?: string;
+  email: string;
+  password: string;
+  isVerified: boolean;
+  isBlocked: boolean;
   auditoriumName: string;
   ownerName: string;
-  email: string;
-  phone: string;
   events: string[];
   locations: string[];
+  phone: string;
 }
 
-const AuditoriumProfile: React.FC<AuditoriumProfileProps> = ({
-  onLogout = () => console.log('Logout function called'),
-  onRedirect = (path) => console.log(`Redirecting to ${path}`),
-}) => {
-  const [profileData, setProfileData] = useState<ProfileData>({
-    auditoriumName: '',
-    ownerName: '',
-    email: '',
-    phone: '',
-    events: [],
-    locations: [],
-  });
-  const [loading, setLoading] = useState<boolean>(true);
-  const availableEvents = ['Wedding', 'Engagement', 'Corporate Events', 'Music Concerts'];
-  const availableLocations = ['Kochi', 'Trivandrum', 'Calicut', 'Thrissur'];
+interface EditState {
+  [key: string]: boolean;
+}
 
-  // State for general profile editing (excluding email)
-  const [isEditing, setIsEditing] = useState(false);
-  const [tempProfileData, setTempProfileData] = useState<ProfileData | null>(null);
+interface FormData {
+  [key: string]: any;
+}
 
-  // State for email specific editing
-  const [editingEmailField, setEditingEmailField] = useState<boolean>(false);
-  const [tempEmailValue, setTempEmailValue] = useState<string>('');
+interface RootState {
+  auth: {
+    currentUser: {
+      id: string;
+      role: string;
+      email: string;
+    } | null;
+  };
+}
 
+// Mock API function - replace with your actual import
+// const fetchAuditoriumUserdetails = async (userId: string) => {
+//   // Replace this with your actual API call
+//   const response = await fetch(`/api/auditorium/user/${userId}`, {
+//     headers: {
+//       'Authorization': `Bearer ${localStorage.getItem('token')}`
+//     }
+//   });
+//   const data = await response.json();
+//   return { data: data.data };
+// };
+
+const AuditoriumProfile: React.FC = () => {
+  const [userData, setUserData] = useState<AuditoriumUser | null>(null);
+  const [editState, setEditState] = useState<EditState>({});
+  const [formData, setFormData] = useState<FormData>({});
+  const { currentUser } = useSelector((state: RootState) => state.auth);
+  
+  // Email editing states
   const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [password, setPassword] = useState('');
-  const [newEmail, setNewEmail] = useState('');
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
+  const [newEmailInput, setNewEmailInput] = useState('');
   const [passwordError, setPasswordError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  // Simulated backend API call to fetch user data
-  const fetchAuditoriumUser = async () => {
-    setLoading(true);
-    // Simulate network delay
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    const newProfileData = {
-      auditoriumName: 'Malabar Grand Hall',
-      ownerName: 'V. P. Amal',
-      email: 'vpamal@gmail.com',
-      phone: '+91 8606184131',
-      events: ['Wedding', 'Engagement'],
-      locations: ['Kochi', 'Trivandrum'],
-    };
-    setProfileData(newProfileData);
-    setLoading(false);
-    console.log('Fetched profile data:', newProfileData);
-  };
-
-  // Simulated backend API call to update profile data (excluding email)
-  const updateProfileDataBackend = async (data: ProfileData) => {
-    console.log('Simulating backend update for profile data:', data);
-    // In a real application, you would make an API call here, e.g.:
-    // const response = await fetch('/api/profile', {
-    //   method: 'PUT',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify(data),
-    // });
-    // if (!response.ok) {
-    //   throw new Error('Failed to update profile');
-    // }
-    await new Promise((resolve) => setTimeout(resolve, 500)); // Simulate network delay
-    console.log('Profile data updated successfully on backend (simulated).');
-  };
-
-  // Simulated backend API call to verify password and change email
-  const verifyPasswordAndChangeEmail = async (email: string, currentPassword: string) => {
-    console.log(`Simulating backend call to change email to "${email}" with password verification.`);
-    // In a real application, you would make an API call here, e.g.:
-    // const response = await fetch('/api/change-email', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({ newEmail: email, password: currentPassword }),
-    // });
-    // const result = await response.json();
-    // return result.success; // Assuming the backend returns { success: true/false }
-
-    await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate network delay
-    if (currentPassword === 'password123') { // Hardcoded for demonstration, replace with actual backend check
-      console.log('Password verified and email changed successfully (simulated).');
-      return true;
-    } else {
-      console.error('Incorrect password (simulated).');
-      return false;
+  const fetchUserData = async () => {
+    try {
+      if (!currentUser?.id) return;
+      
+      setLoading(true);
+      const response = await fetchAuditoriumUserdetails(currentUser.id);
+      console.log(response.data, 'this profile data');
+      
+      if (response.data) {
+        setUserData(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      alert('Error loading user data');
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchAuditoriumUser();
-  }, []);
+    fetchUserData();
+  }, [currentUser]);
 
-  // Handlers for general profile editing
-  const handleStartEditing = () => {
-    setIsEditing(true);
-    setTempProfileData({ ...profileData }); // Create a mutable copy
-  };
-
-  const handleSaveChanges = async () => {
-    if (tempProfileData) {
-      setProfileData(tempProfileData); // Update main state
-      await updateProfileDataBackend(tempProfileData); // Send to backend
-    }
-    setIsEditing(false);
-    setTempProfileData(null); // Clear temporary data
-  };
-
-  const handleCancelEditing = () => {
-    setIsEditing(false);
-    setTempProfileData(null); // Discard changes
-  };
-
-  const handleTempInputChange = (field: keyof ProfileData, value: string) => {
-    setTempProfileData((prev) => (prev ? { ...prev, [field]: value } : null));
-  };
-
-  // Handlers for email editing (separate flow)
-  const handleEditEmail = (currentValue: string) => {
-    setEditingEmailField(true);
-    setTempEmailValue(currentValue);
-  };
-
-  const handleSaveEmail = () => {
-    setNewEmail(tempEmailValue);
-    setShowPasswordModal(true);
-    setEditingEmailField(false); // Exit email editing mode
-    setTempEmailValue('');
-  };
-
-  const handleCancelEmail = () => {
-    setEditingEmailField(false);
-    setTempEmailValue('');
-  };
-
-  // Handlers for events and locations (immediate update)
-  const handleEventToggle = async (event: string) => {
-    const updatedEvents = profileData.events.includes(event)
-      ? profileData.events.filter((e) => e !== event)
-      : [...profileData.events, event];
-
-    const updatedProfile = {
-      ...profileData,
-      events: updatedEvents,
-    };
-    setProfileData(updatedProfile);
-    await updateProfileDataBackend(updatedProfile); // Send all data to backend
-  };
-
-  const handleLocationToggle = async (location: string) => {
-    const updatedLocations = profileData.locations.includes(location)
-      ? profileData.locations.filter((l) => l !== location)
-      : [...profileData.locations, location];
-
-    const updatedProfile = {
-      ...profileData,
-      locations: updatedLocations,
-    };
-    setProfileData(updatedProfile);
-    await updateProfileDataBackend(updatedProfile); // Send all data to backend
-  };
-
-  // Password modal handlers
-  const handlePasswordSubmit = async () => {
-    setPasswordError('');
-    const success = await verifyPasswordAndChangeEmail(newEmail, password);
-
-    if (success) {
-      setProfileData((prev) => ({
-        ...prev,
-        email: newEmail,
-      }));
-      setShowPasswordModal(false);
-      setPassword('');
-      setNewEmail('');
-      setPasswordError('');
-      onLogout();
-      setTimeout(() => {
-        onRedirect('/login');
-      }, 1000);
-    } else {
-      setPasswordError('Incorrect password. Please try again.');
-    }
-  };
-
-  const handlePasswordCancel = () => {
-    setShowPasswordModal(false);
-    setPassword('');
-    setNewEmail('');
-    setPasswordError('');
-  };
-
-  if (loading) {
+  // Show loading state if userData is not loaded
+  if (!userData) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-indigo-200 border-t-indigo-600 mx-auto mb-3"></div>
-          <p className="text-slate-600 text-base font-medium">Loading your profile...</p>
+      <div className="max-w-4xl mx-auto p-6 bg-white">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-gray-500">Loading user data...</div>
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-800 text-white">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center">
-            <div className="relative inline-block mb-4">
-              <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border-2 border-white/30 shadow-lg">
-                <Building2 size={32} className="text-white" />
-              </div>
-              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-amber-400 rounded-full flex items-center justify-center border-2 border-white shadow">
-                <Crown size={12} className="text-white" />
-              </div>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-bold mb-1">{profileData.auditoriumName}</h1>
-            <p className="text-base sm:text-lg text-indigo-100 flex items-center justify-center gap-2">
-              <User size={16} />
-              Owned by {profileData.ownerName}
-            </p>
-          </div>
+  const handleEditToggle = (field: string) => {
+    setEditState(prev => ({
+      ...prev,
+      [field]: !prev[field]
+    }));
+    
+    if (!editState[field]) {
+      setFormData(prev => ({
+        ...prev,
+        [field]: userData[field as keyof AuditoriumUser]
+      }));
+    }
+  };
+
+  const handleInputChange = (field: string, value: any) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleArrayChange = (field: string, index: number, value: string) => {
+    const currentArray = formData[field] || userData[field as keyof AuditoriumUser];
+    const newArray = [...currentArray];
+    newArray[index] = value;
+    setFormData(prev => ({
+      ...prev,
+      [field]: newArray
+    }));
+  };
+
+  const addArrayItem = (field: string) => {
+    const currentArray = formData[field] || userData[field as keyof AuditoriumUser];
+    const newArray = [...currentArray, ''];
+    setFormData(prev => ({
+      ...prev,
+      [field]: newArray
+    }));
+  };
+
+  const removeArrayItem = (field: string, index: number) => {
+    const currentArray = formData[field] || userData[field as keyof AuditoriumUser];
+    const newArray = currentArray.filter((_: any, i: number) => i !== index);
+    setFormData(prev => ({
+      ...prev,
+      [field]: newArray
+    }));
+  };
+
+  const handleSave = async (field: string) => {
+    try {
+      setLoading(true);
+      
+      // Use your actual API endpoint
+      const response = await fetch(`/api/auditorium/update-profile/${currentUser?.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          [field]: formData[field]
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        setUserData(prev => prev ? ({
+          ...prev,
+          [field]: formData[field]
+        }) : null);
+        
+        setEditState(prev => ({
+          ...prev,
+          [field]: false
+        }));
+        
+        alert('Data updated successfully!');
+      } else {
+        alert(result.message || 'Failed to update data');
+      }
+    } catch (error) {
+      console.error('Error updating data:', error);
+      alert('Error updating data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEmailEditClick = () => {
+    setShowPasswordModal(true);
+    setPasswordInput('');
+    setPasswordError('');
+  };
+
+  // const verifyPassword = async () => {
+  //   try {
+  //     setLoading(true);
+  //     setPasswordError('');
+      
+  //     // const response = await fetch(`/api/auditorium/verify-password/${currentUser?.id}`, {
+  //     //   method: 'POST',
+  //     //   headers: {
+  //     //     'Content-Type': 'application/json',
+  //     //     'Authorization': `Bearer ${localStorage.getItem('token')}`
+  //     //   },
+  //     //   body: JSON.stringify({
+  //     //     password: passwordInput
+  //     //   }),
+  //     // });
+
+  //     const response=await verifyPswrd(currentUser?.id)
+
+  //     const data = await response.json();
+      
+  //     if (response.ok && data.success) {
+  //       setShowPasswordModal(false);
+  //       setShowEmailModal(true);
+  //       setNewEmailInput(userData?.email || '');
+  //     } else {
+  //       setPasswordError(data.message || 'Incorrect password');
+  //     }
+  //   } catch (error) {
+  //     console.error('Error verifying password:', error);
+  //     setPasswordError('Error verifying password');
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+
+  const verifyPassword = async () => {
+    try {
+      setLoading(true);
+      setPasswordError('');
+      
+  
+      const response=await verifyPswrd(currentUser?.id,passwordInput)
+
+      // const data = await response.json();
+      
+      // if (response.ok && data.success) {
+      //   setShowPasswordModal(false);
+      //   setShowEmailModal(true);
+      //   setNewEmailInput(userData?.email || '');
+      // } else {
+      //   setPasswordError(data.message || 'Incorrect password');
+      // }
+    } catch (error) {
+      console.error('Error verifying password:', error);
+      setPasswordError('Error verifying password');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateEmail = async () => {
+    try {
+      setLoading(true);
+      
+      const response = await fetch(`/api/auditorium/update-email/${currentUser?.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          newEmail: newEmailInput
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        setUserData(prev => prev ? ({
+          ...prev,
+          email: newEmailInput
+        }) : null);
+        
+        setShowEmailModal(false);
+        alert('Email updated successfully!');
+      } else {
+        alert(result.message || 'Failed to update email');
+      }
+    } catch (error) {
+      console.error('Error updating email:', error);
+      alert('Error updating email');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const renderField = (field: string, label: string, type: 'text' | 'boolean' | 'array' = 'text') => {
+    const isEditing = editState[field];
+    const value = formData[field] !== undefined ? formData[field] : userData[field as keyof AuditoriumUser];
+
+    return (
+      <div className="mb-6 p-4 border border-gray-200 rounded-lg">
+        <div className="flex justify-between items-center mb-2">
+          <label className="block text-sm font-medium text-gray-700">{label}</label>
+          {field !== 'email' && (
+            <button
+              onClick={() => handleEditToggle(field)}
+              className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded"
+              disabled={loading}
+            >
+              {isEditing ? <X size={16} /> : <Edit2 size={16} />}
+            </button>
+          )}
         </div>
-      </div>
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Basic Information Card */}
-        <div className="bg-white rounded-xl shadow-lg border border-slate-200/50 mb-6 overflow-hidden">
-          <div className="bg-gradient-to-r from-slate-50 to-blue-50 px-6 py-4 border-b border-slate-200/50">
-            <h2 className="text-lg sm:text-xl font-bold text-slate-800 flex items-center gap-2">
-              <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
-                <User size={16} className="text-indigo-600" />
+
+        {type === 'boolean' ? (
+          <div className="flex items-center space-x-4">
+            <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+              value ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+            }`}>
+              {value ? 'Yes' : 'No'}
+            </span>
+            {isEditing && (
+              <div className="flex items-center space-x-2">
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name={field}
+                    checked={formData[field] === true}
+                    onChange={() => handleInputChange(field, true)}
+                    className="mr-1"
+                  />
+                  Yes
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name={field}
+                    checked={formData[field] === false}
+                    onChange={() => handleInputChange(field, false)}
+                    className="mr-1"
+                  />
+                  No
+                </label>
               </div>
-              Basic Information
-            </h2>
+            )}
           </div>
-          <div className="p-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              {/* Auditorium Name */}
-              <div className="space-y-2">
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide">
-                  Auditorium Name
-                </label>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    value={tempProfileData?.auditoriumName || ''}
-                    onChange={(e) => handleTempInputChange('auditoriumName', e.target.value)}
-                    className="w-full px-3 py-2 border-2 border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                  />
-                ) : (
-                  <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
-                    <span className="text-slate-800 font-medium text-base">{profileData.auditoriumName}</span>
-                  </div>
-                )}
-              </div>
-              {/* Owner Name */}
-              <div className="space-y-2">
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide">
-                  Owner Name
-                </label>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    value={tempProfileData?.ownerName || ''}
-                    onChange={(e) => handleTempInputChange('ownerName', e.target.value)}
-                    className="w-full px-3 py-2 border-2 border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                  />
-                ) : (
-                  <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
-                    <span className="text-slate-800 font-medium text-base">{profileData.ownerName}</span>
-                  </div>
-                )}
-              </div>
-              {/* Phone */}
-              <div className="space-y-2">
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide flex items-center gap-1">
-                  <Phone size={14} />
-                  Phone Number
-                </label>
-                {isEditing ? (
-                  <input
-                    type="tel"
-                    value={tempProfileData?.phone || ''}
-                    onChange={(e) => handleTempInputChange('phone', e.target.value)}
-                    className="w-full px-3 py-2 border-2 border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                  />
-                ) : (
-                  <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
-                    <span className="text-slate-800 font-medium text-base">{profileData.phone}</span>
-                  </div>
-                )}
-              </div>
-              {/* Email */}
-              <div className="space-y-2">
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide flex items-center gap-1">
-                  <Mail size={14} />
-                  Email Address
-                </label>
-                {editingEmailField ? (
-                  <div className="flex gap-2">
+        ) : type === 'array' ? (
+          <div>
+            {isEditing ? (
+              <div>
+                {(formData[field] || value).map((item: string, index: number) => (
+                  <div key={index} className="flex items-center space-x-2 mb-2">
                     <input
-                      type="email"
-                      value={tempEmailValue}
-                      onChange={(e) => setTempEmailValue(e.target.value)}
-                      className="flex-1 px-3 py-2 border-2 border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                      type="text"
+                      value={item}
+                      onChange={(e) => handleArrayChange(field, index, e.target.value)}
+                      className="flex-1 p-2 border border-gray-300 rounded"
                     />
                     <button
-                      onClick={handleSaveEmail}
-                      className="px-3 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors shadow"
-                    >
-                      <Save size={16} />
-                    </button>
-                    <button
-                      onClick={handleCancelEmail}
-                      className="px-3 py-2 bg-slate-500 text-white rounded-lg hover:bg-slate-600 transition-colors shadow"
+                      onClick={() => removeArrayItem(field, index)}
+                      className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded"
                     >
                       <X size={16} />
                     </button>
                   </div>
-                ) : (
-                  <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200">
-                    <span className="text-slate-800 font-medium text-base">{profileData.email}</span>
-                    <button
-                      onClick={() => handleEditEmail(profileData.email)}
-                      className="text-indigo-600 hover:text-indigo-800 transition-colors p-1 hover:bg-indigo-50 rounded"
-                    >
-                      <Edit2 size={16} />
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-            {/* Edit/Save/Cancel Buttons for general profile */}
-            <div className="mt-6 flex justify-end gap-3">
-              {isEditing ? (
-                <>
-                  <button
-                    onClick={handleSaveChanges}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white font-semibold rounded-lg hover:bg-emerald-600 transition-colors shadow"
-                  >
-                    <Save size={16} />
-                    Save Changes
-                  </button>
-                  <button
-                    onClick={handleCancelEditing}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-slate-500 text-white font-semibold rounded-lg hover:bg-slate-600 transition-colors shadow"
-                  >
-                    <X size={16} />
-                    Cancel
-                  </button>
-                </>
-              ) : (
+                ))}
                 <button
-                  onClick={handleStartEditing}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition-colors shadow"
+                  onClick={() => addArrayItem(field)}
+                  className="text-blue-600 hover:text-blue-800 text-sm"
                 >
-                  <Edit2 size={16} />
-                  Edit Profile
+                  + Add {label.slice(0, -1)}
                 </button>
-              )}
-            </div>
-          </div>
-        </div>
-        {/* Events and Locations */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Available Events */}
-          <div className="bg-white rounded-xl shadow-lg border border-slate-200/50 overflow-hidden">
-            <div className="bg-gradient-to-r from-emerald-50 to-teal-50 px-6 py-4 border-b border-slate-200/50">
-              <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
-                  <Calendar size={16} className="text-emerald-600" />
-                </div>
-                Available Events
-              </h3>
-            </div>
-            <div className="p-6">
-              <div className="space-y-3">
-                {availableEvents.map((event) => (
-                  <label key={event} className="flex items-center p-3 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer transition-all group">
-                    <input
-                      type="checkbox"
-                      checked={profileData.events.includes(event)}
-                      onChange={() => handleEventToggle(event)}
-                      className="w-4 h-4 text-emerald-600 border-2 border-slate-300 rounded focus:ring-emerald-500 focus:ring-2"
-                    />
-                    <span className="ml-3 text-slate-700 font-medium text-base group-hover:text-slate-900 transition-colors">{event}</span>
-                  </label>
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {value.map((item: string, index: number) => (
+                  <span key={index} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                    {item}
+                  </span>
                 ))}
               </div>
-            </div>
+            )}
           </div>
-          {/* Available Locations */}
-          <div className="bg-white rounded-xl shadow-lg border border-slate-200/50 overflow-hidden">
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-slate-200/50">
-              <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <MapPin size={16} className="text-blue-600" />
-                </div>
-                Available Locations
-              </h3>
-            </div>
-            <div className="p-6">
-              <div className="space-y-3">
-                {availableLocations.map((location) => (
-                  <label key={location} className="flex items-center p-3 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer transition-all group">
-                    <input
-                      type="checkbox"
-                      checked={profileData.locations.includes(location)}
-                      onChange={() => handleLocationToggle(location)}
-                      className="w-4 h-4 text-blue-600 border-2 border-slate-300 rounded focus:ring-blue-500 focus:ring-2"
-                    />
-                    <span className="ml-3 text-slate-700 font-medium text-base group-hover:text-slate-900 transition-colors">{location}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
+        ) : (
+          <div>
+            {isEditing ? (
+              <input
+                type="text"
+                value={formData[field] || ''}
+                onChange={(e) => handleInputChange(field, e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded"
+              />
+            ) : (
+              <span className="text-gray-900">{value}</span>
+            )}
           </div>
-        </div>
-        {/* Logout Button */}
-        <div className="text-center mt-6">
+        )}
+
+        {isEditing && (
+          <div className="flex space-x-2 mt-3">
+            <button
+              onClick={() => handleSave(field)}
+              disabled={loading}
+              className="flex items-center space-x-1 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+            >
+              <Save size={16} />
+              <span>Save</span>
+            </button>
+            <button
+              onClick={() => handleEditToggle(field)}
+              className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto p-6 bg-white">
+      <h1 className="text-3xl font-bold text-gray-900 mb-8">Auditorium User Management</h1>
+
+      {/* Email Field with Special Handling */}
+      <div className="mb-6 p-4 border border-gray-200 rounded-lg">
+        <div className="flex justify-between items-center mb-2">
+          <label className="block text-sm font-medium text-gray-700">Email</label>
           <button
-            onClick={() => {
-              onLogout();
-              onRedirect('/login');
-            }}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold rounded-lg hover:from-red-600 hover:to-red-700 transition-all transform hover:scale-105 shadow"
+            onClick={handleEmailEditClick}
+            className="flex items-center space-x-1 p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded"
+            disabled={loading}
           >
-            <LogOut size={16} />
-            Logout
+            <Mail size={16} />
+            <span>Edit Email</span>
           </button>
         </div>
+        <span className="text-gray-900">{userData?.email}</span>
       </div>
-      {/* Password Modal */}
+
+      {/* Other Fields */}
+      {renderField('auditoriumName', 'Auditorium Name')}
+      {renderField('ownerName', 'Owner Name')}
+      {renderField('phone', 'Phone Number')}
+      {renderField('isVerified', 'Verified Status', 'boolean')}
+      {renderField('isBlocked', 'Blocked Status', 'boolean')}
+      {renderField('events', 'Events', 'array')}
+      {renderField('locations', 'Locations', 'array')}
+
+      {/* Password Verification Modal */}
       {showPasswordModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl w-full max-w-sm shadow-xl">
-            <div className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-6 py-4 rounded-t-xl">
-              <h3 className="text-lg font-bold">Confirm Email Change</h3>
-            </div>
-            <div className="p-6 space-y-4">
-              <p className="text-slate-600 text-sm">
-                To change your email address, please enter your current password. You will be logged out after the change.
-              </p>
-              <div className="space-y-2">
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide">
-                  Current Password
-                </label>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg w-96">
+            <h2 className="text-xl font-bold mb-4">Verify Password</h2>
+            <p className="text-gray-600 mb-4">Please enter your current password to change email</p>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                 <input
                   type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-3 py-2 border-2 border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                  value={passwordInput}
+                  onChange={(e) => setPasswordInput(e.target.value)}
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded"
                   placeholder="Enter your password"
                 />
-                {passwordError && (
-                  <p className="text-red-600 text-xs font-medium">{passwordError}</p>
-                )}
               </div>
+              {passwordError && (
+                <p className="text-red-500 text-sm mt-1">{passwordError}</p>
+              )}
             </div>
-            <div className="px-6 py-4 bg-slate-50 rounded-b-xl flex gap-3">
+
+            <div className="flex space-x-3">
               <button
-                onClick={handlePasswordSubmit}
-                className="flex-1 bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-4 py-2 rounded-lg hover:from-indigo-600 hover:to-purple-700 font-semibold transition-all"
+                onClick={verifyPassword}
+                disabled={loading || !passwordInput}
+                className="flex-1 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
               >
-                Confirm & Logout
+                {loading ? 'Verifying...' : 'Verify'}
               </button>
               <button
-                onClick={handlePasswordCancel}
-                className="flex-1 bg-slate-200 text-slate-700 px-4 py-2 rounded-lg hover:bg-slate-300 font-semibold transition-all"
+                onClick={() => setShowPasswordModal(false)}
+                className="flex-1 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Email Update Modal */}
+      {showEmailModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg w-96">
+            <h2 className="text-xl font-bold mb-4">Update Email</h2>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">New Email</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <input
+                  type="email"
+                  value={newEmailInput}
+                  onChange={(e) => setNewEmailInput(e.target.value)}
+                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded"
+                  placeholder="Enter new email"
+                />
+              </div>
+            </div>
+
+            <div className="flex space-x-3">
+              <button
+                onClick={updateEmail}
+                disabled={loading || !newEmailInput || newEmailInput === userData?.email}
+                className="flex-1 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+              >
+                {loading ? 'Updating...' : 'Update Email'}
+              </button>
+              <button
+                onClick={() => setShowEmailModal(false)}
+                className="flex-1 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
               >
                 Cancel
               </button>
