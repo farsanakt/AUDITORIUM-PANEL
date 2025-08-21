@@ -94,6 +94,8 @@ export const fetchAuditoriumUserdetails=async(id:string)=>{
 
 }
 
+
+
 export const verifyPswrd=async(id:string,password:string)=>{
 
   const response=await api.post(`/verify-password/${id}`,{password})
