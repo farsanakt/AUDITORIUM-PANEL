@@ -45,36 +45,37 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 bg-[#FDF8F1] flex items-center justify-center min-h-screen">
+    <div className="min-h-screen h-screen bg-[#FDF8F1] flex flex-col items-center justify-center px-4 py-6 box-border">
       <Header />
-      <div className="flex flex-col md:flex-row bg-white shadow-lg rounded-lg overflow-hidden w-full max-w-4xl mx-auto my-4">
+      <div className="flex flex-col md:flex-row bg-white shadow-xl rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto box-border">
         {/* Left Section */}
-        <div className="md:w-1/2 relative h-72 md:h-auto">
+        <div className="md:w-1/2 hidden md:block relative h-72 md:h-auto">
           <div className="relative w-full h-full">
+            {/* If tk image doesn't display, replace src with: https://images.unsplash.com/photo-1519167758481-83f550bb2953 */}
             <img
               src={tk}
-              alt="Platform Preview"
+              alt="Auditorium Preview"
               className="w-full h-full object-cover"
             />
-            <div className="absolute inset-0 bg-opacity-40">
-              <div className="p-4 h-full flex flex-col justify-between">
-                <div className="text-center mb-2">
+            <div className="absolute inset-0 bg-[#78533F] bg-opacity-40">
+              <div className="p-6 sm:p-8 h-full flex flex-col justify-between">
+                <div className="text-center">
                   <div className="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-2">
                     <span className="text-[#ED695A] text-xl font-bold">TK</span>
                   </div>
-                  <h2 className="text-[#78533F] text-xl md:text-2xl font-bold mb-1">Welcome Back</h2>
+                  <h2 className="text-white text-xl md:text-2xl font-bold mb-1">Welcome to Auditorium</h2>
                   <div className="w-16 h-1 bg-[#ED695A] mx-auto mb-1"></div>
                 </div>
-                <p className="text-[#3C3A39] text-sm mb-2 text-center px-2">
-                  Experience a seamless and intuitive interface designed to enhance your productivity and creativity.
+                <p className="text-white text-sm text-center px-2">
+                  Manage your auditorium bookings seamlessly with our intuitive platform.
                 </p>
-                <div className="p-2 rounded-lg backdrop-blur-sm mb-2">
-                  <p className="text-[rgb(237,105,90)] font-bold text-base mb-2 text-center">Why choose us?</p>
-                  <ul className="text-[#3C3A39] space-y-1">
-                    <li className="flex items-center"><span className="mr-1">✦</span> Intuitive and user-friendly interface</li>
-                    <li className="flex items-center"><span className="mr-1">✦</span> Powerful features for enhanced productivity</li>
-                    <li className="flex items-center"><span className="mr-1">✦</span> Secure and reliable platform</li>
-                    <li className="flex items-center"><span className="mr-1">✦</span> Dedicated support team</li>
+                <div className="p-2 rounded-lg backdrop-blur-sm">
+                  <p className="text-[#ED695A] font-bold text-base mb-2 text-center">Why Choose Us?</p>
+                  <ul className="text-white text-sm space-y-2">
+                    <li className="flex items-center"><span className="mr-2 text-[#ED695A]">✔</span> Intuitive and user-friendly interface</li>
+                    <li className="flex items-center"><span className="mr-2 text-[#ED695A]">✔</span> Streamlined booking management</li>
+                    <li className="flex items-center"><span className="mr-2 text-[#ED695A]">✔</span> Secure and reliable platform</li>
+                    <li className="flex items-center"><span className="mr-2 text-[#ED695A]">✔</span> Dedicated support for auditorium owners</li>
                   </ul>
                 </div>
               </div>
@@ -83,13 +84,13 @@ const LoginPage: React.FC = () => {
         </div>
 
         {/* Right Section - Login Form */}
-        <div className="md:w-1/2 p-4 md:p-6 flex justify-center items-center">
+        <div className="md:w-1/2 p-6 sm:p-8 flex justify-center items-center">
           <div className="w-full max-w-sm">
             <div className="text-center mb-4">
-              <h2 className="text-xl md:text-2xl font-bold text-[#78533F]">WELCOME BACK!</h2>
-              <p className="text-gray-600 mt-1">Please login to your account</p>
+              <h2 className="text-xl md:text-2xl font-bold text-[#78533F]">Auditorium Login</h2>
+              <p className="text-gray-600 text-sm mt-1">Sign in to your auditorium account</p>
             </div>
-            <form onSubmit={handleLogin} className="space-y-3">
+            <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-1">
                 <label htmlFor="email" className="block text-sm text-[#78533F] font-medium">Email</label>
                 <div className="relative">
@@ -100,7 +101,7 @@ const LoginPage: React.FC = () => {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Enter your email"
                     required
-                    className="w-full pl-3 pr-8 py-1.5 border border-[#b09d94] rounded-md focus:outline-none focus:ring-2 focus:ring-[#876553]"
+                    className="w-full pl-3 pr-8 py-2 border border-[#b09d94] rounded-full focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200 text-sm"
                   />
                   <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[#b09d94]" viewBox="0 0 20 20" fill="currentColor">
@@ -119,7 +120,7 @@ const LoginPage: React.FC = () => {
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter your password"
                     required
-                    className="w-full pl-3 pr-8 py-1.5 border border-[#b09d94] rounded-md focus:outline-none focus:ring-2 focus:ring-[#876553]"
+                    className="w-full pl-3 pr-8 py-2 border border-[#b09d94] rounded-full focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200 text-sm"
                   />
                   <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[#b09d94]" viewBox="0 0 20 20" fill="currentColor">
@@ -128,8 +129,8 @@ const LoginPage: React.FC = () => {
                   </div>
                 </div>
               </div>
-              <div className="flex items-center justify-between">
-                <label className="flex items-center text-sm text-gray-700">
+              <div className="flex items-center justify-between text-sm">
+                <label className="flex items-center text-gray-600">
                   <input
                     type="checkbox"
                     className="h-4 w-4 text-[#ED695A] border-[#b09d94] rounded"
@@ -141,14 +142,14 @@ const LoginPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleForgotPassword}
-                  className="text-sm font-medium text-[#ED695A] hover:text-[#78533F]"
+                  className="text-[#ED695A] hover:text-[#78533F] hover:underline"
                 >
                   Forgot password?
                 </button>
               </div>
               <button
                 type="submit"
-                className="w-full bg-[#ED695A] text-white font-semibold py-2 rounded-md shadow hover:bg-[#d85c4e] transition"
+                className="w-full bg-[#ED695A] text-white font-semibold py-2 rounded-full shadow-md hover:bg-[#d85c4e] transition-all duration-300"
               >
                 Sign In
               </button>
@@ -157,7 +158,7 @@ const LoginPage: React.FC = () => {
                   <div className="w-full border-t border-[#b09d94]"></div>
                 </div>
                 <div className="relative flex justify-center text-xs">
-                  <span className="px-2 bg-white text-[#b09d94]">Or continue with</span>
+                  <span className="px-2 bg-white text-gray-600">Or continue with</span>
                 </div>
               </div>
               {/* <div className="grid grid-cols-3 gap-2">
@@ -181,11 +182,11 @@ const LoginPage: React.FC = () => {
                 </button>
               </div> */}
               <div className="text-center mt-3">
-                <span className="text-sm text-gray-700">Don't have an account?</span>
+                <span className="text-sm text-gray-600">Don't have an account?</span>
                 <button
                   type="button"
                   onClick={handleSignup}
-                  className="text-sm text-[#ED695A] ml-1 hover:text-[#78533F] font-semibold"
+                  className="text-sm text-[#ED695A] ml-1 hover:text-[#78533F] hover:underline font-semibold"
                 >
                   Sign Up
                 </button>
