@@ -3,6 +3,7 @@ import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import Header from "../../component/user/Header"
 import { vendorSingUpRequest } from "../../api/userApi"
+import tk from "../../assets/k.png"
 import { toast } from 'react-toastify'
 
 const VendorRegistration: React.FC = () => {
@@ -218,7 +219,7 @@ const VendorRegistration: React.FC = () => {
             </div>
             <div className="mt-4">
               <img
-                src="https://images.unsplash.com/photo-1519167758481-83f550bb2953"
+                src={tk}
                 alt="Vendor Preview"
                 className="w-full h-48 object-cover rounded-md shadow-md"
               />

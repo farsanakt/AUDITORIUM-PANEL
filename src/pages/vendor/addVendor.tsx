@@ -16,7 +16,7 @@ import Swal from "sweetalert2";
 import { useSelector } from "react-redux";
 import { addVendorAPI, existingAllVendors } from "../../api/userApi";
 import Header from "../../component/user/Header";
-import Sidebar from "../../component/user/VendorSidebar";
+import VendorSidebar from "../../component/user/VendorSidebar";
 
 // Define interfaces
 interface TimeSlot {
@@ -82,7 +82,7 @@ export default function VendorManagement() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // State for mobile sidebar toggle
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [newVendor, setNewVendor] = useState<Partial<Vendor>>({
     name: "",
     address: "",
@@ -411,7 +411,7 @@ export default function VendorManagement() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-[#FDF8F1] flex flex-col">
       <style jsx global>{`
         .scrollbar-custom {
           scrollbar-width: thin;
@@ -438,43 +438,18 @@ export default function VendorManagement() {
 
       <div className="flex flex-1">
         {/* Sidebar */}
-        <div
-          className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:static lg:transform-none ${
-            isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-          } lg:translate-x-0`}
-        >
-            <div className="fixed top-0 left-0 w-64 h-full">
-    <Sidebar />
-  </div>
-
-          <button
-            className="lg:hidden absolute top-4 right-4 text-gray-500 hover:text-gray-700"
-            onClick={toggleSidebar}
-          >
-            <X size={24} />
-          </button>
-        </div>
-
-        {/* Mobile Sidebar Toggle Button */}
-        <button
-          className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-orange-500 text-white rounded-lg"
-          onClick={toggleSidebar}
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-        </button>
+        <VendorSidebar />
 
         {/* Main Content */}
-        <main className="flex-1 p-4 lg:ml-4 overflow-x-auto">
+        <main className="flex-1 p-4 lg:ml-64">
           <div className="bg-white p-6 rounded-lg shadow-sm mb-6 border border-gray-100">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
               <div>
-                <h2 className="text-xl font-semibold text-gray-800">Vendors ({filteredVendors.length})</h2>
+                <h2 className="text-xl font-semibold text-[#825F4C]">Vendors ({filteredVendors.length})</h2>
               </div>
               <button
                 onClick={() => setIsAddModalOpen(true)}
-                className="w-full sm:w-auto px-6 py-2 bg-orange-500 text-white rounded-lg flex items-center justify-center hover:bg-orange-600 transition-all text-sm"
+                className="w-full sm:w-auto px-6 py-2 bg-[#ED695A] text-white rounded-lg flex items-center justify-center hover:bg-[#D65A4C] transition-all text-sm"
               >
                 <Plus size={16} className="mr-2" /> Add New Vendor
               </button>
@@ -485,7 +460,7 @@ export default function VendorManagement() {
               <input
                 type="text"
                 placeholder="Search vendors..."
-                className="w-full sm:w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                className="w-full sm:w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ED695A] text-sm"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -526,7 +501,7 @@ export default function VendorManagement() {
                         ))}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h3 className="font-semibold text-lg text-gray-800 truncate">{vendor.name}</h3>
+                        <h3 className="font-semibold text-lg text-[#825F4C] truncate">{vendor.name}</h3>
                         <div className="flex items-center text-gray-600 mt-1">
                           <MapPin size={12} className="mr-1 flex-shrink-0" />
                           <span className="text-sm truncate">{vendor.address}</span>
@@ -534,12 +509,12 @@ export default function VendorManagement() {
                       </div>
                     </div>
                     <div className="flex items-center space-x-3 flex-shrink-0">
-                      <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                      <span className="px-3 py-1 bg-[#ED695A]/10 text-[#ED695A] rounded-full text-xs font-medium">
                         {vendor.vendorType}
                       </span>
                       <button
                         onClick={() => selectVendor(vendor)}
-                        className="p-2 hover:bg-blue-50 rounded-lg text-blue-600"
+                        className="p-2 hover:bg-[#ED695A]/10 rounded-lg text-[#ED695A]"
                       >
                         <Edit size={16} />
                       </button>
@@ -552,23 +527,23 @@ export default function VendorManagement() {
                     </div>
                   </div>
                   {expandedVendor === vendor._id && (
-                    <div className="mt-4 pl-8 border-l-2 border-orange-200">
+                    <div className="mt-4 pl-8 border-l-2 border-[#ED695A]/20">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                          <p className="text-sm font-medium text-gray-700">Contact</p>
+                          <p className="text-sm font-medium text-[#825F4C]">Contact</p>
                           <p className="text-sm text-gray-600">{vendor.phone}</p>
                           {vendor.altPhone && <p className="text-sm text-gray-600">{vendor.altPhone}</p>}
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-gray-700">Email</p>
+                          <p className="text-sm font-medium text-[#825F4C]">Email</p>
                           <p className="text-sm text-gray-600">{vendor.email}</p>
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-gray-700">Cities</p>
+                          <p className="text-sm font-medium text-[#825F4C]">Cities</p>
                           <p className="text-sm text-gray-600">{vendor.cities.join(", ")}</p>
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-gray-700">Time Slots</p>
+                          <p className="text-sm font-medium text-[#825F4C]">Time Slots</p>
                           <p className="text-sm text-gray-600">
                             {vendor.timeSlots.map((s) => `${s.label} (${s.startTime} - ${s.endTime})`).join(", ")}
                           </p>
@@ -589,7 +564,7 @@ export default function VendorManagement() {
           <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] flex flex-col">
             <div className="border-b border-gray-200 px-6 py-4">
               <div className="flex justify-between items-center">
-                <h2 className="text-xl font-bold text-gray-800">Add New Vendor</h2>
+                <h2 className="text-xl font-bold text-[#825F4C]">Add New Vendor</h2>
                 <button onClick={resetAddModal} className="text-gray-500 hover:text-gray-700">
                   <X size={20} />
                 </button>
@@ -598,23 +573,23 @@ export default function VendorManagement() {
             <div className="flex-1 overflow-y-auto scrollbar-custom px-6 py-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Vendor Name *</label>
+                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Vendor Name *</label>
                   <input
                     name="name"
                     value={newVendor.name || ""}
                     onChange={(e) => handleInputChange(e, true)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ED695A] text-sm"
                     placeholder="Enter vendor name"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Vendor Type *</label>
+                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Vendor Type *</label>
                   <select
                     name="vendorType"
                     value={newVendor.vendorType || ""}
                     onChange={(e) => handleInputChange(e, true)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ED695A] text-sm"
                     required
                   >
                     <option value="" disabled>Select Vendor Type</option>
@@ -624,63 +599,63 @@ export default function VendorManagement() {
                   </select>
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Address *</label>
+                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Address *</label>
                   <textarea
                     name="address"
                     value={newVendor.address || ""}
                     onChange={(e) => handleInputChange(e, true)}
                     rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm resize-none"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ED695A] text-sm resize-none"
                     placeholder="Enter address"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Phone Number *</label>
+                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Phone Number *</label>
                   <input
                     name="phone"
                     value={newVendor.phone || ""}
                     onChange={(e) => handleInputChange(e, true)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ED695A] text-sm"
                     placeholder="Enter phone number"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Alternative Phone</label>
+                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Alternative Phone</label>
                   <input
                     name="altPhone"
                     value={newVendor.altPhone || ""}
                     onChange={(e) => handleInputChange(e, true)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ED695A] text-sm"
                     placeholder="Enter alternative phone"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Email *</label>
+                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Email *</label>
                   <input
                     name="email"
                     type="email"
                     value={newVendor.email || ""}
                     onChange={(e) => handleInputChange(e, true)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ED695A] text-sm"
                     placeholder="Enter email"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Pincode *</label>
+                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Pincode *</label>
                   <input
                     name="pincode"
                     value={newVendor.pincode || ""}
                     onChange={(e) => handleInputChange(e, true)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ED695A] text-sm"
                     placeholder="Enter pincode"
                     required
                   />
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Cities *</label>
+                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Cities *</label>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-32 overflow-y-auto border border-gray-300 rounded-lg p-3 bg-gray-50 scrollbar-custom">
                     {availableCities.map((city) => (
                       <label key={city} className="flex items-center space-x-2 cursor-pointer">
@@ -688,50 +663,50 @@ export default function VendorManagement() {
                           type="checkbox"
                           checked={newVendor.cities?.includes(city) || false}
                           onChange={() => handleCityToggle(city)}
-                          className="h-4 w-4 rounded text-orange-500 focus:ring-orange-500"
+                          className="h-4 w-4 rounded text-[#ED695A] focus:ring-[#ED695A]"
                         />
-                        <span className="text-sm text-gray-700">{city}</span>
+                        <span className="text-sm text-[#825F4C]">{city}</span>
                       </label>
                     ))}
                   </div>
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Cancellation Policy *</label>
+                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Cancellation Policy *</label>
                   <input
                     name="cancellationPolicy"
                     value={newVendor.cancellationPolicy || ""}
                     onChange={(e) => handleInputChange(e, true)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ED695A] text-sm"
                     placeholder="Enter cancellation policy"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Total Amount *</label>
+                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Total Amount *</label>
                   <input
                     name="totalAmount"
                     type="number"
                     value={newVendor.totalAmount || ""}
                     onChange={(e) => handleInputChange(e, true)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ED695A] text-sm"
                     placeholder="Enter total amount"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Advance Amount *</label>
+                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Advance Amount *</label>
                   <input
                     name="advanceAmount"
                     type="number"
                     value={newVendor.advanceAmount || ""}
                     onChange={(e) => handleInputChange(e, true)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ED695A] text-sm"
                     placeholder="Enter advance amount"
                     required
                   />
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Time Slots *</label>
+                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Time Slots *</label>
                   <div className="flex flex-wrap gap-2 mb-4">
                     {fixedTimeSlots.map((slot) => (
                       <button
@@ -740,8 +715,8 @@ export default function VendorManagement() {
                         onClick={() => handleTimeSlotToggle(slot)}
                         className={`px-3 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
                           newVendor.timeSlots?.some((s) => s.id === slot.id)
-                            ? "border-orange-500 bg-orange-50 text-orange-700"
-                            : "border-gray-200 hover:border-gray-300 text-gray-700"
+                            ? "border-[#ED695A] bg-[#ED695A]/10 text-[#ED695A]"
+                            : "border-gray-200 hover:border-gray-300 text-[#825F4C]"
                         }`}
                       >
                         {slot.label}
@@ -750,23 +725,23 @@ export default function VendorManagement() {
                   </div>
                   {newVendor.timeSlots?.length > 0 && (
                     <div className="mt-4">
-                      <p className="text-sm font-medium text-gray-700 mb-2">Set Times for Selected Slots *</p>
+                      <p className="text-sm font-medium text-[#825F4C] mb-2">Set Times for Selected Slots *</p>
                       {newVendor.timeSlots.map((slot, index) => (
                         <div key={slot.id} className="flex flex-wrap items-center gap-2 mb-2">
-                          <span className="w-24 text-sm text-gray-600">{slot.label}</span>
+                          <span className="w-24 text-sm text-[#825F4C]">{slot.label}</span>
                           <input
                             type="time"
                             value={slot.startTime || ""}
                             onChange={(e) => updateAddTimeSlot(index, "startTime", e.target.value)}
-                            className="px-2 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                            className="px-2 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ED695A] text-sm"
                             required
                           />
-                          <span className="text-sm text-gray-600">to</span>
+                          <span className="text-sm text-[#825F4C]">to</span>
                           <input
                             type="time"
                             value={slot.endTime || ""}
                             onChange={(e) => updateAddTimeSlot(index, "endTime", e.target.value)}
-                            className="px-2 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                            className="px-2 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ED695A] text-sm"
                             required
                           />
                         </div>
@@ -775,8 +750,8 @@ export default function VendorManagement() {
                   )}
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Vendor Images (exactly 4) *</label>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-orange-400 transition-colors">
+                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Vendor Images (exactly 4) *</label>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-[#ED695A] transition-colors">
                     <input
                       type="file"
                       accept="image/*"
@@ -823,7 +798,7 @@ export default function VendorManagement() {
               <div className="flex justify-end space-x-3">
                 <button
                   onClick={resetAddModal}
-                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm"
+                  className="px-4 py-2 border border-gray-300 text-[#825F4C] rounded-lg hover:bg-gray-50 text-sm"
                 >
                   Cancel
                 </button>
@@ -844,7 +819,7 @@ export default function VendorManagement() {
                     selectedImages.length !== 4 ||
                     newVendor.timeSlots?.some((slot) => !slot.startTime || !slot.endTime)
                   }
-                  className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-sm"
+                  className="px-4 py-2 bg-[#ED695A] text-white rounded-lg hover:bg-[#D65A4C] disabled:bg-gray-300 disabled:cursor-not-allowed text-sm"
                 >
                   Add Vendor
                 </button>
@@ -860,7 +835,7 @@ export default function VendorManagement() {
           <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] flex flex-col">
             <div className="border-b border-gray-200 px-6 py-4">
               <div className="flex justify-between items-center">
-                <h2 className="text-xl font-bold text-gray-800">Edit Vendor: {selectedVendor.name}</h2>
+                <h2 className="text-xl font-bold text-[#825F4C]">Edit Vendor: {selectedVendor.name}</h2>
                 <button onClick={() => setIsEditModalOpen(false)} className="text-gray-500 hover:text-gray-700">
                   <X size={20} />
                 </button>
@@ -869,21 +844,21 @@ export default function VendorManagement() {
             <div className="flex-1 overflow-y-auto scrollbar-custom px-6 py-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Vendor Name</label>
+                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Vendor Name</label>
                   <input
                     name="name"
                     value={selectedVendor.name}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ED695A] text-sm"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Vendor Type</label>
+                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Vendor Type</label>
                   <select
                     name="vendorType"
                     value={selectedVendor.vendorType}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ED695A] text-sm"
                   >
                     <option value="" disabled>Select Vendor Type</option>
                     {vendorTypes.map((type) => (
@@ -892,54 +867,54 @@ export default function VendorManagement() {
                   </select>
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Address</label>
+                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Address</label>
                   <textarea
                     name="address"
                     value={selectedVendor.address}
                     onChange={handleInputChange}
                     rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm resize-none"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ED695A] text-sm resize-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Phone Number</label>
+                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Phone Number</label>
                   <input
                     name="phone"
                     value={selectedVendor.phone}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ED695A] text-sm"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Alternative Phone</label>
+                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Alternative Phone</label>
                   <input
                     name="altPhone"
                     value={selectedVendor.altPhone || ""}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ED695A] text-sm"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
+                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Email</label>
                   <input
                     name="email"
                     type="email"
                     value={selectedVendor.email}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ED695A] text-sm"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Pincode</label>
+                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Pincode</label>
                   <input
                     name="pincode"
                     value={selectedVendor.pincode}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ED695A] text-sm"
                   />
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Cities</label>
+                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Cities</label>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-32 overflow-y-auto border border-gray-300 rounded-lg p-3 bg-gray-50 scrollbar-custom">
                     {availableCities.map((city) => (
                       <label key={city} className="flex items-center space-x-2 cursor-pointer">
@@ -947,44 +922,44 @@ export default function VendorManagement() {
                           type="checkbox"
                           checked={selectedVendor.cities.includes(city)}
                           onChange={() => handleCityToggleEdit(city)}
-                          className="h-4 w-4 rounded text-orange-500 focus:ring-orange-500"
+                          className="h-4 w-4 rounded text-[#ED695A] focus:ring-[#ED695A]"
                         />
-                        <span className="text-sm text-gray-700">{city}</span>
+                        <span className="text-sm text-[#825F4C]">{city}</span>
                       </label>
                     ))}
                   </div>
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Cancellation Policy</label>
+                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Cancellation Policy</label>
                   <input
                     name="cancellationPolicy"
                     value={selectedVendor.cancellationPolicy}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ED695A] text-sm"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Total Amount</label>
+                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Total Amount</label>
                   <input
                     name="totalAmount"
                     type="number"
                     value={selectedVendor.totalAmount}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ED695A] text-sm"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Advance Amount</label>
+                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Advance Amount</label>
                   <input
                     name="advanceAmount"
                     type="number"
                     value={selectedVendor.advanceAmount}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ED695A] text-sm"
                   />
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Time Slots</label>
+                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Time Slots</label>
                   <div className="flex flex-wrap gap-2 mb-4">
                     {fixedTimeSlots.map((slot) => (
                       <button
@@ -993,8 +968,8 @@ export default function VendorManagement() {
                         onClick={() => handleTimeSlotToggleEdit(slot)}
                         className={`px-3 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
                           selectedVendor.timeSlots.some((s) => s.id === slot.id)
-                            ? "border-orange-500 bg-orange-50 text-orange-700"
-                            : "border-gray-200 hover:border-gray-300 text-gray-700"
+                            ? "border-[#ED695A] bg-[#ED695A]/10 text-[#ED695A]"
+                            : "border-gray-200 hover:border-gray-300 text-[#825F4C]"
                         }`}
                       >
                         {slot.label}
@@ -1003,22 +978,22 @@ export default function VendorManagement() {
                   </div>
                   {selectedVendor.timeSlots.length > 0 && (
                     <div className="mt-4">
-                      <p className="text-sm font-medium text-gray-700 mb-2">Set Times for Selected Slots</p>
+                      <p className="text-sm font-medium text-[#825F4C] mb-2">Set Times for Selected Slots</p>
                       {selectedVendor.timeSlots.map((slot, index) => (
                         <div key={slot.id} className="flex flex-wrap items-center gap-2 mb-2">
-                          <span className="w-24 text-sm text-gray-600">{slot.label}</span>
+                          <span className="w-24 text-sm text-[#825F4C]">{slot.label}</span>
                           <input
                             type="time"
                             value={slot.startTime || ""}
                             onChange={(e) => updateEditTimeSlot(index, "startTime", e.target.value)}
-                            className="px-2 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                            className="px-2 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ED695A] text-sm"
                           />
-                          <span className="text-sm text-gray-600">to</span>
+                          <span className="text-sm text-[#825F4C]">to</span>
                           <input
                             type="time"
                             value={slot.endTime || ""}
                             onChange={(e) => updateEditTimeSlot(index, "endTime", e.target.value)}
-                            className="px-2 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+                            className="px-2 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ED695A] text-sm"
                           />
                         </div>
                       ))}
@@ -1026,10 +1001,10 @@ export default function VendorManagement() {
                   )}
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Vendor Images (exactly 4)</label>
+                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Vendor Images (exactly 4)</label>
                   {selectedVendor.images.length > 0 && (
                     <div className="mb-4">
-                      <p className="text-sm text-gray-600 mb-2">Current Images:</p>
+                      <p className="text-sm text-[#825F4C] mb-2">Current Images:</p>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         {selectedVendor.images.map((image, index) => (
                           <div key={index} className="relative group">
@@ -1048,7 +1023,7 @@ export default function VendorManagement() {
                       </div>
                     </div>
                   )}
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-orange-400 transition-colors">
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-[#ED695A] transition-colors">
                     <input
                       type="file"
                       accept="image/*"
@@ -1064,7 +1039,7 @@ export default function VendorManagement() {
                   </div>
                   {editImages.length > 0 && (
                     <div className="mt-3">
-                      <p className="text-sm text-gray-600 mb-2">New Images:</p>
+                      <p className="text-sm text-[#825F4C] mb-2">New Images:</p>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         {editImages.map((file, index) => (
                           <div key={index} className="relative group">
@@ -1097,13 +1072,13 @@ export default function VendorManagement() {
               <div className="flex justify-end space-x-3">
                 <button
                   onClick={() => setIsEditModalOpen(false)}
-                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm"
+                  className="px-4 py-2 border border-gray-300 text-[#825F4C] rounded-lg hover:bg-gray-50 text-sm"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleUpdateVendor}
-                  className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 text-sm"
+                  className="px-4 py-2 bg-[#ED695A] text-white rounded-lg hover:bg-[#D65A4C] text-sm"
                 >
                   Save Changes
                 </button>

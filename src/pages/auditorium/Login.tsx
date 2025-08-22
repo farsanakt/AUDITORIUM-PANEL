@@ -57,16 +57,16 @@ const LoginPage: React.FC = () => {
               alt="Auditorium Preview"
               className="w-full h-full object-cover"
             />
-            <div className="absolute inset-0 bg-[#78533F] bg-opacity-40">
+            <div className="absolute inset-0  bg-opacity-40">
               <div className="p-6 sm:p-8 h-full flex flex-col justify-between">
                 <div className="text-center">
                   <div className="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-2">
                     <span className="text-[#ED695A] text-xl font-bold">TK</span>
                   </div>
-                  <h2 className="text-white text-xl md:text-2xl font-bold mb-1">Welcome to Auditorium</h2>
+                  <h2 className="text-[#78533F] text-xl md:text-2xl font-bold mb-1">Welcome to Auditorium</h2>
                   <div className="w-16 h-1 bg-[#ED695A] mx-auto mb-1"></div>
                 </div>
-                <p className="text-white text-sm text-center px-2">
+                <p className="text-[#78533F] text-sm text-center px-2">
                   Manage your auditorium bookings seamlessly with our intuitive platform.
                 </p>
                 <div className="p-2 rounded-lg backdrop-blur-sm">
