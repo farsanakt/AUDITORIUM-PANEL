@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Search, MapPin, Calendar, Flag } from "lucide-react";
+import { MapPin, Flag } from "lucide-react";
 import Header from "../../component/user/Header";
 import bgImg from '../../assets/vector.png';
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -19,13 +19,8 @@ const VenueSelector: React.FC = () => {
   const navigate = useNavigate();
 
   const [place, setPlace] = useState(searchParams.get("place") || "");
-  const [date, setDate] = useState(searchParams.get("date") || "");
   const [event, setEvent] = useState(searchParams.get("event") || "");
   const [venues, setVenues] = useState<Venue[]>([]);
-
-  const handleSubmit = () => {
-    navigate(`/auditoriumlist?place=${place}&date=${date}&event=${event}`);
-  };
 
   const findAuditorium = async () => {
     try {
@@ -84,27 +79,30 @@ const VenueSelector: React.FC = () => {
 
           {/* Content */}
           <div className="relative z-20 w-full max-w-7xl px-6 flex flex-col md:flex-row justify-between items-start gap-10 mt-12">
-            {/* Left Content */}
+            {/* Left Content - Classic look with serif fonts and elegant styling */}
             <div className="text-left md:w-1/2">
-              <h2 className="text-4xl md:text-5xl font-serif text-brown-700 mb-4">
+              <h2 className="text-4xl md:text-5xl font-serif text-brown-700 mb-4 italic">
                 Choose
               </h2>
-              <h1 className="text-5xl font-bold text-[#6e3d2b] mb-4">
+              <h1 className="text-5xl font-serif font-bold text-[#6e3d2b] mb-4">
                 Your Venue
               </h1>
-              <p className="text-gray-700 mb-6">
+              <p className="text-gray-700 mb-6 font-serif text-lg">
                 Your wedding venue sets the stage for one of the most memorable
                 days of your life. Whether you envision an intimate garden
                 ceremony, a grand ballroom reception, or a picturesque
                 beachfront wedding, choosing the right venue is the first step
                 in bringing your dream to life.
               </p>
-              <button className="bg-[#6e3d2b] text-white px-6 py-2 rounded-full shadow-md hover:bg-[#5a2f20]">
+              <button className="bg-[#6e3d2b] text-white px-6 py-2 rounded-full shadow-md hover:bg-[#5a2f20] font-serif">
                 View Details
               </button>
+              <p className="mt-6 text-[#6e3d2b] font-serif text-xl italic">
+                Search Results for {place || "Any Place"} - {event || "Any Event"}
+              </p>
             </div>
 
-            {/* Right Content */}
+            {/* Right Content - Place and Event in same line for desktop, stacked for mobile */}
             <div className="w-full max-w-sm sm:max-w-md space-y-3 sm:space-y-4">
               {/* Mobile: stacked */}
               <div className="flex flex-col sm:hidden space-y-3">
@@ -113,7 +111,7 @@ const VenueSelector: React.FC = () => {
                   <select
                     value={place}
                     onChange={(e) => setPlace(e.target.value)}
-                    className="w-full h-10 pl-10 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+                    className="w-full h-10 pl-10 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 font-serif"
                   >
                     <option value="">Place</option>
                     <option value="Kochi">Kochi</option>
@@ -121,16 +119,6 @@ const VenueSelector: React.FC = () => {
                     <option value="Kannur">Kannur</option>
                     <option value="Calicut">Calicut</option>
                   </select>
-                </div>
-
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
-                  <input
-                    type="date"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    className="w-full h-10 pl-10 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
-                  />
                 </div>
 
                 <div className="relative">
@@ -138,7 +126,7 @@ const VenueSelector: React.FC = () => {
                   <select
                     value={event}
                     onChange={(e) => setEvent(e.target.value)}
-                    className="w-full h-10 pl-10 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+                    className="w-full h-10 pl-10 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 font-serif"
                   >
                     <option value="">Event</option>
                     <option value="wedding">Wedding</option>
@@ -147,24 +135,16 @@ const VenueSelector: React.FC = () => {
                     <option value="anniversary">Anniversary</option>
                   </select>
                 </div>
-
-                <button
-                  onClick={handleSubmit}
-                  className="h-10 px-4 w-full bg-[#9c7c5d] text-white rounded-md font-medium hover:bg-[#9c7c5d] transition duration-300 flex items-center justify-center gap-2 text-sm"
-                >
-                  <span>Find Venues</span>
-                  <Search className="w-4 h-4" />
-                </button>
               </div>
 
-              {/* Desktop: 2×2 Grid */}
-              <div className="hidden sm:grid grid-cols-2 gap-3 sm:gap-4">
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4 sm:w-5 sm:h-5" />
+              {/* Desktop: side by side */}
+              <div className="hidden sm:flex space-x-4">
+                <div className="relative flex-1">
+                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-5 h-5" />
                   <select
                     value={place}
                     onChange={(e) => setPlace(e.target.value)}
-                    className="w-full h-10 sm:h-12 pl-10 sm:pl-12 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+                    className="w-full h-12 pl-12 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 font-serif"
                   >
                     <option value="">Place</option>
                     <option value="Kochi">Kochi</option>
@@ -174,22 +154,12 @@ const VenueSelector: React.FC = () => {
                   </select>
                 </div>
 
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4 sm:w-5 sm:h-5" />
-                  <input
-                    type="date"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    className="w-full h-10 sm:h-12 pl-10 sm:pl-12 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
-                  />
-                </div>
-
-                <div className="relative">
-                  <Flag className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4 sm:w-5 sm:h-5" />
+                <div className="relative flex-1">
+                  <Flag className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-5 h-5" />
                   <select
                     value={event}
                     onChange={(e) => setEvent(e.target.value)}
-                    className="w-full h-10 sm:h-12 pl-10 sm:pl-12 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+                    className="w-full h-12 pl-12 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 font-serif"
                   >
                     <option value="">Event</option>
                     <option value="wedding">Wedding</option>
@@ -198,14 +168,6 @@ const VenueSelector: React.FC = () => {
                     <option value="anniversary">Anniversary</option>
                   </select>
                 </div>
-
-                <button
-                  onClick={handleSubmit}
-                  className="h-10 sm:h-12 px-4 w-full bg-[#9c7c5d] text-white rounded-md font-medium bg-[#9c7c5d] transition duration-300 flex items-center justify-center gap-2 text-sm"
-                >
-                  <span>Find Venues</span>
-                  <Search className="w-4 h-4" />
-                </button>
               </div>
             </div>
           </div>
@@ -230,14 +192,14 @@ const VenueSelector: React.FC = () => {
                   <div
                     className={`absolute top-3 left-3 ${getTagColor(
                       venue.tag
-                    )} text-white px-3 py-1 rounded-full text-xs font-medium`}
+                    )} text-white px-3 py-1 rounded-full text-xs font-medium font-serif`}
                   >
                     {venue.tag}
                   </div>
                 </div>
 
                 <div className="p-4 sm:p-6">
-                  <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
+                  <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2 font-serif">
                     {venue.name}
                   </h3>
                   <div className="flex items-center text-gray-600 text-sm">
@@ -266,14 +228,14 @@ const VenueSelector: React.FC = () => {
                   <div
                     className={`absolute top-3 left-3 ${getTagColor(
                       venue.tag
-                    )} text-white px-3 py-1 rounded-full text-xs font-medium`}
+                    )} text-white px-3 py-1 rounded-full text-xs font-medium font-serif`}
                   >
                     {venue.tag}
                   </div>
                 </div>
 
                 <div className="p-4 sm:p-6">
-                  <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
+                  <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2 font-serif">
                     {venue.name}
                   </h3>
                   <div className="flex items-center text-gray-600 text-sm">
