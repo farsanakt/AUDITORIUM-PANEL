@@ -170,15 +170,15 @@ const LoginUserPage: React.FC = () => {
                 </button>
               </form>
 
-              {/* Divider */}
-              <div className="flex items-center my-3">
+              {/* {/* Divider */}
+              {/* <div className="flex items-center my-3">
                 <div className="flex-grow h-px bg-gray-300"></div>
                 <span className="mx-2 text-xs text-gray-500 font-serif">or continue with</span>
                 <div className="flex-grow h-px bg-gray-300"></div>
-              </div>
+              </div> */}
 
               {/* Social buttons */}
-              <div className="grid grid-cols-3 gap-2">
+              {/* <div className="grid grid-cols-3 gap-2">
                 <button className="flex items-center justify-center border border-[#b09d94] rounded-full h-9 w-full hover:bg-gray-50 transition-all duration-200">
                   <FaGoogle className="text-red-500" />
                 </button>
@@ -188,7 +188,7 @@ const LoginUserPage: React.FC = () => {
                 <button className="flex items-center justify-center border border-[#b09d94] rounded-full h-9 w-full hover:bg-gray-50 transition-all duration-200">
                   <FaApple className="text-black" />
                 </button>
-              </div>
+              </div>  */}
 
               {/* Sign up text */}
               <div className="text-center text-xs text-gray-600 font-serif">

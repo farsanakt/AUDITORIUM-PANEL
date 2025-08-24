@@ -167,11 +167,11 @@ const Login: React.FC = () => {
               </form>
 
               {/* Divider */}
-              <div className="flex items-center my-3">
+              {/* <div className="flex items-center my-3">
                 <div className="flex-grow h-px bg-gray-300"></div>
                 <span className="mx-2 text-xs text-gray-500">or continue with</span>
                 <div className="flex-grow h-px bg-gray-300"></div>
-              </div>
+              </div> */}
 
               {/* Social buttons */}
               {/* <div className="grid grid-cols-3 gap-2">
