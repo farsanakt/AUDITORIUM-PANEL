@@ -1,4 +1,7 @@
+"use client"
+
 import React, { useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 import tk from "../../assets/Rectangle 50.png";
 import { useNavigate } from "react-router-dom";
 import Header from "../../component/user/Header";
@@ -11,6 +14,7 @@ const LoginPage: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -45,33 +49,35 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen h-screen bg-[#FDF8F1] flex flex-col items-center justify-center px-4 py-6 box-border">
+    <div className="min-h-screen bg-[#FDF8F1] flex flex-col items-center justify-center px-4 py-6 box-border">
       <Header />
-      <div className="flex flex-col md:flex-row bg-white shadow-xl rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto box-border">
+      <div className="flex flex-col md:flex-row bg-white shadow-2xl rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto box-border my-8 mx-auto">
         {/* Left Section */}
-        <div className="md:w-1/2 hidden md:block relative h-72 md:h-auto">
+        <div className="md:w-1/2 hidden md:block relative h-64 md:h-auto">
           <div className="relative w-full h-full">
-            {/* If tk image doesn't display, replace src with: https://images.unsplash.com/photo-1519167758481-83f550bb2953 */}
             <img
               src={tk}
               alt="Auditorium Preview"
               className="w-full h-full object-cover"
+              onError={(e) => {
+                e.currentTarget.src = "https://images.unsplash.com/photo-1519167758481-83f550bb2953";
+              }}
             />
-            <div className="absolute inset-0  bg-opacity-40">
-              <div className="p-6 sm:p-8 h-full flex flex-col justify-between">
+            <div className="absolute inset-0 bg-opacity-40">
+              <div className="p-4 sm:p-6 h-full flex flex-col justify-between">
                 <div className="text-center">
                   <div className="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-2">
-                    <span className="text-[#ED695A] text-xl font-bold">TK</span>
+                    <span className="text-[#ED695A] text-xl font-bold font-serif">TK</span>
                   </div>
-                  <h2 className="text-[#78533F] text-xl md:text-2xl font-bold mb-1">Welcome to Auditorium</h2>
+                  <h2 className="text-[#78533F] text-lg md:text-2xl font-bold mb-1 font-serif">Welcome to Auditorium</h2>
                   <div className="w-16 h-1 bg-[#ED695A] mx-auto mb-1"></div>
                 </div>
-                <p className="text-[#78533F] text-sm text-center px-2">
+                <p className="text-[#78533F] text-xs md:text-sm text-center px-2 font-serif">
                   Manage your auditorium bookings seamlessly with our intuitive platform.
                 </p>
-                <div className="p-2 rounded-lg backdrop-blur-sm">
-                  <p className="text-[#ED695A] font-bold text-base mb-2 text-center">Why Choose Us?</p>
-                  <ul className="text-white text-sm space-y-2">
+                <div className="p-2 rounded-xl backdrop-blur-sm">
+                  <p className="text-[#ED695A] font-bold text-sm md:text-base mb-2 text-center font-serif">Why Choose Us?</p>
+                  <ul className="text-white text-xs md:text-sm space-y-2 font-serif">
                     <li className="flex items-center"><span className="mr-2 text-[#ED695A]">✔</span> Intuitive and user-friendly interface</li>
                     <li className="flex items-center"><span className="mr-2 text-[#ED695A]">✔</span> Streamlined booking management</li>
                     <li className="flex items-center"><span className="mr-2 text-[#ED695A]">✔</span> Secure and reliable platform</li>
@@ -84,15 +90,15 @@ const LoginPage: React.FC = () => {
         </div>
 
         {/* Right Section - Login Form */}
-        <div className="md:w-1/2 p-6 sm:p-8 flex justify-center items-center">
-          <div className="w-full max-w-sm">
+        <div className="md:w-1/2 p-4 sm:p-6 flex justify-center items-center">
+          <div className="w-full max-w-xs">
             <div className="text-center mb-4">
-              <h2 className="text-xl md:text-2xl font-bold text-[#78533F]">Auditorium Login</h2>
-              <p className="text-gray-600 text-sm mt-1">Sign in to your auditorium account</p>
+              <h2 className="text-lg md:text-2xl font-bold text-[#78533F] font-serif">Auditorium Login</h2>
+              <p className="text-gray-600 text-sm mt-1 font-serif">Sign in to your auditorium account</p>
             </div>
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-1">
-                <label htmlFor="email" className="block text-sm text-[#78533F] font-medium">Email</label>
+                {/* <label htmlFor="email" className="block text-sm text-[#78533F] font-medium font-serif">Email</label> */}
                 <div className="relative">
                   <input
                     type="text"
@@ -101,9 +107,9 @@ const LoginPage: React.FC = () => {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Enter your email"
                     required
-                    className="w-full pl-3 pr-8 py-2 border border-[#b09d94] rounded-full focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200 text-sm"
+                    className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200"
                   />
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[#b09d94]" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
                     </svg>
@@ -111,26 +117,28 @@ const LoginPage: React.FC = () => {
                 </div>
               </div>
               <div className="space-y-1">
-                <label htmlFor="password" className="block text-sm text-[#78533F] font-medium">Password</label>
+                {/* <label htmlFor="password" className="block text-sm text-[#78533F] font-medium font-serif">Password</label> */}
                 <div className="relative">
                   <input
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     id="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter your password"
                     required
-                    className="w-full pl-3 pr-8 py-2 border border-[#b09d94] rounded-full focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200 text-sm"
+                    className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-sm pr-10 focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200"
                   />
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[#b09d94]" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                    </svg>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
                 </div>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <label className="flex items-center text-gray-600">
+                <label className="flex items-center text-gray-600 font-serif">
                   <input
                     type="checkbox"
                     className="h-4 w-4 text-[#ED695A] border-[#b09d94] rounded"
@@ -142,27 +150,27 @@ const LoginPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleForgotPassword}
-                  className="text-[#ED695A] hover:text-[#78533F] hover:underline"
+                  className="text-[#ED695A] hover:text-[#78533F] hover:underline font-serif"
                 >
                   Forgot password?
                 </button>
               </div>
               <button
                 type="submit"
-                className="w-full bg-[#ED695A] text-white font-semibold py-2 rounded-full shadow-md hover:bg-[#d85c4e] transition-all duration-300"
+                className="w-full bg-[#ED695A] text-white font-semibold py-2 rounded-full shadow-md hover:bg-[#d85c4e] transition-all duration-300 font-serif"
               >
                 Sign In
               </button>
-              <div className="relative my-3">
+              {/* <div className="relative my-3">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-[#b09d94]"></div>
                 </div>
                 <div className="relative flex justify-center text-xs">
-                  <span className="px-2 bg-white text-gray-600">Or continue with</span>
+                  <span className="px-2 bg-white text-gray-600 font-serif">Or continue with</span>
                 </div>
               </div>
-              {/* <div className="grid grid-cols-3 gap-2">
-                <button type="button" className="flex justify-center items-center py-1 px-2 border border-[#b09d94] rounded-md bg-white hover:bg-gray-50">
+              <div className="grid grid-cols-3 gap-2">
+                <button type="button" className="flex justify-center items-center py-1 px-2 border border-[#b09d94] rounded-full bg-white hover:bg-gray-50 transition-all duration-200">
                   <svg className="w-4 h-4" viewBox="0 0 24 24">
                     <path fill="#EA4335" d="M12 11.7v2.6h5.4c-.2 1.3-.8 2.4-1.7 3.1v2.6h2.8c1.6-1.4 2.5-3.5 2.5-5.9 0-.6-.1-1.2-.2-1.8H12z"/>
                     <path fill="#34A853" d="M12 23c2.4 0 4.5-.8 6.1-2.2l-2.8-2.6c-.8.5-1.9.8-3.3.8-2.5 0-4.7-1.7-5.5-4.1H3.5v2.6C5.1 20.9 8.3 23 12 23z"/>
@@ -170,23 +178,23 @@ const LoginPage: React.FC = () => {
                     <path fill="#4285F4" d="M12 6.3c1.3 0 2.5.5 3.4 1.3l2.5-2.5C16.5 3.3 14.4 2.4 12 2.4 8.3 2.4 5.1 4.5 3.5 7.4l3 2.6c.8-2.4 3-4.1 5.5-4.1z"/>
                   </svg>
                 </button>
-                <button type="button" className="flex justify-center items-center py-1 px-2 border border-[#b09d94] rounded-md bg-white hover:bg-gray-50">
+                <button type="button" className="flex justify-center items-center py-1 px-2 border border-[#b09d94] rounded-full bg-white hover:bg-gray-50 transition-all duration-200">
                   <svg className="w-4 h-4" viewBox="0 0 24 24" fill="#1877F2">
                     <path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 5 3.66 9.12 8.44 9.88v-7h-2.54v-2.88h2.54V9.88c0-2.51 1.49-3.88 3.78-3.88 1.1 0 2.25.2 2.25.2v2.48h-1.27c-1.25 0-1.63.77-1.63 1.56v1.88h2.78L16.1 14.88h-2.26v7C18.34 21.12 22 17 22 12z"/>
                   </svg>
                 </button>
-                <button type="button" className="flex justify-center items-center py-1 px-2 border border-[#b09d94] rounded-md bg-white hover:bg-gray-50">
+                <button type="button" className="flex justify-center items-center py-1 px-2 border border-[#b09d94] rounded-full bg-white hover:bg-gray-50 transition-all duration-200">
                   <svg className="w-4 h-4" viewBox="0 0 24 24" fill="#000000">
                     <path d="M16.365 1.43c0 1.14-.48 2.26-1.32 3.06-.9.86-2.16 1.38-3.36 1.3-.03-1.15.45-2.28 1.29-3.08.45-.44 1.07-.8 1.74-1.01.15-.04.29-.07.44-.07.27 0 .53.06.77.17.16.08.31.2.44.34zM20.25 17.01c-.24.58-.49 1.15-.76 1.69-.43.86-.88 1.7-1.52 2.39-.61.67-1.22 1.34-2.12 1.36-.82.02-1.08-.52-2.23-.51-1.15.01-1.45.52-2.27.51-.91-.02-1.5-.68-2.1-1.34-.67-.74-1.17-1.61-1.6-2.5-.71-1.48-1.29-3.08-1.04-4.76.19-1.29.74-2.4 1.61-3.27.83-.82 2.12-1.43 3.11-1.27.61.1 1.05.33 1.37.33.29 0 .85-.42 1.59-.36.27.01 1.16.11 1.7.86-.05.03-1.02.6-1 1.77.03 1.43 1.23 1.91 1.28 1.93-.01.04-1.26.88-1.24 2.34.01 1.85 1.54 2.47 1.56 2.47z"/>
                   </svg>
                 </button>
               </div> */}
               <div className="text-center mt-3">
-                <span className="text-sm text-gray-600">Don't have an account?</span>
+                <span className="text-sm text-gray-600 font-serif">Don't have an account?</span>
                 <button
                   type="button"
                   onClick={handleSignup}
-                  className="text-sm text-[#ED695A] ml-1 hover:text-[#78533F] hover:underline font-semibold"
+                  className="text-sm text-[#ED695A] ml-1 hover:text-[#78533F] hover:underline font-semibold font-serif"
                 >
                   Sign Up
                 </button>

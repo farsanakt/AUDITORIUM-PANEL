@@ -61,13 +61,13 @@ const LoginUserPage: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-2 sm:px-4 py-4">
+    <div className="min-h-screen bg-[#FDF8F1] flex items-center justify-center py-8 px-4 sm:px-6 lg:px-8 overflow-y-auto">
       <Header />
-      <div className="bg-white rounded-xl shadow-lg w-full max-w-3xl overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden my-8 mx-auto">
         <div className="flex flex-col sm:flex-row">
           {/* Left image section */}
           <div className="flex-1 relative bg-white flex flex-col items-center justify-center p-2 sm:p-4">
-            <h1 className="text-2xl sm:text-2xl font-bold text-center text-[#78533F] mb-2">
+            <h1 className="text-xl sm:text-2xl font-bold text-center text-[#78533F] mb-2 font-serif">
               Capture Your Moments
             </h1>
 
@@ -75,10 +75,10 @@ const LoginUserPage: React.FC = () => {
               {images.map((image, index) => (
                 <div
                   key={index}
-                  className={`absolute w-full h-full flex items-center justify-center transition-all duration-1000 ${
+                  className={`absolute w-full h-full flex items-center justify-center transition-all duration-1000 ease-in-out ${
                     index === currentImageIndex
-                      ? 'opacity-100 translate-x-0'
-                      : 'opacity-0 translate-x-full'
+                      ? 'opacity-100 scale-100 translate-x-0'
+                      : 'opacity-0 scale-95 translate-x-full'
                   }`}
                 >
                   <img
@@ -90,7 +90,7 @@ const LoginUserPage: React.FC = () => {
               ))}
             </div>
 
-            <p className="mt-2 text-xs text-gray-600 text-center">
+            <p className="mt-2 text-xs text-gray-600 text-center font-serif">
               Memories that last forever – log in and make new ones.
             </p>
 
@@ -98,8 +98,8 @@ const LoginUserPage: React.FC = () => {
               {images.map((_, index) => (
                 <div
                   key={index}
-                  className={`w-2 h-2 rounded-full ${
-                    index === currentImageIndex ? 'bg-purple-600' : 'bg-gray-300'
+                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                    index === currentImageIndex ? 'bg-[#ED695A]' : 'bg-gray-300'
                   }`}
                 />
               ))}
@@ -110,24 +110,26 @@ const LoginUserPage: React.FC = () => {
           <div className="flex-1 p-4 sm:p-6 bg-white flex flex-col justify-center">
             <div className="w-full max-w-xs mx-auto space-y-4">
               <div className="text-right">
-                <X className="w-4 h-4 text-gray-400 cursor-pointer" />
+                <X className="w-4 h-4 text-gray-400 cursor-pointer hover:text-gray-600" />
               </div>
 
               <div className="text-center">
-                <h2 className="text-2xl font-bold text-[#78533F]">Welcome Back</h2>
-                <p className="text-sm text-gray-600 mt-1">Please login to continue</p>
+                <h2 className="text-xl sm:text-2xl font-bold text-[#78533F] font-serif">Welcome Back</h2>
+                <p className="text-sm text-gray-600 mt-1 font-serif">Please login to continue</p>
               </div>
 
               <form onSubmit={handleLogin} className="space-y-3">
                 {/* Email input */}
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email"
-                  required
-                  className="w-full px-3 py-2 border border-[#b09d94] rounded-md text-sm focus:ring-2 focus:ring-purple-500"
-                />
+                <div className="relative">
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Enter your email"
+                    required
+                    className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200"
+                  />
+                </div>
 
                 {/* Password input */}
                 <div className="relative">
@@ -137,7 +139,7 @@ const LoginUserPage: React.FC = () => {
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter your password"
                     required
-                    className="w-full px-3 py-2 border border-[#b09d94] rounded-md text-sm pr-10 focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-sm pr-10 focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200"
                   />
                   <button
                     type="button"
@@ -149,9 +151,9 @@ const LoginUserPage: React.FC = () => {
                 </div>
 
                 {/* Remember & Forgot */}
-                <div className="flex justify-between text-xs text-gray-600 items-center">
+                <div className="flex justify-between text-xs text-gray-600 items-center font-serif">
                   <label className="flex items-center space-x-1">
-                    <input type="checkbox" className="w-3 h-3" />
+                    <input type="checkbox" className="w-3 h-3 rounded border-[#b09d94]" />
                     <span>Remember me</span>
                   </label>
                   <button type="button" className="text-[#ED695A] hover:underline">
@@ -162,7 +164,7 @@ const LoginUserPage: React.FC = () => {
                 {/* Login button */}
                 <button
                   type="submit"
-                  className="w-full bg-[#ED695A] text-white py-2 rounded-md font-semibold hover:bg-[#d7584c] transition"
+                  className="w-full bg-[#ED695A] text-white py-2 rounded-full font-semibold hover:bg-[#d7584c] transition-all duration-300 font-serif"
                 >
                   Sign In
                 </button>
@@ -171,30 +173,28 @@ const LoginUserPage: React.FC = () => {
               {/* Divider */}
               <div className="flex items-center my-3">
                 <div className="flex-grow h-px bg-gray-300"></div>
-                <span className="mx-2 text-xs text-gray-500">or continue with</span>
+                <span className="mx-2 text-xs text-gray-500 font-serif">or continue with</span>
                 <div className="flex-grow h-px bg-gray-300"></div>
               </div>
 
               {/* Social buttons */}
-              {/* <div className="grid grid-cols-3 gap-2">
-                <button className="flex items-center justify-center border rounded-md h-9 w-full hover:bg-gray-50">
+              <div className="grid grid-cols-3 gap-2">
+                <button className="flex items-center justify-center border border-[#b09d94] rounded-full h-9 w-full hover:bg-gray-50 transition-all duration-200">
                   <FaGoogle className="text-red-500" />
                 </button>
-                <button className="flex items-center justify-center border rounded-md h-9 w-full hover:bg-gray-50">
+                <button className="flex items-center justify-center border border-[#b09d94] rounded-full h-9 w-full hover:bg-gray-50 transition-all duration-200">
                   <FaFacebookF className="text-blue-600" />
                 </button>
-                <button className="flex items-center justify-center border rounded-md h-9 w-full hover:bg-gray-50">
+                <button className="flex items-center justify-center border border-[#b09d94] rounded-full h-9 w-full hover:bg-gray-50 transition-all duration-200">
                   <FaApple className="text-black" />
                 </button>
-              </div> */}
+              </div>
 
               {/* Sign up text */}
-              <div className="text-center text-xs text-gray-600">
+              <div className="text-center text-xs text-gray-600 font-serif">
                 <span>Don't have an account? </span>
                 <button className="text-[#ED695A] hover:underline" onClick={handleSignUp}>
                   Sign up
-
-                  
                 </button>
               </div>
             </div>
