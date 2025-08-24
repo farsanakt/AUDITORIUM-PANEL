@@ -2,7 +2,7 @@
 import type React from "react"
 import { useState } from "react"
 import { Eye, EyeOff } from "lucide-react"
-import tk from '../../assets/Honeymoon-pana.png'
+import tk from '../../assets/Rectangle 30.png'
 import { useNavigate } from "react-router-dom"
 import Header from "../../component/user/Header"
 import { userSingUpRequest } from "../../api/userApi"
