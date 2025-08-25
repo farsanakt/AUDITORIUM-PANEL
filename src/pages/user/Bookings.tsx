@@ -1,5 +1,3 @@
-"use client"
-
 import type React from "react"
 import { useEffect, useState, Component, type ErrorInfo } from "react"
 import { ChevronLeft, ChevronRight, MapPin, X, CheckCircle, ChevronUp, ChevronDown } from "lucide-react"
@@ -23,11 +21,11 @@ class ErrorBoundary extends Component<{ children: React.ReactNode }, { hasError:
   render() {
     if (this.state.hasError) {
       return (
-        <div className="p-4 text-red-600">
-          <h2>Something went wrong!</h2>
-          <p>{this.state.error?.message || "An unexpected error occurred"}</p>
+        <div className="p-4 text-[#3C3A39]">
+          <h2 className="text-xl font-bold text-[#78533F]">Something went wrong!</h2>
+          <p className="text-[#3C3A39]">{this.state.error?.message || "An unexpected error occurred"}</p>
           <button
-            className="mt-4 bg-[#876553] text-white py-2 px-4 rounded-lg"
+            className="mt-4 bg-[#ED695A] hover:bg-[#d85c4e] text-white py-2 px-4 rounded-xl shadow-lg transition-all transform hover:scale-105 text-sm"
             onClick={() => window.location.reload()}
           >
             Reload Page
@@ -107,21 +105,10 @@ const Bookings: React.FC = () => {
   const navigate = useNavigate()
 
   const monthNames = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December",
   ]
 
-  // Helper function to format date without timezone issues
   const formatDateForBackend = (date: Date): string => {
     const year = date.getFullYear()
     const month = String(date.getMonth() + 1).padStart(2, "0")
@@ -267,12 +254,12 @@ const Bookings: React.FC = () => {
 
     if (bookedSlotsCount === 0) return "available"
     if (bookedSlotsCount >= totalSlots) return "booked"
-    return "partial" // Some slots booked but not all
+    return "partial"
   }
 
   const getDateClassName = (date: Date | null, isCurrentMonth: boolean) => {
     const baseClass =
-      "w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-xs sm:text-sm font-medium transition-all relative group"
+      "w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center text-xs sm:text-sm md:text-base font-medium transition-all relative group"
 
     if (!isCurrentMonth || !date) {
       return `${baseClass} text-gray-400 cursor-not-allowed`
@@ -289,32 +276,32 @@ const Bookings: React.FC = () => {
     }
     if (status === "partial") {
       return isSelected
-        ? `${baseClass} bg-blue-600 text-white cursor-pointer hover:scale-105`
+        ? `${baseClass} bg-[#ED695A] text-white cursor-pointer hover:scale-105`
         : `${baseClass} bg-yellow-400 text-yellow-900 cursor-pointer hover:bg-yellow-500 hover:scale-105`
     }
 
     return isSelected
-      ? `${baseClass} bg-blue-600 text-white cursor-pointer hover:scale-105`
+      ? `${baseClass} bg-[#ED695A] text-white cursor-pointer hover:scale-105`
       : `${baseClass} bg-green-100 text-green-800 cursor-pointer hover:bg-green-200 hover:scale-105`
   }
 
   const getTooltipContent = (date: Date) => {
     const slots = getTimeSlotStatus(date)
     return (
-      <div className="absolute z-20 bg-white p-3 rounded-lg shadow-xl border border-gray-200 top-full mt-2 text-sm max-w-xs sm:max-w-sm bg-opacity-95 transform -translate-x-1/2 left-1/2">
-        <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-8 border-r-8 border-b-8 border-l-transparent border-r-transparent border-b-white"></div>
-        <p className="font-semibold text-gray-800 mb-2">Time Slots:</p>
+      <div className="absolute z-20 bg-white p-3 rounded-lg shadow-lg border-2 border-[#b09d94] bottom-full mb-2 text-xs sm:text-sm max-w-[90vw] sm:max-w-xs bg-opacity-95 transform -translate-x-1/2 left-1/2">
+        <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-8 border-r-8 border-t-8 border-l-transparent border-r-transparent border-t-white"></div>
+        <p className="font-semibold text-[#78533F] mb-2">Time Slots:</p>
         {slots.length > 0 ? (
           slots.map((slot) => (
             <div key={slot.id} className="flex items-center gap-2">
-              <div className={`w-3 h-3 rounded-full ${slot.isBooked ? "bg-red-500" : "bg-green-500"}`}></div>
+              <div className={`w-3 h-3 sm:w-4 sm:h-4 rounded-full ${slot.isBooked ? "bg-red-500" : "bg-green-500"}`}></div>
               <p className={slot.isBooked ? "text-red-600" : "text-green-600"}>
                 {slot.label}: {slot.isBooked ? "Booked" : "Available"}
               </p>
             </div>
           ))
         ) : (
-          <p className="text-gray-600">No time slots available</p>
+          <p className="text-[#3C3A39]">No time slots available</p>
         )}
       </div>
     )
@@ -353,7 +340,6 @@ const Bookings: React.FC = () => {
       const currentYear = new Date().getFullYear()
       const newYear = direction === "prev" ? prev.getFullYear() - 1 : prev.getFullYear() + 1
 
-      // Prevent going to past years
       if (newYear >= currentYear) {
         newDate.setFullYear(newYear)
       }
@@ -382,15 +368,16 @@ const Bookings: React.FC = () => {
   }
 
   const handlePaymentTypeChange = (type: "full" | "advance") => {
-    setFormData((prev) => ({
-      ...prev,
-      paymentType: type,
-      paidAmount: type === "full" ? prev.totalAmount : prev.advanceAmount,
-      balanceAmount:
-        type === "full"
-          ? "0"
-          : (Number.parseFloat(prev.totalAmount || "0") - Number.parseFloat(prev.advanceAmount || "0")).toString(),
-    }))
+    setFormData((prev) => {
+      const total = Number.parseFloat(prev.totalAmount || "0")
+      const advance = Number.parseFloat(prev.advanceAmount || "0")
+      return {
+        ...prev,
+        paymentType: type,
+        paidAmount: type === "full" ? prev.totalAmount : prev.advanceAmount,
+        balanceAmount: type === "full" ? "0" : (total - advance).toString(),
+      }
+    })
   }
 
   const handleFormSubmit = async () => {
@@ -445,15 +432,18 @@ const Bookings: React.FC = () => {
   }
 
   if (loading) {
-    return <div className="p-4 text-center text-gray-600">Loading...</div>
+    return <div className="p-4 text-center text-[#3C3A39] text-sm sm:text-base">Loading...</div>
   }
 
   if (error) {
     return (
-      <div className="p-4 text-center text-red-600">
-        <h2>Error</h2>
-        <p>{error}</p>
-        <button className="mt-4 bg-[#876553] text-white py-2 px-4 rounded-lg" onClick={() => window.location.reload()}>
+      <div className="p-4 text-center">
+        <h2 className="text-xl font-bold text-[#78533F]">Error</h2>
+        <p className="text-[#3C3A39] text-sm sm:text-base">{error}</p>
+        <button
+          className="mt-4 bg-[#ED695A] hover:bg-[#d85c4e] text-white py-2 px-4 rounded-xl shadow-lg transition-all transform hover:scale-105 text-sm"
+          onClick={() => window.location.reload()}
+        >
           Retry
         </button>
       </div>
@@ -462,141 +452,140 @@ const Bookings: React.FC = () => {
 
   const renderCalendar = () => (
     <ErrorBoundary>
-      <div className="relative min-h-screen overflow-hidden bg-gray-50">
+      <div className="bg-[#FDF8F1] min-h-screen">
         <img
           src={Lines || "/placeholder.svg"}
           alt="Lines"
-          className="fixed top-0 right-0 h-full object-cover z-0 scale-140 sm:scale-100 opacity-10"
+          className="absolute top-0 left-0 h-full object-cover z-0 scale-125 sm:scale-150 opacity-10"
           style={{ maxWidth: "none" }}
         />
-        <div className="relative z-10 p-2 sm:p-4 lg:p-6 xl:p-8">
-          <div className="max-w-7xl mx-auto">
+        <div className="relative z-10 p-2 sm:p-4 md:p-6 lg:p-8">
+          <div className="max-w-6xl mx-auto">
             <Header />
-            <div className="overflow-hidden">
-              <div className="p-2 sm:p-4">
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div>
-                      <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-[#845e38]">
-                        {venue?.name || "Venue"}
-                      </h1>
-                      <p className="text-xs sm:text-sm text-gray-600 flex items-center gap-1">
-                        <MapPin className="w-3 h-3 sm:w-4 sm:h-4" />
-                        {venue?.address || "Location"}
-                      </p>
-                    </div>
+            <div className="mb-4 sm:mb-6">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div>
+                    <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-[#78533F]">
+                      {venue?.name || "Venue"}
+                    </h1>
+                    <p className="text-xs sm:text-sm md:text-base text-[#3C3A39] flex items-center gap-1">
+                      <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-[#9c7c5d]" />
+                      {venue?.address || "Location"}
+                    </p>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <div className="text-right hidden sm:block">
-                      <p className="text-xs sm:text-sm text-gray-600">Confirm your venue from our</p>
-                      <p className="text-xs sm:text-sm text-gray-600">calendar and mark your booking date</p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="text-right hidden sm:block">
+                    <p className="text-xs sm:text-sm text-[#3C3A39]">Confirm your venue from our</p>
+                    <p className="text-xs sm:text-sm text-[#3C3A39]">calendar and mark your booking date</p>
+                  </div>
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center bg-white border-2 border-[#b09d94]">
+                    <img
+                      src={Homeicon || "/placeholder.svg"}
+                      alt="Custom Icon"
+                      className="w-8 h-8 sm:w-10 sm:h-10 object-contain"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="grid lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
+              <div className="space-y-4 sm:space-y-6">
+                <h3 className="text-base sm:text-lg md:text-xl font-semibold text-[#78533F]">Availability Calendar</h3>
+                <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 border-2 border-[#b09d94]">
+                  <div className="flex items-center justify-between mb-4 sm:mb-6">
+                    <button
+                      onClick={() => navigateMonth("prev")}
+                      className="p-2 hover:bg-[#FDF8F1] rounded-full transition-all transform hover:scale-105"
+                    >
+                      <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 text-[#3C3A39]" />
+                    </button>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-sm sm:text-lg md:text-xl font-semibold text-[#78533F]">
+                        {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+                      </h2>
+                      <div className="flex flex-col">
+                        <button
+                          onClick={() => navigateYear("next")}
+                          className="p-1 hover:bg-[#FDF8F1] rounded transition-all"
+                          disabled={currentDate.getFullYear() >= new Date().getFullYear() + 10}
+                        >
+                          <ChevronUp className="w-4 h-4 sm:w-5 sm:h-5 text-[#3C3A39]" />
+                        </button>
+                        <button
+                          onClick={() => navigateYear("prev")}
+                          className="p-1 hover:bg-[#FDF8F1] rounded transition-all"
+                          disabled={currentDate.getFullYear() <= new Date().getFullYear()}
+                        >
+                          <ChevronDown className="w-4 h-4 sm:w-5 sm:h-5 text-[#3C3A39]" />
+                        </button>
+                      </div>
                     </div>
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center">
-                      <img
-                        src={Homeicon || "/placeholder.svg"}
-                        alt="Custom Icon"
-                        className="w-10 h-10 sm:w-12 sm:h-12 object-contain"
-                      />
+                    <button
+                      onClick={() => navigateMonth("next")}
+                      className="p-2 hover:bg-[#FDF8F1] rounded-full transition-all transform hover:scale-105"
+                    >
+                      <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 text-[#3C3A39]" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-7 gap-1 sm:gap-2">
+                    {["S", "M", "T", "W", "T", "F", "S"].map((day, index) => (
+                      <div
+                        key={index}
+                        className="h-6 sm:h-8 flex items-center justify-center text-xs sm:text-sm font-medium text-[#3C3A39]"
+                      >
+                        {day}
+                      </div>
+                    ))}
+                    {generateCalendarDays().map((dateObj, index) => (
+                      <div
+                        key={index}
+                        className={getDateClassName(dateObj.date, dateObj.isCurrentMonth)}
+                        onClick={() => handleDateClick(dateObj.date)}
+                        style={{ aspectRatio: "1" }}
+                      >
+                        {dateObj.day || ""}
+                        {dateObj.isCurrentMonth && dateObj.date && (
+                          <div className="hidden group-hover:block">{getTooltipContent(dateObj.date)}</div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-4 p-3 sm:p-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
+                      <div className="flex items-center gap-2 text-xs sm:text-sm">
+                        <div className="w-3 h-3 sm:w-4 sm:h-4 bg-green-100 border-2 border-green-400 rounded-full"></div>
+                        <span className="text-[#3C3A39]">Available</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs sm:text-sm">
+                        <div className="w-3 h-3 sm:w-4 sm:h-4 bg-yellow-400 rounded-full"></div>
+                        <span className="text-[#3C3A39]">Partial</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs sm:text-sm">
+                        <div className="w-3 h-3 sm:w-4 sm:h-4 bg-red-500 rounded-full"></div>
+                        <span className="text-[#3C3A39]">Booked</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs sm:text-sm">
+                        <div className="w-3 h-3 sm:w-4 sm:h-4 bg-gray-100 border-2 border-gray-400 rounded-full"></div>
+                        <span className="text-[#3C3A39]">Past</span>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-              <div className="p-2 sm:p-4 lg:p-6 xl:p-8">
-                <div className="grid lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
+              <div className="space-y-4 sm:space-y-6">
+                <h3 className="text-base sm:text-lg md:text-xl font-semibold text-[#78533F]">Booking Options</h3>
+                <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 border-2 border-[#b09d94]">
                   <div className="space-y-4 sm:space-y-6">
-                    <div className="bg-white rounded-2xl shadow-xl p-3 sm:p-4 lg:p-6 aspect-square flex flex-col border border-gray-100">
-                      <div className="flex items-center justify-between mb-3 sm:mb-4 lg:mb-6">
-                        <button
-                          onClick={() => navigateMonth("prev")}
-                          className="p-1 sm:p-2 hover:bg-gray-100 rounded-full transition-colors"
-                        >
-                          <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
-                        </button>
-                        <div className="flex flex-col items-center">
-                          <div className="flex items-center gap-2">
-                            <h2 className="text-sm sm:text-lg lg:text-xl font-semibold text-gray-800">
-                              {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-                            </h2>
-                            <div className="flex flex-col">
-                              <button
-                                onClick={() => navigateYear("next")}
-                                className="p-1 hover:bg-gray-100 rounded transition-colors"
-                                disabled={currentDate.getFullYear() >= new Date().getFullYear() + 10}
-                              >
-                                <ChevronUp className="w-3 h-3 sm:w-4 sm:h-4 text-gray-600" />
-                              </button>
-                              <button
-                                onClick={() => navigateYear("prev")}
-                                className="p-1 hover:bg-gray-100 rounded transition-colors"
-                                disabled={currentDate.getFullYear() <= new Date().getFullYear()}
-                              >
-                                <ChevronDown className="w-3 h-3 sm:w-4 sm:h-4 text-gray-600" />
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => navigateMonth("next")}
-                          className="p-1 sm:p-2 hover:bg-gray-100 rounded-full transition-colors"
-                        >
-                          <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
-                        </button>
-                      </div>
-                      <div className="grid grid-cols-7 gap-1 mb-2 sm:mb-4">
-                        {["S", "M", "T", "W", "T", "F", "S"].map((day, index) => (
-                          <div
-                            key={index}
-                            className="h-6 sm:h-8 flex items-center justify-center text-xs sm:text-sm font-medium text-gray-500"
-                          >
-                            {day}
-                          </div>
-                        ))}
-                      </div>
-                      <div className="flex-1">
-                        <div className="grid grid-cols-7 gap-1 h-full">
-                          {generateCalendarDays().map((dateObj, index) => (
-                            <div
-                              key={index}
-                              className={getDateClassName(dateObj.date, dateObj.isCurrentMonth)}
-                              onClick={() => handleDateClick(dateObj.date)}
-                              style={{ aspectRatio: "1" }}
-                            >
-                              {dateObj.day || ""}
-                              {dateObj.isCurrentMonth && dateObj.date && (
-                                <div className="hidden group-hover:block">{getTooltipContent(dateObj.date)}</div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="p-3 sm:p-4 lg:p-6">
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
-                        <div className="flex items-center gap-2 text-xs sm:text-sm">
-                          <div className="w-3 h-3 sm:w-4 sm:h-4 bg-green-100 border-2 border-green-400 rounded-full"></div>
-                          <span className="text-gray-600">Available</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs sm:text-sm">
-                          <div className="w-3 h-3 sm:w-4 sm:h-4 bg-yellow-400 rounded-full"></div>
-                          <span className="text-gray-600">Partial</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs sm:text-sm">
-                          <div className="w-3 h-3 sm:w-4 sm:h-4 bg-red-500 rounded-full"></div>
-                          <span className="text-gray-600">Booked</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs sm:text-sm">
-                          <div className="w-3 h-3 sm:w-4 sm:h-4 bg-gray-100 border-2 border-gray-400 rounded-full"></div>
-                          <span className="text-gray-600">Past</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="rounded-2xl p-3 sm:p-4 lg:p-6 bg-white shadow-xl border border-gray-100">
-                    <div className="space-y-3 sm:space-y-4">
+                    <div>
+                      <label className="block text-xs sm:text-sm font-semibold text-[#78533F] flex items-center mb-2">
+                        <span className="mr-2">❄️</span>AC Option
+                      </label>
                       <select
                         value={acOption}
                         onChange={(e) => setAcOption(e.target.value)}
-                        className="w-full p-2 sm:p-3 border border-gray-300 text-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553] focus:border-transparent transition-all text-sm sm:text-base"
+                        className="w-full p-2 sm:p-3 border-2 border-[#b09d94] text-[#3C3A39] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ED695A] focus:border-transparent transition-all text-xs sm:text-sm"
                       >
                         <option value="">Select AC Option</option>
                         {venue?.acType ? (
@@ -605,13 +594,18 @@ const Bookings: React.FC = () => {
                           <option value="">No AC option available</option>
                         )}
                       </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs sm:text-sm font-semibold text-[#78533F] flex items-center mb-2">
+                        <span className="mr-2">⏰</span>Time Slot
+                      </label>
                       <select
                         value={venueTime}
                         onChange={(e) => {
                           setVenueTime(e.target.value)
                           setFormData((prev) => ({ ...prev, timeSlot: e.target.value }))
                         }}
-                        className="w-full p-2 sm:p-3 border border-gray-300 text-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553] focus:border-transparent transition-all text-sm sm:text-base"
+                        className="w-full p-2 sm:p-3 border-2 border-[#b09d94] text-[#3C3A39] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ED695A] focus:border-transparent transition-all text-xs sm:text-sm"
                       >
                         <option value="">Select Time Slot</option>
                         {selectedDate ? (
@@ -629,10 +623,15 @@ const Bookings: React.FC = () => {
                           <option value="">Select a date first</option>
                         )}
                       </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs sm:text-sm font-semibold text-[#78533F] flex items-center mb-2">
+                        <span className="mr-2">🎉</span>Event Type
+                      </label>
                       <select
                         value={eventType}
                         onChange={(e) => setEventType(e.target.value)}
-                        className="w-full p-2 sm:p-3 border border-gray-300 text-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553] focus:border-transparent transition-all text-sm sm:text-base"
+                        className="w-full p-2 sm:p-3 border-2 border-[#b09d94] text-[#3C3A39] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ED695A] focus:border-transparent transition-all text-xs sm:text-sm"
                       >
                         <option value="">Select Event Type</option>
                         {venue?.eventTypes?.map((type, index) => (
@@ -641,112 +640,130 @@ const Bookings: React.FC = () => {
                           </option>
                         )) || <option value="">No event types available</option>}
                       </select>
-                      <button
-                        onClick={handleConfirmBooking}
-                        className="w-full mt-4 sm:mt-6 bg-[#876553] text-white py-2 sm:py-3 px-4 sm:px-6 rounded-lg font-semibold transition-all shadow-md hover:bg-[#6e4e3d] hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
-                        disabled={!venue}
-                      >
-                        Confirm your Booking!
-                      </button>
                     </div>
-                    {selectedDate && (
-                      <div className="mt-3 sm:mt-4 p-3 sm:p-4 bg-blue-50 rounded-lg">
-                        <p className="text-xs sm:text-sm text-blue-700 font-medium">
-                          Selected Date: {selectedDate.toLocaleDateString()}
-                        </p>
-                        <p className="text-xs sm:text-sm text-blue-700 font-medium">
-                          Available Slots: {getTimeSlotStatus(selectedDate).filter((slot) => !slot.isBooked).length}
-                        </p>
-                      </div>
-                    )}
+                    <button
+                      onClick={handleConfirmBooking}
+                      className="w-full mt-4 sm:mt-6 bg-[#ED695A] hover:bg-[#d85c4e] text-white py-2 sm:py-3 px-4 sm:px-6 rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm"
+                      disabled={!venue}
+                    >
+                      Confirm your Booking!
+                    </button>
                   </div>
+                  {selectedDate && (
+                    <div className="mt-4 p-3 sm:p-4 bg-[#FDF8F1] rounded-xl border-2 border-[#b09d94]">
+                      <p className="text-xs sm:text-sm text-[#78533F] font-medium">
+                        Selected Date: {selectedDate.toLocaleDateString()}
+                      </p>
+                      <p className="text-xs sm:text-sm text-[#78533F] font-medium">
+                        Available Slots: {getTimeSlotStatus(selectedDate).filter((slot) => !slot.isBooked).length}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
             {showModal && (
-              <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-2 sm:p-4">
-                <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-2 sm:p-4 backdrop-blur-sm">
+                <div className="bg-[#FDF8F1] rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border-2 border-[#b09d94]">
                   {currentPage === "form" && (
                     <div className="p-4 sm:p-6 lg:p-8">
-                      <div className="flex items-center justify-between mb-4 sm:mb-6 lg:mb-8">
+                      <div className="flex items-center justify-between mb-4 sm:mb-6 border-b-2 border-[#b09d94] pb-4">
                         <div className="text-center flex-1">
-                          <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-[#845e38]">Booking Form</h2>
-                          <p className="text-sm sm:text-base text-gray-600">Please fill in your booking details</p>
+                          <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-[#78533F]">
+                            📅 Booking Form
+                          </h2>
+                          <p className="text-xs sm:text-sm text-[#3C3A39]">Please fill in your booking details</p>
                         </div>
-                        <button onClick={closeModal} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-                          <X className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
+                        <button
+                          onClick={closeModal}
+                          className="p-2 hover:bg-[#FDF8F1] rounded-full transition-all transform hover:scale-105"
+                        >
+                          <X className="w-5 h-5 sm:w-6 sm:h-6 text-[#3C3A39]" />
                         </button>
                       </div>
-
-                      <div className="space-y-3 sm:space-y-4">
+                      <div className="space-y-4 sm:space-y-6">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                          <label className="block text-xs sm:text-sm font-semibold text-[#78533F] flex items-center mb-2">
+                            <span className="mr-2">📧</span>Email
+                          </label>
                           <input
                             type="email"
                             value={formData.userEmail}
                             onChange={(e) => handleInputChange("userEmail", e.target.value)}
-                            className="w-full p-2 sm:p-3 border border-gray-300 text-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553] transition-all text-sm sm:text-base"
+                            className="w-full p-2 sm:p-3 border-2 border-[#b09d94] text-[#3C3A39] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ED695A] focus:border-transparent transition-all text-xs sm:text-sm"
                             placeholder="Enter your email"
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                          <label className="block text-xs sm:text-sm font-semibold text-[#78533F] flex items-center mb-2">
+                            <span className="mr-2">📍</span>Address
+                          </label>
                           <textarea
                             value={formData.address}
                             onChange={(e) => handleInputChange("address", e.target.value)}
-                            className="w-full p-2 sm:p-3 border border-gray-300 text-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553] transition-all text-sm sm:text-base"
+                            className="w-full p-2 sm:p-3 border-2 border-[#b09d94] text-[#3C3A39] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ED695A] focus:border-transparent transition-all text-xs sm:text-sm"
                             placeholder="Enter your address"
                             rows={4}
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Venue Name</label>
+                          <label className="block text-xs sm:text-sm font-semibold text-[#78533F] flex items-center mb-2">
+                            <span className="mr-2">🏛️</span>Venue Name
+                          </label>
                           <input
                             type="text"
                             value={formData.venueName}
                             readOnly
-                            className="w-full p-2 sm:p-3 border border-gray-300 text-gray-700 rounded-lg bg-gray-50 text-sm sm:text-base"
+                            className="w-full p-2 sm:p-3 border-2 border-[#b09d94] text-[#3C3A39] rounded-xl bg-[#f5f5f5] text-xs sm:text-sm"
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Booking Date</label>
+                          <label className="block text-xs sm:text-sm font-semibold text-[#78533F] flex items-center mb-2">
+                            <span className="mr-2">📅</span>Booking Date
+                          </label>
                           <input
                             type="text"
                             value={formData.bookingDate}
                             readOnly
-                            className="w-full p-2 sm:p-3 border border-gray-300 text-gray-700 rounded-lg bg-gray-50 text-sm sm:text-base"
+                            className="w-full p-2 sm:p-3 border-2 border-[#b09d94] text-[#3C3A39] rounded-xl bg-[#f5f5f5] text-xs sm:text-sm"
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Time Slot</label>
+                          <label className="block text-xs sm:text-sm font-semibold text-[#78533F] flex items-center mb-2">
+                            <span className="mr-2">⏰</span>Time Slot
+                          </label>
                           <input
                             type="text"
                             value={formData.timeSlot}
                             readOnly
-                            className="w-full p-2 sm:p-3 border border-gray-300 text-gray-700 rounded-lg bg-gray-50 text-sm sm:text-base"
+                            className="w-full p-2 sm:p-3 border-2 border-[#b09d94] text-[#3C3A39] rounded-xl bg-[#f5f5f5] text-xs sm:text-sm"
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Total Amount</label>
+                          <label className="block text-xs sm:text-sm font-semibold text-[#78533F] flex items-center mb-2">
+                            <span className="mr-2">💰</span>Total Amount
+                          </label>
                           <input
                             type="text"
                             value={formData.totalAmount}
                             onChange={(e) => handleInputChange("totalAmount", e.target.value)}
-                            className="w-full p-2 sm:p-3 border border-gray-300 text-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553] transition-all text-sm sm:text-base"
+                            className="w-full p-2 sm:p-3 border-2 border-[#b09d94] text-[#3C3A39] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ED695A] focus:border-transparent transition-all text-xs sm:text-sm"
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Advance Amount</label>
+                          <label className="block text-xs sm:text-sm font-semibold text-[#78533F] flex items-center mb-2">
+                            <span className="mr-2">💸</span>Advance Amount
+                          </label>
                           <input
                             type="text"
                             value={formData.advanceAmount}
                             onChange={(e) => handleInputChange("advanceAmount", e.target.value)}
-                            className="w-full p-2 sm:p-3 border border-gray-300 text-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553] transition-all text-sm sm:text-base"
+                            className="w-full p-2 sm:p-3 border-2 border-[#b09d94] text-[#3C3A39] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ED695A] focus:border-transparent transition-all text-xs sm:text-sm"
                           />
                         </div>
                         <button
                           onClick={handleFormSubmit}
-                          className="w-full mt-4 sm:mt-6 bg-[#876553] text-white py-2 sm:py-3 px-4 sm:px-6 rounded-lg font-semibold hover:bg-[#6e4e3d] transition-all shadow-md hover:shadow-lg text-sm sm:text-base"
+                          className="w-full mt-4 sm:mt-6 bg-[#ED695A] hover:bg-[#d85c4e] text-white py-2 sm:py-3 px-4 sm:px-6 rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl transform hover:scale-105 text-xs sm:text-sm"
                         >
                           Proceed to Payment
                         </button>
@@ -755,72 +772,93 @@ const Bookings: React.FC = () => {
                   )}
                   {currentPage === "payment" && (
                     <div className="p-4 sm:p-6 lg:p-8">
-                      <div className="flex items-center justify-between mb-4 sm:mb-6 lg:mb-8">
+                      <div className="flex items-center justify-between mb-4 sm:mb-6 border-b-2 border-[#b09d94] pb-4">
                         <div className="text-center flex-1">
-                          <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-[#845e38]">Payment</h2>
-                          <p className="text-sm sm:text-base text-gray-600">Select your payment method</p>
+                          <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-[#78533F]">
+                            💳 Payment
+                          </h2>
+                          <p className="text-xs sm:text-sm text-[#3C3A39]">Select your payment method</p>
                         </div>
-                        <button onClick={closeModal} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-                          <X className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
+                        <button
+                          onClick={closeModal}
+                          className="p-2 hover:bg-[#FDF8F1] rounded-full transition-all transform hover:scale-105"
+                        >
+                          <X className="w-5 h-5 sm:w-6 sm:h-6 text-[#3C3A39]" />
                         </button>
                       </div>
-
                       <div className="space-y-4 sm:space-y-6">
-                        <div className="bg-gray-50 p-3 sm:p-4 rounded-lg">
-                          <p className="text-sm sm:text-base text-gray-700">Venue: {formData.venueName}</p>
-                          <p className="text-sm sm:text-base text-gray-700">Date: {formData.bookingDate}</p>
-                          <p className="text-sm sm:text-base text-gray-700">Time: {formData.timeSlot}</p>
-                          <p className="text-sm sm:text-base text-gray-700">Total Amount: {formData.totalAmount}</p>
-                          <p className="text-sm sm:text-base text-gray-700">Advance Amount: {formData.advanceAmount}</p>
+                        <div className="bg-white p-3 sm:p-4 rounded-xl border-2 border-[#b09d94]">
+                          <p className="text-xs sm:text-sm text-[#78533F] font-medium">Venue: {formData.venueName}</p>
+                          <p className="text-xs sm:text-sm text-[#78533F] font-medium">Date: {formData.bookingDate}</p>
+                          <p className="text-xs sm:text-sm text-[#78533F] font-medium">Time: {formData.timeSlot}</p>
+                          <p className="text-xs sm:text-sm text-[#78533F] font-medium">
+                            Total Amount: ₹{Number(formData.totalAmount).toLocaleString("en-IN")}
+                          </p>
+                          <p className="text-xs sm:text-sm text-[#78533F] font-medium">
+                            Advance Amount: ₹{Number(formData.advanceAmount).toLocaleString("en-IN")}
+                          </p>
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Payment Type</label>
+                          <label className="block text-xs sm:text-sm font-semibold text-[#78533F] flex items-center mb-2">
+                            <span className="mr-2">💰</span>Payment Type
+                          </label>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                            <label className="flex items-center gap-2 p-3 sm:p-4 rounded-lg border border-gray-300 cursor-pointer hover:bg-gray-50">
+                            <label className="flex items-center gap-2 p-3 sm:p-4 rounded-xl border-2 border-[#b09d94] cursor-pointer hover:bg-[#FDF8F1] transition-all transform hover:scale-105">
                               <input
                                 type="radio"
                                 name="paymentType"
                                 value="full"
                                 checked={formData.paymentType === "full"}
                                 onChange={() => handlePaymentTypeChange("full")}
-                                className="text-[#876553] focus:ring-[#876553]"
+                                className="text-[#ED695A] focus:ring-[#ED695A]"
                               />
-                              <span className="text-sm sm:text-base">Full Payment ({formData.totalAmount})</span>
+                              <span className="text-xs sm:text-sm text-[#3C3A39]">
+                                Full Payment (₹{Number(formData.totalAmount).toLocaleString("en-IN")})
+                              </span>
                             </label>
-                            <label className="flex items-center gap-2 p-3 sm:p-4 rounded-lg border border-gray-300 cursor-pointer hover:bg-gray-50">
+                            <label className="flex items-center gap-2 p-3 sm:p-4 rounded-xl border-2 border-[#b09d94] cursor-pointer hover:bg-[#FDF8F1] transition-all transform hover:scale-105">
                               <input
                                 type="radio"
                                 name="paymentType"
                                 value="advance"
                                 checked={formData.paymentType === "advance"}
                                 onChange={() => handlePaymentTypeChange("advance")}
-                                className="text-[#876553] focus:ring-[#876553]"
+                                className="text-[#ED695A] focus:ring-[#ED695A]"
                               />
-                              <span className="text-sm sm:text-base">Advance Payment ({formData.advanceAmount})</span>
+                              <span className="text-xs sm:text-sm text-[#3C3A39]">
+                                Advance Payment (₹{Number(formData.advanceAmount).toLocaleString("en-IN")})
+                              </span>
                             </label>
                           </div>
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
+                          <label className="block text-xs sm:text-sm font-semibold text-[#78533F] flex items-center mb-2">
+                            <span className="mr-2">🏦</span>Payment Method
+                          </label>
                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-                            {["Credit/Debit Card", "UPI", "Net Banking"].map((method) => (
+                            {[
+                              { id: "Credit/Debit Card", icon: "💳" },
+                              { id: "UPI", icon: "📱" },
+                              { id: "Net Banking", icon: "🏦" },
+                            ].map((method) => (
                               <button
-                                key={method}
-                                onClick={() => setSelectedPaymentMethod(method)}
-                                className={`p-3 sm:p-4 rounded-lg border text-gray-700 transition-all shadow-sm text-sm sm:text-base ${
-                                  selectedPaymentMethod === method
-                                    ? "bg-[#876553] text-white border-[#876553]"
-                                    : "bg-white border-gray-300 hover:bg-[#f5e8df] hover:border-[#876553]"
+                                key={method.id}
+                                onClick={() => setSelectedPaymentMethod(method.id)}
+                                className={`p-3 sm:p-4 rounded-xl border-2 border-[#b09d94] text-[#3C3A39] transition-all shadow-lg text-xs sm:text-sm ${
+                                  selectedPaymentMethod === method.id
+                                    ? "bg-[#ED695A] text-white border-[#ED695A]"
+                                    : "bg-white hover:bg-[#FDF8F1] hover:border-[#ED695A] hover:scale-105"
                                 }`}
                               >
-                                {method}
+                                <span className="mr-2">{method.icon}</span>
+                                {method.id}
                               </button>
                             ))}
                           </div>
                         </div>
                         <button
                           onClick={handlePaymentSubmit}
-                          className="w-full mt-4 sm:mt-6 bg-[#876553] text-white py-2 sm:py-3 px-4 sm:px-6 rounded-lg font-semibold hover:bg-[#6e4e3d] transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+                          className="w-full mt-4 sm:mt-6 bg-[#ED695A] hover:bg-[#d85c4e] text-white py-2 sm:py-3 px-4 sm:px-6 rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm"
                           disabled={!selectedPaymentMethod}
                         >
                           Complete Payment
@@ -830,12 +868,12 @@ const Bookings: React.FC = () => {
                   )}
                   {currentPage === "success" && (
                     <div className="p-4 sm:p-6 lg:p-8">
-                      <div className="flex items-center justify-between mb-4 sm:mb-6 lg:mb-8">
+                      <div className="flex items-center justify-between mb-4 sm:mb-6 border-b-2 border-[#b09d94] pb-4">
                         <div className="text-center flex-1">
-                          <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-[#845e38]">
-                            Booking Confirmed!
+                          <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-[#78533F]">
+                            🎉 Booking Confirmed!
                           </h2>
-                          <p className="text-sm sm:text-base text-gray-600">
+                          <p className="text-xs sm:text-sm text-[#3C3A39]">
                             Your booking has been successfully completed
                           </p>
                         </div>
@@ -844,28 +882,35 @@ const Bookings: React.FC = () => {
                             closeModal()
                             navigate("/")
                           }}
-                          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                          className="p-2 hover:bg-[#FDF8F1] rounded-full transition-all transform hover:scale-105"
                         >
-                          <X className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
+                          <X className="w-5 h-5 sm:w-6 sm:h-6 text-[#3C3A39]" />
                         </button>
                       </div>
-
-                      <div className="space-y-3 sm:space-y-4 text-center">
+                      <div className="space-y-4 sm:space-y-6 text-center">
                         <div className="flex justify-center">
                           <CheckCircle className="w-12 h-12 sm:w-16 sm:h-16 text-green-500" />
                         </div>
-                        <div className="bg-gray-50 p-3 sm:p-4 rounded-lg">
-                          <p className="text-sm sm:text-base text-gray-700">Venue: {formData.venueName}</p>
-                          <p className="text-sm sm:text-base text-gray-700">Date: {formData.bookingDate}</p>
-                          <p className="text-sm sm:text-base text-gray-700">Time: {formData.timeSlot}</p>
-                          <p className="text-sm sm:text-base text-gray-700">Event Type: {eventType}</p>
-                          <p className="text-sm sm:text-base text-gray-700">AC Option: {acOption}</p>
-                          <p className="text-sm sm:text-base text-gray-700">Address: {formData.address}</p>
-                          <p className="text-sm sm:text-base text-gray-700">Total Amount: {formData.totalAmount}</p>
-                          <p className="text-sm sm:text-base text-gray-700">Paid Amount: {formData.paidAmount}</p>
-                          <p className="text-sm sm:text-base text-gray-700">Balance Amount: {formData.balanceAmount}</p>
-                          <p className="text-sm sm:text-base text-gray-700">Payment Method: {selectedPaymentMethod}</p>
-                          <p className="text-sm sm:text-base text-gray-700">
+                        <div className="bg-white p-3 sm:p-4 rounded-xl border-2 border-[#b09d94]">
+                          <p className="text-xs sm:text-sm text-[#78533F] font-medium">Venue: {formData.venueName}</p>
+                          <p className="text-xs sm:text-sm text-[#78533F] font-medium">Date: {formData.bookingDate}</p>
+                          <p className="text-xs sm:text-sm text-[#78533F] font-medium">Time: {formData.timeSlot}</p>
+                          <p className="text-xs sm:text-sm text-[#78533F] font-medium">Event Type: {eventType}</p>
+                          <p className="text-xs sm:text-sm text-[#78533F] font-medium">AC Option: {acOption}</p>
+                          <p className="text-xs sm:text-sm text-[#78533F] font-medium">Address: {formData.address}</p>
+                          <p className="text-xs sm:text-sm text-[#78533F] font-medium">
+                            Total Amount: ₹{Number(formData.totalAmount).toLocaleString("en-IN")}
+                          </p>
+                          <p className="text-xs sm:text-sm text-[#78533F] font-medium">
+                            Paid Amount: ₹{Number(formData.paidAmount).toLocaleString("en-IN")}
+                          </p>
+                          <p className="text-xs sm:text-sm text-[#78533F] font-medium">
+                            Balance Amount: ₹{Number(formData.balanceAmount).toLocaleString("en-IN")}
+                          </p>
+                          <p className="text-xs sm:text-sm text-[#78533F] font-medium">
+                            Payment Method: {selectedPaymentMethod}
+                          </p>
+                          <p className="text-xs sm:text-sm text-[#78533F] font-medium">
                             Reference ID: {Math.random().toString(36).substr(2, 9).toUpperCase()}
                           </p>
                         </div>
@@ -874,7 +919,7 @@ const Bookings: React.FC = () => {
                             closeModal()
                             navigate("/")
                           }}
-                          className="w-full mt-4 sm:mt-6 bg-[#876553] text-white py-2 sm:py-3 px-4 sm:px-6 rounded-lg font-semibold hover:bg-[#6e4e3d] transition-all shadow-md hover:shadow-lg text-sm sm:text-base"
+                          className="w-full mt-4 sm:mt-6 bg-[#ED695A] hover:bg-[#d85c4e] text-white py-2 sm:py-3 px-4 sm:px-6 rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl transform hover:scale-105 text-xs sm:text-sm"
                         >
                           Okay
                         </button>
