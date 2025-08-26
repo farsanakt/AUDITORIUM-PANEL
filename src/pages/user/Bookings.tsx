@@ -23,7 +23,7 @@ class ErrorBoundary extends Component<{ children: React.ReactNode }, { hasError:
       return (
         <div className="p-4 text-[#3C3A39]">
           <h2 className="text-xl font-bold text-[#78533F]">Something went wrong!</h2>
-          <p className="text-[#3C3A39]">{this.state.error?.message || "An unexpected error occurred"}</p>
+          <p className="text-[#3C3A39]">{this.state.error || "An unexpected error occurred"}</p>
           <button
             className="mt-4 bg-[#ED695A] hover:bg-[#d85c4e] text-white py-2 px-4 rounded-xl shadow-lg transition-all transform hover:scale-105 text-sm"
             onClick={() => window.location.reload()}
@@ -745,8 +745,8 @@ const Bookings: React.FC = () => {
                           </label>
                           <input
                             type="text"
-                            value={formData.totalAmount}
-                            onChange={(e) => handleInputChange("totalAmount", e.target.value)}
+                            value={formData.totalAmount ? `₹${formData.totalAmount}` : ""}
+                            onChange={(e) => handleInputChange("totalAmount", e.target.value.replace("₹", ""))}
                             className="w-full p-2 sm:p-3 border-2 border-[#b09d94] text-[#3C3A39] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ED695A] focus:border-transparent transition-all text-xs sm:text-sm"
                           />
                         </div>
@@ -756,8 +756,8 @@ const Bookings: React.FC = () => {
                           </label>
                           <input
                             type="text"
-                            value={formData.advanceAmount}
-                            onChange={(e) => handleInputChange("advanceAmount", e.target.value)}
+                            value={formData.advanceAmount ? `₹${formData.advanceAmount}` : ""}
+                            onChange={(e) => handleInputChange("advanceAmount", e.target.value.replace("₹", ""))}
                             className="w-full p-2 sm:p-3 border-2 border-[#b09d94] text-[#3C3A39] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ED695A] focus:border-transparent transition-all text-xs sm:text-sm"
                           />
                         </div>

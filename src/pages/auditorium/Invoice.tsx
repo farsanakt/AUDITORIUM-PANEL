@@ -254,8 +254,8 @@ const InvoicePanel: React.FC = () => {
                       <td className="p-3">{invoice.bookingDetails.date}</td>
                       <td className="p-3">{invoice.bookingDetails.timeSlot}</td>
                       <td className="p-3">{invoice.userDetails.email}</td>
-                      <td className="p-3">${invoice.paymentDetails.totalAmount}</td>
-                      <td className="p-3">${invoice.paymentDetails.paidAmount}</td>
+                      <td className="p-3">₹{invoice.paymentDetails.totalAmount}</td>
+                      <td className="p-3">₹{invoice.paymentDetails.paidAmount}</td>
                       <td className="p-3">
                         <span
                           className={`px-2 py-1 rounded-full text-sm ${
@@ -343,11 +343,11 @@ const InvoicePanel: React.FC = () => {
                       <h3 className="font-semibold text-gray-800 text-base mb-2">Payment Details</h3>
                       <div className="grid grid-cols-2 gap-2 text-sm text-gray-700">
                         <span className="font-medium">Total Amount:</span>
-                        <span>${selectedInvoice.paymentDetails.totalAmount}</span>
+                        <span>₹{selectedInvoice.paymentDetails.totalAmount}</span>
                         <span className="font-medium">Paid Amount:</span>
-                        <span>${selectedInvoice.paymentDetails.paidAmount}</span>
+                        <span>₹{selectedInvoice.paymentDetails.paidAmount}</span>
                         <span className="font-medium">Balance Amount:</span>
-                        <span>${selectedInvoice.paymentDetails.balanceAmount}</span>
+                        <span>₹{selectedInvoice.paymentDetails.balanceAmount}</span>
                         <span className="font-medium">Status:</span>
                         <span>{selectedInvoice.paymentDetails.status}</span>
                         <span className="font-medium">Payment ID:</span>

@@ -41,7 +41,7 @@ const Dashboard: React.FC = () => {
 
           {/* Total Balance */}
           <div className="text-xl font-semibold text-[#825F4C] mb-4">
-            Total balance: <span className="text-[#ED695A]">$12,245</span>
+            Total balance: <span className="text-[#ED695A]">₹12,245</span>
           </div>
 
           {/* Stats Cards */}
@@ -52,7 +52,7 @@ const Dashboard: React.FC = () => {
             </div>
             <div className="bg-[#ED695A] text-white p-4 rounded-xl shadow">
               <p className="text-sm">Total Revenue</p>
-              <p className="text-2xl font-bold">$45,000</p>
+              <p className="text-2xl font-bold">₹45,000</p>
             </div>
             <div className="bg-[#825F4C] text-white p-4 rounded-xl shadow">
               <p className="text-sm">Upcoming Events</p>
