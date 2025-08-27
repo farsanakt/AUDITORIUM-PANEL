@@ -106,8 +106,8 @@ const VenueBookingPage: React.FC = () => {
 
   // User authentication states
   const [showEmailModal, setShowEmailModal] = useState(false)
+  const [showPhoneModal, setShowPhoneModal] = useState(false)
   const [showSignupModal, setShowSignupModal] = useState(false)
-  const [contactMethod, setContactMethod] = useState<"email" | "phone">("email")
   const [email, setEmail] = useState("")
   const [phone, setPhone] = useState("")
   const [communicationPreference, setCommunicationPreference] = useState<"whatsapp" | "sms" | null>(null)
@@ -122,6 +122,7 @@ const VenueBookingPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [contactError, setContactError] = useState("")
+  const [phoneError, setPhoneError] = useState("")
 
   // Booking confirmation states
   const [showBookingModal, setShowBookingModal] = useState(false)
@@ -285,19 +286,24 @@ const VenueBookingPage: React.FC = () => {
     }
   }
 
-  const isSelectable = (status: string) => {
-    return status === "available" || status === "partial"
+  const isSelectable = (status: string, date: number) => {
+    const targetDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), date)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    return (status === "available" || status === "partial") && targetDate >= today
   }
 
   const handleDateClick = (date: number) => {
     const status = getDateStatus(date, selectedVenue)
-    if (isSelectable(status) && selectedVenue !== "all") {
+    if (isSelectable(status, date) && selectedVenue !== "all") {
       const newDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), date)
       setSelectedDate(newDate)
       setSelectedDateForSlots(newDate)
       setShowTimeSlotsModal(true)
     } else if (selectedVenue === "all") {
       alert("Please select a specific venue to view available time slots.")
+    } else {
+      alert("Cannot book past dates.")
     }
   }
 
@@ -359,16 +365,17 @@ const VenueBookingPage: React.FC = () => {
   }
 
   const handleContactSubmit = async () => {
-    if (contactMethod === "email" && email.trim()) {
+    if (email.trim()) {
       try {
         const response = await checkUserExists(email)
         if (response.data.success) {
           setConfirmedUserEmail(email)
-          setConfirmedUserPhone("")
-          setConfirmedCommunicationPreference(null)
           setShowEmailModal(false)
-          setShowBookingModal(true)
+          setShowPhoneModal(true)
           setShowSignupLink(false)
+          setPhone("")
+          setCommunicationPreference(null)
+          setPhoneError("")
         } else {
           setContactError(response.data.message || "User not found.")
           setShowSignupLink(true)
@@ -378,20 +385,31 @@ const VenueBookingPage: React.FC = () => {
         setContactError("Something went wrong. Please try again.")
         setShowSignupLink(true)
       }
-    } else if (contactMethod === "phone" && phone.trim() && communicationPreference) {
-      setConfirmedUserEmail("")
-      setConfirmedUserPhone(phone)
-      setConfirmedCommunicationPreference(communicationPreference)
-      setShowEmailModal(false)
-      setShowBookingModal(true)
-      setShowSignupLink(false)
     } else {
-      setContactError(
-        contactMethod === "email"
-          ? "Please enter a valid email."
-          : "Please enter a valid phone number and select a communication preference."
-      )
+      setContactError("Please enter a valid email.")
     }
+  }
+
+  const handlePhoneSubmit = () => {
+    if (phone.trim() && !communicationPreference) {
+      setPhoneError("Please select a communication preference if providing a phone number.")
+      return
+    }
+    setConfirmedUserPhone(phone.trim() || "")
+    setConfirmedCommunicationPreference(phone.trim() ? communicationPreference : null)
+    setShowPhoneModal(false)
+    setShowBookingModal(true)
+    setPhoneError("")
+  }
+
+  const handlePhoneSkip = () => {
+    setConfirmedUserPhone("")
+    setConfirmedCommunicationPreference(null)
+    setShowPhoneModal(false)
+    setShowBookingModal(true)
+    setPhone("")
+    setCommunicationPreference(null)
+    setPhoneError("")
   }
 
   const handleSignupSubmit = async () => {
@@ -406,12 +424,13 @@ const VenueBookingPage: React.FC = () => {
         const response = await userSingUpRequest(signupData)
         console.log("Signup response:", response)
         if (response.success === true || response.data) {
-          console.log("User registered successfully, going to booking modal")
+          console.log("User registered successfully, going to phone modal")
           setConfirmedUserEmail(email)
-          setConfirmedUserPhone("")
-          setConfirmedCommunicationPreference(null)
           setShowSignupModal(false)
-          setShowBookingModal(true)
+          setShowPhoneModal(true)
+          setPhone("")
+          setCommunicationPreference(null)
+          setPhoneError("")
           setSignupData({
             firstName: "",
             lastName: "",
@@ -485,6 +504,8 @@ const VenueBookingPage: React.FC = () => {
       totalAmount: currentVenue?.totalamount,
       advanceAmount: currentVenue?.advAmnt,
       address: userAddress,
+      phoneNumber: confirmedUserPhone, // Added phone number
+      communicationType: confirmedCommunicationPreference // Added communication preference
     }
 
     try {
@@ -503,6 +524,8 @@ const VenueBookingPage: React.FC = () => {
     const daysInMonth = getDaysInMonth(currentMonth)
     const firstDay = getFirstDayOfMonth(currentMonth)
     const days = []
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
 
     for (let i = 0; i < firstDay; i++) {
       days.push(<div key={`empty-${i}`} className="h-10 w-10"></div>)
@@ -514,19 +537,20 @@ const VenueBookingPage: React.FC = () => {
         selectedDate.getDate() === day &&
         selectedDate.getMonth() === currentMonth.getMonth() &&
         selectedDate.getFullYear() === currentMonth.getFullYear()
+      const targetDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)
+      const isPastDate = targetDate < today
 
       days.push(
         <div
           key={day}
-          onClick={() => handleDateClick(day)}
+          onClick={() => !isPastDate && handleDateClick(day)}
           onMouseEnter={(e) => handleMouseEnter(e, day)}
           onMouseLeave={handleMouseLeave}
           className={`
-            h-10 w-10 rounded-full flex items-center justify-center text-sm font-semibold cursor-pointer
+            h-10 w-10 rounded-full flex items-center justify-center text-sm font-semibold
             transition-all duration-300 ease-in-out transform hover:scale-110
-            ${getStatusColor(status)} text-white shadow-md hover:shadow-lg
-            ${isSelected ? "ring-2 ring-offset-2 ring-gray-900" : ""}
-            ${isSelectable(status) ? "hover:shadow-xl" : "cursor-not-allowed opacity-80"}
+            ${isPastDate ? "bg-gray-400 cursor-not-allowed opacity-80 text-white" : `${getStatusColor(status)} text-white shadow-md hover:shadow-lg ${isSelectable(status, day) ? "hover:shadow-xl cursor-pointer" : "cursor-not-allowed opacity-80"}`}
+            ${isSelected && !isPastDate ? "ring-2 ring-offset-2 ring-gray-900" : ""}
           `}
         >
           {day}
@@ -542,6 +566,8 @@ const VenueBookingPage: React.FC = () => {
     const miniDaysInMonth = getDaysInMonth(miniDate)
     const miniFirstDay = getFirstDayOfMonth(miniDate)
     const miniDays = []
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
 
     for (let i = 0; i < miniFirstDay; i++) {
       miniDays.push(<div key={`mini-empty-${i}`} className="h-6 w-6"></div>)
@@ -549,7 +575,10 @@ const VenueBookingPage: React.FC = () => {
 
     for (let day = 1; day <= miniDaysInMonth; day++) {
       const status = getDateStatus(day, selectedVenue, miniDate)
-      const getMiniStatusColor = (status: string) => {
+      const targetDate = new Date(miniDate.getFullYear(), miniDate.getMonth(), day)
+      const isPastDate = targetDate < today
+      const getMiniStatusColor = (status: string, isPast: boolean) => {
+        if (isPast) return "bg-gray-400 text-white"
         switch (status) {
           case "available":
             return "bg-green-600 text-white"
@@ -565,7 +594,7 @@ const VenueBookingPage: React.FC = () => {
       miniDays.push(
         <div
           key={day}
-          className={`h-6 w-6 flex items-center justify-center text-xs font-medium rounded-full transition-colors ${getMiniStatusColor(status)}`}
+          className={`h-6 w-6 flex items-center justify-center text-xs font-medium rounded-full transition-colors ${getMiniStatusColor(status, isPastDate)}`}
         >
           {day}
         </div>,
@@ -763,6 +792,10 @@ const VenueBookingPage: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-4 rounded-full bg-yellow-600 shadow-sm"></div>
                   <span className="text-gray-700 font-medium">Partially Booked</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded-full bg-gray-400 shadow-sm"></div>
+                  <span className="text-gray-700 font-medium">Past Date</span>
                 </div>
               </div>
             </div>
@@ -995,21 +1028,18 @@ const VenueBookingPage: React.FC = () => {
         </div>
       )}
 
-      {/* Contact Modal */}
+      {/* Email Modal */}
       {showEmailModal && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50 animate-fade-in">
           <div className="bg-[#FDF8F1] rounded-lg shadow-lg max-w-md w-full mx-4 p-6 border border-gray-200 animate-scale-in">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-semibold text-[#78533F]">Enter Contact Details</h3>
+              <h3 className="text-xl font-semibold text-[#78533F]">Enter Your Email</h3>
               <button
                 onClick={() => {
                   setShowEmailModal(false)
                   setContactError("")
                   setShowSignupLink(false)
-                  setContactMethod("email")
                   setEmail("")
-                  setPhone("")
-                  setCommunicationPreference(null)
                 }}
                 className="p-1 hover:bg-gray-100 rounded-full"
               >
@@ -1034,101 +1064,28 @@ const VenueBookingPage: React.FC = () => {
               </div>
             </div>
             <p className="mb-4 text-gray-600 text-sm">
-              Please enter your email or phone number to proceed with the booking. This field is mandatory for future
+              Please enter your email to proceed with the booking. This field is mandatory for future
               processing and communication.
             </p>
             <div className="mb-4">
-              <div className="flex gap-4 mb-2">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    value="email"
-                    checked={contactMethod === "email"}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                      setContactMethod(e.target.value as "email" | "phone")
-                      setPhone("")
-                      setCommunicationPreference(null)
-                      setContactError("")
-                    }}
-                    className="text-[#ED695A] focus:ring-[#ED695A]"
-                  />
-                  <span className="text-sm text-gray-700">Email</span>
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    value="phone"
-                    checked={contactMethod === "phone"}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                      setContactMethod(e.target.value as "email" | "phone")
-                      setEmail("")
-                      setContactError("")
-                    }}
-                    className="text-[#ED695A] focus:ring-[#ED695A]"
-                  />
-                  <span className="text-sm text-gray-700">Phone</span>
-                </label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value)
+                    setContactError("")
+                    setShowSignupLink(false)
+                  }}
+                  placeholder="Enter your email"
+                  className="w-full pl-10 pr-3 py-2 border-2 border-[#b09d94] border-opacity-50 rounded-md focus:outline-none focus:border-[#ED695A] focus:ring-1 focus:ring-[#ED695A] focus:ring-opacity-20 text-sm"
+                />
               </div>
-              {contactMethod === "email" ? (
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => {
-                      setEmail(e.target.value)
-                      setContactError("")
-                      setShowSignupLink(false)
-                    }}
-                    placeholder="Enter your email"
-                    className="w-full pl-10 pr-3 py-2 border-2 border-[#b09d94] border-opacity-50 rounded-md focus:outline-none focus:border-[#ED695A] focus:ring-1 focus:ring-[#ED695A] focus:ring-opacity-20 text-sm"
-                  />
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                    <input
-                      type="tel"
-                      value={phone}
-                      onChange={(e) => {
-                        setPhone(e.target.value)
-                        setContactError("")
-                      }}
-                      placeholder="Enter your phone number"
-                      className="w-full pl-10 pr-3 py-2 border-2 border-[#b09d94] border-opacity-50 rounded-md focus:outline-none focus:border-[#ED695A] focus:ring-1 focus:ring-[#ED695A] focus:ring-opacity-20 text-sm"
-                    />
-                  </div>
-                  {phone.trim() && (
-                    <div className="flex gap-4">
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="radio"
-                          value="whatsapp"
-                          checked={communicationPreference === "whatsapp"}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCommunicationPreference(e.target.value as "whatsapp" | "sms")}
-                          className="text-[#ED695A] focus:ring-[#ED695A]"
-                        />
-                        <span className="text-sm text-gray-700">WhatsApp</span>
-                      </label>
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="radio"
-                          value="sms"
-                          checked={communicationPreference === "sms"}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCommunicationPreference(e.target.value as "whatsapp" | "sms")}
-                          className="text-[#ED695A] focus:ring-[#ED695A]"
-                        />
-                        <span className="text-sm text-gray-700">SMS</span>
-                      </label>
-                    </div>
-                  )}
-                </div>
-              )}
               {contactError && <p className="text-red-600 text-sm mt-1 px-1">{contactError}</p>}
             </div>
 
-            {showSignupLink && contactMethod === "email" && (
+            {showSignupLink && (
               <div className="text-center mb-4">
                 <p className="text-sm text-gray-600">New Customer?</p>
                 <button
@@ -1149,10 +1106,7 @@ const VenueBookingPage: React.FC = () => {
                   setShowEmailModal(false)
                   setContactError("")
                   setShowSignupLink(false)
-                  setContactMethod("email")
                   setEmail("")
-                  setPhone("")
-                  setCommunicationPreference(null)
                 }}
                 className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-all duration-300 text-gray-700 text-sm"
               >
@@ -1160,6 +1114,97 @@ const VenueBookingPage: React.FC = () => {
               </button>
               <button
                 onClick={handleContactSubmit}
+                className="px-4 py-2 bg-[#ED695A] text-white rounded-md hover:bg-[#fcaca4] transition-all duration-300 text-sm"
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Phone Modal */}
+      {showPhoneModal && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50 animate-fade-in">
+          <div className="bg-[#FDF8F1] rounded-lg shadow-lg max-w-md w-full mx-4 p-6 border border-gray-200 animate-scale-in">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold text-[#78533F]">Enter Mobile for Updates (Optional)</h3>
+              <button
+                onClick={() => handlePhoneSkip()}
+                className="p-1 hover:bg-gray-100 rounded-full"
+              >
+                <X className="h-4 w-4 text-gray-600" />
+              </button>
+            </div>
+            <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+              <p className="text-sm text-gray-600 mb-2">Booking Details:</p>
+              <div className="space-y-1">
+                <p className="text-sm">
+                  <span className="font-medium">Date:</span> {selectedDate.toLocaleDateString()}
+                </p>
+                <p className="text-sm">
+                  <span className="font-medium">Time Slot:</span> {selectedTimeSlot?.label}
+                </p>
+                <p className="text-sm">
+                  <span className="font-medium">Time:</span> {selectedTimeSlot?.startTime} - {selectedTimeSlot?.endTime}
+                </p>
+                <p className="text-sm">
+                  <span className="font-medium">Venue:</span> {getCurrentVenue()?.name}
+                </p>
+              </div>
+            </div>
+            <p className="mb-4 text-gray-600 text-sm">
+              Provide your mobile number for future updates. You can skip this step if you prefer.
+            </p>
+            <div className="mb-4">
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => {
+                    setPhone(e.target.value)
+                    setPhoneError("")
+                  }}
+                  placeholder="Enter your phone number (optional)"
+                  className="w-full pl-10 pr-3 py-2 border-2 border-[#b09d94] border-opacity-50 rounded-md focus:outline-none focus:border-[#ED695A] focus:ring-1 focus:ring-[#ED695A] focus:ring-opacity-20 text-sm"
+                />
+              </div>
+              {phone.trim() && (
+                <div className="flex gap-4 mt-4">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      value="whatsapp"
+                      checked={communicationPreference === "whatsapp"}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCommunicationPreference(e.target.value as "whatsapp" | "sms")}
+                      className="text-[#ED695A] focus:ring-[#ED695A]"
+                    />
+                    <span className="text-sm text-gray-700">WhatsApp</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      value="sms"
+                      checked={communicationPreference === "sms"}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCommunicationPreference(e.target.value as "whatsapp" | "sms")}
+                      className="text-[#ED695A] focus:ring-[#ED695A]"
+                    />
+                    <span className="text-sm text-gray-700">SMS</span>
+                  </label>
+                </div>
+              )}
+              {phoneError && <p className="text-red-600 text-sm mt-1 px-1">{phoneError}</p>}
+            </div>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={handlePhoneSkip}
+                className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-all duration-300 text-gray-700 text-sm"
+              >
+                Skip
+              </button>
+              <button
+                onClick={handlePhoneSubmit}
                 className="px-4 py-2 bg-[#ED695A] text-white rounded-md hover:bg-[#fcaca4] transition-all duration-300 text-sm"
               >
                 Continue

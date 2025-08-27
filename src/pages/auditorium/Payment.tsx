@@ -24,6 +24,8 @@ export default function PaymentDetails() {
   const bookingData = location.state
   const navigate = useNavigate()
 
+
+
   const handlePayment = async () => {
     setIsProcessing(true)
     try {
@@ -40,7 +42,9 @@ export default function PaymentDetails() {
         timeSlot: bookingData.selectedTimeSlot,
         address: bookingData.address,
         paymentType: paymentType,
-        paymentMethod: paymentMethod
+        paymentMethod: paymentMethod,
+        phone:bookingData.userPhone,
+        communicationPrefer:bookingData.communicationType
       }
 
       
@@ -70,6 +74,8 @@ export default function PaymentDetails() {
 
   useEffect(() => {
     customerDetails()
+    console.log('gfgfgg',bookingData.communicationType
+)
   }, [])
 
   const handleGoBack = () => {
