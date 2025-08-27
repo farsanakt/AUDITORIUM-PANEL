@@ -16,6 +16,8 @@ import {
   CreditCard,
   Calendar,
   Building2,
+  Menu,
+  Phone,
 } from "lucide-react"
 import Header from "../../component/user/Header"
 import Sidebar from "../../component/auditorium/Sidebar"
@@ -100,11 +102,15 @@ const VenueBookingPage: React.FC = () => {
   const [showTimeSlotsModal, setShowTimeSlotsModal] = useState(false)
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<TimeSlot | null>(null)
   const [selectedDateForSlots, setSelectedDateForSlots] = useState<Date | null>(null)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
   // User authentication states
   const [showEmailModal, setShowEmailModal] = useState(false)
   const [showSignupModal, setShowSignupModal] = useState(false)
+  const [contactMethod, setContactMethod] = useState<"email" | "phone">("email")
   const [email, setEmail] = useState("")
+  const [phone, setPhone] = useState("")
+  const [communicationPreference, setCommunicationPreference] = useState<"whatsapp" | "sms" | null>(null)
   const [showSignupLink, setShowSignupLink] = useState(false)
   const [signupData, setSignupData] = useState({
     firstName: "",
@@ -115,11 +121,14 @@ const VenueBookingPage: React.FC = () => {
   })
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [contactError, setContactError] = useState("")
 
   // Booking confirmation states
   const [showBookingModal, setShowBookingModal] = useState(false)
   const [userAddress, setUserAddress] = useState("")
   const [confirmedUserEmail, setConfirmedUserEmail] = useState("")
+  const [confirmedUserPhone, setConfirmedUserPhone] = useState("")
+  const [confirmedCommunicationPreference, setConfirmedCommunicationPreference] = useState<"whatsapp" | "sms" | null>(null)
   const [isSubmittingBooking, setIsSubmittingBooking] = useState(false)
 
   // Main component states
@@ -132,7 +141,6 @@ const VenueBookingPage: React.FC = () => {
   const [venues, setVenues] = useState<Venue[]>([])
   const [bookings, setBookings] = useState<Booking[]>([])
   const [loading, setLoading] = useState(true)
-  const [emailError, setEmailError] = useState<string>("")
 
   const navigate = useNavigate()
   const { currentUser } = useSelector((state: RootState) => state.auth)
@@ -350,26 +358,39 @@ const VenueBookingPage: React.FC = () => {
     setTooltip(null)
   }
 
-  const handleEmailSubmit = async () => {
-    if (email.trim()) {
+  const handleContactSubmit = async () => {
+    if (contactMethod === "email" && email.trim()) {
       try {
         const response = await checkUserExists(email)
         if (response.data.success) {
           setConfirmedUserEmail(email)
+          setConfirmedUserPhone("")
+          setConfirmedCommunicationPreference(null)
           setShowEmailModal(false)
           setShowBookingModal(true)
           setShowSignupLink(false)
         } else {
-          setEmailError(response.data.message || "User not found.")
+          setContactError(response.data.message || "User not found.")
           setShowSignupLink(true)
         }
       } catch (error) {
         console.error("Unexpected error:", error)
-        setEmailError("Something went wrong. Please try again.")
+        setContactError("Something went wrong. Please try again.")
         setShowSignupLink(true)
       }
+    } else if (contactMethod === "phone" && phone.trim() && communicationPreference) {
+      setConfirmedUserEmail("")
+      setConfirmedUserPhone(phone)
+      setConfirmedCommunicationPreference(communicationPreference)
+      setShowEmailModal(false)
+      setShowBookingModal(true)
+      setShowSignupLink(false)
     } else {
-      setEmailError("Please enter a valid email.")
+      setContactError(
+        contactMethod === "email"
+          ? "Please enter a valid email."
+          : "Please enter a valid phone number and select a communication preference."
+      )
     }
   }
 
@@ -387,6 +408,8 @@ const VenueBookingPage: React.FC = () => {
         if (response.success === true || response.data) {
           console.log("User registered successfully, going to booking modal")
           setConfirmedUserEmail(email)
+          setConfirmedUserPhone("")
+          setConfirmedCommunicationPreference(null)
           setShowSignupModal(false)
           setShowBookingModal(true)
           setSignupData({
@@ -452,6 +475,8 @@ const VenueBookingPage: React.FC = () => {
 
     const bookingData = {
       userEmail: confirmedUserEmail,
+      userPhone: confirmedUserPhone,
+      communicationPreference: confirmedCommunicationPreference,
       venueId: selectedVenue,
       venueName: currentVenue?.name,
       selectedDate: formatDateForBackend(selectedDate),
@@ -577,13 +602,31 @@ const VenueBookingPage: React.FC = () => {
   }
 
   return (
-    <div className="flex min-h-screen bg-[#FDF8F1]">
+    <div className="min-h-screen bg-[#FDF8F1] flex flex-col">
       <Header />
-      <div className="w-64 shrink-0 h-[calc(100vh-64px)] sticky top-16 hidden md:block bg-[#FDF8F1] text-[#4A3728]">
+      <div className="flex flex-1">
+        {/* Sidebar */}
         <Sidebar />
-      </div>
-      <div className="flex-1 flex flex-col mt-16 overflow-auto">
-        <main className="flex-1 p-4 md:p-6 lg:p-8">
+
+        {/* Mobile Sidebar Toggle */}
+        <button
+          className="md:hidden fixed top-20 left-4 z-30 p-2 bg-[#ED695A] text-white rounded-md focus:outline-none"
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          aria-label="Toggle sidebar"
+        >
+          <Menu className="h-6 w-6" />
+        </button>
+
+        {/* Overlay for mobile sidebar */}
+        {isSidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 z-10 md:hidden"
+            onClick={() => setIsSidebarOpen(false)}
+          ></div>
+        )}
+
+        {/* Main Content */}
+        <main className="flex-1 p-6 w-full max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
             <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
               <select
@@ -837,13 +880,25 @@ const VenueBookingPage: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   {/* Left */}
                   <div className="space-y-4">
-                    <div className="flex items-start gap-3">
-                      <Mail className="h-5 w-5 mt-1 text-[#b09d94]" />
-                      <div>
-                        <p className="text-xs text-[#876553] uppercase tracking-wide">Email</p>
-                        <p className="text-sm font-medium text-[#3C3A39]">{confirmedUserEmail}</p>
+                    {confirmedUserEmail && (
+                      <div className="flex items-start gap-3">
+                        <Mail className="h-5 w-5 mt-1 text-[#b09d94]" />
+                        <div>
+                          <p className="text-xs text-[#876553] uppercase tracking-wide">Email</p>
+                          <p className="text-sm font-medium text-[#3C3A39]">{confirmedUserEmail}</p>
+                        </div>
                       </div>
-                    </div>
+                    )}
+                    {confirmedUserPhone && (
+                      <div className="flex items-start gap-3">
+                        <Phone className="h-5 w-5 mt-1 text-[#b09d94]" />
+                        <div>
+                          <p className="text-xs text-[#876553] uppercase tracking-wide">Phone</p>
+                          <p className="text-sm font-medium text-[#3C3A39]">{confirmedUserPhone}</p>
+                          <p className="text-xs text-[#876553] capitalize">{confirmedCommunicationPreference}</p>
+                        </div>
+                      </div>
+                    )}
                     <div className="flex items-start gap-3">
                       <Building2 className="h-5 w-5 mt-1 text-[#b09d94]" />
                       <div>
@@ -940,17 +995,21 @@ const VenueBookingPage: React.FC = () => {
         </div>
       )}
 
-      {/* Email Modal */}
+      {/* Contact Modal */}
       {showEmailModal && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50 animate-fade-in">
           <div className="bg-[#FDF8F1] rounded-lg shadow-lg max-w-md w-full mx-4 p-6 border border-gray-200 animate-scale-in">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-semibold text-[#78533F]">Enter Your Email</h3>
+              <h3 className="text-xl font-semibold text-[#78533F]">Enter Contact Details</h3>
               <button
                 onClick={() => {
                   setShowEmailModal(false)
-                  setEmailError("")
+                  setContactError("")
                   setShowSignupLink(false)
+                  setContactMethod("email")
+                  setEmail("")
+                  setPhone("")
+                  setCommunicationPreference(null)
                 }}
                 className="p-1 hover:bg-gray-100 rounded-full"
               >
@@ -975,32 +1034,107 @@ const VenueBookingPage: React.FC = () => {
               </div>
             </div>
             <p className="mb-4 text-gray-600 text-sm">
-              Please enter your email to proceed with the booking. This field is mandatory for future processing and
-              mailing activities.
+              Please enter your email or phone number to proceed with the booking. This field is mandatory for future
+              processing and communication.
             </p>
-            <div className="relative mb-2">
-              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value)
-                  setEmailError("")
-                  setShowSignupLink(false)
-                }}
-                placeholder="Enter your email"
-                className="w-full pl-10 pr-3 py-2 border-2 border-[#b09d94] border-opacity-50 rounded-md focus:outline-none focus:border-[#ED695A] focus:ring-1 focus:ring-[#ED695A] focus:ring-opacity-20 text-sm"
-              />
-              {emailError && <p className="text-red-600 text-sm mt-1 px-1">{emailError}</p>}
+            <div className="mb-4">
+              <div className="flex gap-4 mb-2">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    value="email"
+                    checked={contactMethod === "email"}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      setContactMethod(e.target.value as "email" | "phone")
+                      setPhone("")
+                      setCommunicationPreference(null)
+                      setContactError("")
+                    }}
+                    className="text-[#ED695A] focus:ring-[#ED695A]"
+                  />
+                  <span className="text-sm text-gray-700">Email</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    value="phone"
+                    checked={contactMethod === "phone"}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      setContactMethod(e.target.value as "email" | "phone")
+                      setEmail("")
+                      setContactError("")
+                    }}
+                    className="text-[#ED695A] focus:ring-[#ED695A]"
+                  />
+                  <span className="text-sm text-gray-700">Phone</span>
+                </label>
+              </div>
+              {contactMethod === "email" ? (
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => {
+                      setEmail(e.target.value)
+                      setContactError("")
+                      setShowSignupLink(false)
+                    }}
+                    placeholder="Enter your email"
+                    className="w-full pl-10 pr-3 py-2 border-2 border-[#b09d94] border-opacity-50 rounded-md focus:outline-none focus:border-[#ED695A] focus:ring-1 focus:ring-[#ED695A] focus:ring-opacity-20 text-sm"
+                  />
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <input
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => {
+                        setPhone(e.target.value)
+                        setContactError("")
+                      }}
+                      placeholder="Enter your phone number"
+                      className="w-full pl-10 pr-3 py-2 border-2 border-[#b09d94] border-opacity-50 rounded-md focus:outline-none focus:border-[#ED695A] focus:ring-1 focus:ring-[#ED695A] focus:ring-opacity-20 text-sm"
+                    />
+                  </div>
+                  {phone.trim() && (
+                    <div className="flex gap-4">
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="radio"
+                          value="whatsapp"
+                          checked={communicationPreference === "whatsapp"}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCommunicationPreference(e.target.value as "whatsapp" | "sms")}
+                          className="text-[#ED695A] focus:ring-[#ED695A]"
+                        />
+                        <span className="text-sm text-gray-700">WhatsApp</span>
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="radio"
+                          value="sms"
+                          checked={communicationPreference === "sms"}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCommunicationPreference(e.target.value as "whatsapp" | "sms")}
+                          className="text-[#ED695A] focus:ring-[#ED695A]"
+                        />
+                        <span className="text-sm text-gray-700">SMS</span>
+                      </label>
+                    </div>
+                  )}
+                </div>
+              )}
+              {contactError && <p className="text-red-600 text-sm mt-1 px-1">{contactError}</p>}
             </div>
 
-            {showSignupLink && (
+            {showSignupLink && contactMethod === "email" && (
               <div className="text-center mb-4">
                 <p className="text-sm text-gray-600">New Customer?</p>
                 <button
                   onClick={() => {
                     setShowEmailModal(false)
-                    setEmailError("")
+                    setContactError("")
                     setShowSignupModal(true)
                   }}
                   className="text-[#ED695A] font-semibold hover:underline hover:text-[#d85c4e]"
@@ -1013,15 +1147,19 @@ const VenueBookingPage: React.FC = () => {
               <button
                 onClick={() => {
                   setShowEmailModal(false)
-                  setEmailError("")
+                  setContactError("")
                   setShowSignupLink(false)
+                  setContactMethod("email")
+                  setEmail("")
+                  setPhone("")
+                  setCommunicationPreference(null)
                 }}
                 className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-all duration-300 text-gray-700 text-sm"
               >
                 Cancel
               </button>
               <button
-                onClick={handleEmailSubmit}
+                onClick={handleContactSubmit}
                 className="px-4 py-2 bg-[#ED695A] text-white rounded-md hover:bg-[#fcaca4] transition-all duration-300 text-sm"
               >
                 Continue
