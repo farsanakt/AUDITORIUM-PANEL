@@ -12,6 +12,8 @@ const AuditoriumRegistrationPage: React.FC = () => {
   const [showOtpModal, setShowOtpModal] = useState(false)
   const [showEventsDropdown, setShowEventsDropdown] = useState(false)
   const [showLocationsDropdown, setShowLocationsDropdown] = useState(false)
+  const [showDistrictDropdown, setShowDistrictDropdown] = useState(false)
+  const [showPanchayatDropdown, setShowPanchayatDropdown] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
@@ -23,7 +25,10 @@ const AuditoriumRegistrationPage: React.FC = () => {
     password: "",
     confirmPassword: "",
     events: [] as string[],
-    locations: [] as string[]
+    locations: [] as string[],
+    address: "",
+    district: "",
+    panchayat: ""
   })
 
   const eventOptions = [
@@ -39,6 +44,97 @@ const AuditoriumRegistrationPage: React.FC = () => {
     { value: "Kannur", label: "Kannur" },
     { value: "calicut", label: "Calicut" }
   ]
+
+  const districtOptions = [
+    { value: "Thiruvananthapuram", label: "Thiruvananthapuram" },
+    { value: "Kollam", label: "Kollam" },
+    { value: "Pathanamthitta", label: "Pathanamthitta" },
+    { value: "Alappuzha", label: "Alappuzha" },
+    { value: "Kottayam", label: "Kottayam" },
+    { value: "Idukki", label: "Idukki" },
+    { value: "Ernakulam", label: "Ernakulam" },
+    { value: "Thrissur", label: "Thrissur" },
+    { value: "Palakkad", label: "Palakkad" },
+    { value: "Malappuram", label: "Malappuram" },
+    { value: "Kozhikode", label: "Kozhikode" },
+    { value: "Wayanad", label: "Wayanad" },
+    { value: "Kannur", label: "Kannur" },
+    { value: "Kasaragod", label: "Kasaragod" }
+  ]
+
+  // Sample panchayats data (expand with full lists from sources mentioned)
+  const panchayatsData: { [key: string]: { value: string; label: string }[] } = {
+    "Thiruvananthapuram": [
+      { value: "Anjuthengu", label: "Anjuthengu" },
+      { value: "Aryanad", label: "Aryanad" },
+      // Add more...
+    ],
+    "Kollam": [
+      { value: "Adichanalloor", label: "Adichanalloor" },
+      { value: "Alappad", label: "Alappad" },
+      // Add more...
+    ],
+    "Pathanamthitta": [
+      { value: "Adoor", label: "Adoor" },
+      { value: "Aranmula", label: "Aranmula" },
+      // Add more...
+    ],
+    "Alappuzha": [
+      { value: "Arookutty", label: "Arookutty" },
+      { value: "Ala", label: "Ala" },
+      // Add more...
+    ],
+    "Kottayam": [
+      { value: "Akalakunnam", label: "Akalakunnam" },
+      { value: "Ayarkunnam", label: "Ayarkunnam" },
+      // Add more...
+    ],
+    "Idukki": [
+      { value: "Adimaly", label: "Adimaly" },
+      { value: "Alakode", label: "Alakode" },
+      // Add more...
+    ],
+    "Ernakulam": [
+      { value: "Aikaranad", label: "Aikaranad" },
+      { value: "Alangad", label: "Alangad" },
+      // Add more...
+    ],
+    "Thrissur": [
+      { value: "Adat", label: "Adat" },
+      { value: "Alagappanagar", label: "Alagappanagar" },
+      // Add more...
+    ],
+    "Palakkad": [
+      { value: "Agali", label: "Agali" },
+      { value: "Akathethara", label: "Akathethara" },
+      // Add more...
+    ],
+    "Malappuram": [
+      { value: "Alamkode", label: "Alamkode" },
+      { value: "Alanallur", label: "Alanallur" },
+      // Add more...
+    ],
+    "Kozhikode": [
+      { value: "Arikkulam", label: "Arikkulam" },
+      { value: "Azhiyur", label: "Azhiyur" },
+      // Add more...
+    ],
+    "Wayanad": [
+      { value: "Ambalavayal", label: "Ambalavayal" },
+      { value: "Edavaka", label: "Edavaka" },
+      // Add more...
+    ],
+    "Kannur": [
+      { value: "Alakode", label: "Alakode" },
+      { value: "Anjarakandy", label: "Anjarakandy" },
+      // Add more...
+    ],
+    "Kasaragod": [
+      { value: "Ajanur", label: "Ajanur" },
+      { value: "Badiadka", label: "Badiadka" },
+      // Add more...
+    ]
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target
@@ -57,6 +153,16 @@ const AuditoriumRegistrationPage: React.FC = () => {
     }
   }
 
+  const handleDistrictSelect = (value: string) => {
+    setFormData(prev => ({ ...prev, district: value, panchayat: "" })) // Reset panchayat on district change
+    setShowDistrictDropdown(false)
+  }
+
+  const handlePanchayatSelect = (value: string) => {
+    setFormData(prev => ({ ...prev, panchayat: value }))
+    setShowPanchayatDropdown(false)
+  }
+
   const handleOtpModal = () => {
     setShowOtpModal(false)
     navigate('/auditorium/login')
@@ -65,6 +171,10 @@ const AuditoriumRegistrationPage: React.FC = () => {
   const handleSignup = async () => {
     if (formData.events.length === 0 || formData.locations.length === 0) {
       toast.error('Select at least one event and location.')
+      return
+    }
+    if (formData.district === "" || formData.panchayat === "") {
+      toast.error('Select district and panchayat.')
       return
     }
     const response = await singUpRequest(formData)
@@ -83,6 +193,8 @@ const AuditoriumRegistrationPage: React.FC = () => {
   const handleLogin = () => {
     navigate('/auditorium/login')
   }
+
+  const selectedPanchayatOptions = formData.district ? panchayatsData[formData.district] || [] : []
 
   return (
     <div className="min-h-screen bg-[#FDF8F1] flex flex-col items-center justify-center px-4 py-6 box-border">
@@ -249,6 +361,73 @@ const AuditoriumRegistrationPage: React.FC = () => {
                             />
                             <span className="text-[#3C3A39] text-xs sm:text-sm font-serif">{option.label}</span>
                           </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label htmlFor="address" className="block text-[#78533F] font-medium text-xs sm:text-sm font-serif">Address</label>
+                  <input
+                    type="text"
+                    id="address"
+                    name="address"
+                    className="w-full px-3 py-2 border border-[#b09d94] rounded-full focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200 text-xs sm:text-sm"
+                    value={formData.address}
+                    onChange={handleChange}
+                    placeholder="Enter full address"
+                    required
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-[#78533F] font-medium text-xs sm:text-sm font-serif">District</label>
+                  <div className="relative">
+                    <div
+                      className="w-full px-3 py-2 border border-[#b09d94] rounded-full bg-white text-xs sm:text-sm cursor-pointer flex items-center justify-between"
+                      onClick={() => setShowDistrictDropdown(!showDistrictDropdown)}
+                    >
+                      <span className={formData.district ? "text-[#3C3A39]" : "text-[#b09d94]"}>
+                        {formData.district || "Select district"}
+                      </span>
+                      <span className="text-[#78533F]">&#9662;</span>
+                    </div>
+                    {showDistrictDropdown && (
+                      <div className="absolute z-10 w-full mt-1 bg-white border border-[#b09d94] rounded-md shadow-lg max-h-28 overflow-y-auto">
+                        {districtOptions.map(option => (
+                          <div
+                            key={option.value}
+                            className="p-1.5 hover:bg-[#FDF8F1] cursor-pointer text-[#3C3A39] text-xs sm:text-sm font-serif"
+                            onClick={() => handleDistrictSelect(option.value)}
+                          >
+                            {option.label}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-[#78533F] font-medium text-xs sm:text-sm font-serif">Panchayat</label>
+                  <div className="relative">
+                    <div
+                      className="w-full px-3 py-2 border border-[#b09d94] rounded-full bg-white text-xs sm:text-sm cursor-pointer flex items-center justify-between"
+                      onClick={() => formData.district && setShowPanchayatDropdown(!showPanchayatDropdown)}
+                    >
+                      <span className={formData.panchayat ? "text-[#3C3A39]" : "text-[#b09d94]"}>
+                        {formData.panchayat || (formData.district ? "Select panchayat" : "Select district first")}
+                      </span>
+                      <span className="text-[#78533F]">&#9662;</span>
+                    </div>
+                    {showPanchayatDropdown && (
+                      <div className="absolute z-10 w-full mt-1 bg-white border border-[#b09d94] rounded-md shadow-lg max-h-28 overflow-y-auto">
+                        {selectedPanchayatOptions.map(option => (
+                          <div
+                            key={option.value}
+                            className="p-1.5 hover:bg-[#FDF8F1] cursor-pointer text-[#3C3A39] text-xs sm:text-sm font-serif"
+                            onClick={() => handlePanchayatSelect(option.value)}
+                          >
+                            {option.label}
+                          </div>
                         ))}
                       </div>
                     )}

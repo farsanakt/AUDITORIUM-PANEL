@@ -23,8 +23,6 @@ interface NewStaffForm {
   status: StaffStatus;
 }
 
-
-
 const StaffManagementUI: React.FC = () => {
   const [staff, setStaff] = useState<Staff[]>([
     {
@@ -109,23 +107,17 @@ const StaffManagementUI: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#FDF8F1] ">
+    <div className="min-h-screen bg-[#FDF8F1] flex flex-col">
       <Header />
-      
-      <div className="flex">
-        {/* Sidebar */}
-        <div className="w-64 h-[calc(100vh-73px)] sticky top-[73px]">
-          <Sidebar />
-        </div>
-
-        {/* Main Content */}
-        <div className="flex-1 p-6">
+      <div className="flex flex-1">
+        <Sidebar />
+        <main className="flex-1 p-6">
           <div className="max-w-7xl space-y-6">
             {/* Page Header */}
-            <div className="bg-white rounded-lg shadow-sm  p-6">
+            <div className="bg-white rounded-lg shadow-sm p-6">
               <div className="flex justify-between items-start">
                 <div>
-                  <h1 className="text-3xl font-bold text-[#78533F]  mb-2">Staff Management System</h1>
+                  <h1 className="text-3xl font-bold text-[#78533F] mb-2">Staff Management System</h1>
                   <p className="text-gray-600">Manage your staff and track activities</p>
                 </div>
                 <button
@@ -139,7 +131,7 @@ const StaffManagementUI: React.FC = () => {
             </div>
 
             {/* Staff List Table */}
-            <div className="bg-white rounded-lg shadow-sm ">
+            <div className="bg-white rounded-lg shadow-sm">
               <div className="p-6 border-b border-gray-200">
                 <h2 className="text-xl font-semibold text-gray-900">Staff List</h2>
               </div>
@@ -194,7 +186,7 @@ const StaffManagementUI: React.FC = () => {
               </div>
             </div>
           </div>
-        </div>
+        </main>
       </div>
 
       {/* Add Staff Modal */}
