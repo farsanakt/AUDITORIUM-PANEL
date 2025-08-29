@@ -94,6 +94,17 @@ export const fetchAuditoriumUserdetails=async(id:string)=>{
 
 }
 
+export const createVendorInquiry=async(data:any)=>{
+
+
+
+}
+
+export const createVendorReview=async(data:any)=>{
+
+
+
+}
 
 
 export const verifyPswrd=async(id:string,password:string)=>{

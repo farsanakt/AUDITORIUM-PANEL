@@ -5,8 +5,9 @@ import { useParams } from "react-router-dom"
 import Header from "../../component/user/Header"
 import Lines from "../../assets/Group 52 (1).png"
 import Bshape from "../../assets/02 2.png"
-import { singleVendorDetails, createVendorBooking, fetchExistingVendorBookings } from "../../api/userApi"
+import { singleVendorDetails, createVendorInquiry, createVendorReview } from "../../api/userApi"
 import Swal from 'sweetalert2'
+import { Eye, EyeOff } from 'lucide-react'
 
 interface Vendor {
   _id: string
@@ -23,58 +24,87 @@ interface Vendor {
   timeSlots: { label: string; startTime: string; endTime: string }[]
   totalamount: string
   vendorType: string
+  about?: string
+  summary?: string
+  reviews?: { name: string; email: string; rating: number; comment: string }[]
 }
 
-interface Booking {
-  bookeddate: string
-  timeSlot: string
-  status: string
-}
-
-interface BookingData {
-  vendorName: string
-  userEmail: string
+interface InquiryData {
   vendorId: string
-  totalAmount: number
-  advanceAmount: number
-  address: string
-  bookedDate: string
-  timeSlot: string
+  name: string
+  email: string
+  contact: string
+  eventDate: string
+  eventType: string
+  message: string
+  notifications: string[]
+}
+
+interface ReviewData {
+  vendorId: string
+  name: string
+  email: string
+  rating: number
+  comment: string
 }
 
 const VendorDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const [vendor, setVendor] = useState<Vendor | null>(null)
   const [loading, setLoading] = useState(true)
-  const [currentDate, setCurrentDate] = useState(new Date())
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null)
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
-  const [paymentMethod, setPaymentMethod] = useState("")
-  const [paymentType, setPaymentType] = useState<"advance" | "full">("advance")
-  const [bookingData, setBookingData] = useState<BookingData | null>(null)
-  const [formData, setFormData] = useState({
+  const [showPassword, setShowPassword] = useState<boolean>(false)
+  const [inquiryFormData, setInquiryFormData] = useState({
+    name: "",
     email: "",
-    address: "",
-    timeSlot: "",
+    contact: "",
+    eventDate: "",
+    eventType: "",
+    message: "",
+    notifyWhatsapp: false,
+    notifyEmail: false,
   })
-  const [bookings, setBookings] = useState<Booking[]>([])
+  const [reviewFormData, setReviewFormData] = useState({
+    name: "",
+    email: "",
+    rating: 0,
+    comment: "",
+    password: "",
+  })
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+
+  // Dummy reviews
+  const dummyReviews = [
+    {
+      name: "John Doe",
+      email: "john@example.com",
+      rating: 5,
+      comment: "Excellent service! The vendor was professional and delivered beyond expectations.",
+    },
+    {
+      name: "Jane Smith",
+      email: "jane@example.com",
+      rating: 4,
+      comment: "Very good experience, though communication could be improved.",
+    },
+    {
+      name: "Alex Brown",
+      email: "alex@example.com",
+      rating: 3,
+      comment: "Decent service, but there were some delays in setup.",
+    },
+  ]
 
   const fetchVendorDetails = async () => {
     try {
       setLoading(true)
-      const [vendorResponse, bookingsResponse] = await Promise.all([
-        singleVendorDetails(id!),
-        fetchExistingVendorBookings(id!)
-      ])
-      setVendor(vendorResponse.data)
-      setBookings(bookingsResponse.data || [])
+      const vendorResponse = await singleVendorDetails(id!)
+      setVendor({ ...vendorResponse.data, reviews: dummyReviews }) // Inject dummy reviews
     } catch (err) {
-      console.error("Error fetching vendor details or bookings:", err)
+      console.error("Error fetching vendor details:", err)
       Swal.fire({
         icon: 'error',
         title: 'Error',
-        text: 'Failed to load vendor details or bookings.',
+        text: 'Failed to load vendor details.',
       })
     } finally {
       setLoading(false)
@@ -85,234 +115,73 @@ const VendorDetails: React.FC = () => {
     if (id) {
       fetchVendorDetails()
     }
-  }, [id])
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prev) => (prev + 1) % (vendor?.images.length || 1))
+    }, 3000)
+    return () => clearInterval(interval)
+  }, [id, vendor?.images.length])
 
-  const monthNames = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
-  ]
-
-  const formatDateForBackend = (date: Date): string => {
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, "0")
-    const day = String(date.getDate()).padStart(2, "0")
-    return `${year}-${month}-${day}`
-  }
-
-  const getDaysInMonth = (date: Date) => {
-    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
-  }
-
-  const getFirstDayOfMonth = (date: Date) => {
-    return new Date(date.getFullYear(), date.getMonth(), 1).getDay()
-  }
-
-  const generateCalendarDays = () => {
-    const daysInMonth = getDaysInMonth(currentDate)
-    const firstDay = getFirstDayOfMonth(currentDate)
-    const days: { day: number; date: Date; isCurrentMonth: boolean }[] = []
-    const prevMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 0)
-    const prevMonthDays = getDaysInMonth(prevMonth)
-
-    for (let i = firstDay - 1; i >= 0; i--) {
-      days.push({
-        day: prevMonthDays - i,
-        date: new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, prevMonthDays - i),
-        isCurrentMonth: false,
-      })
-    }
-
-    for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day)
-      days.push({
-        day,
-        date,
-        isCurrentMonth: true,
-      })
-    }
-
-    const remainingDays = 42 - days.length
-    for (let day = 1; day <= remainingDays; day++) {
-      days.push({
-        day,
-        date: new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, day),
-        isCurrentMonth: false,
-      })
-    }
-
-    return days
-  }
-
-  const getTimeSlotStatus = (date: Date) => {
-    const dateString = formatDateForBackend(date)
-    const bookedSlots = bookings
-      .filter((booking) => booking.bookeddate === dateString && booking.status !== "cancelled")
-      .map((booking) => booking.timeSlot)
-
-    return (
-      vendor?.timeSlots?.map((slot) => ({
-        ...slot,
-        isBooked: bookedSlots.includes(`${slot.label}: ${slot.startTime} - ${slot.endTime}`),
-      })) || []
-    )
-  }
-
-  const getDateStatus = (date: Date | null) => {
-    if (!date) return null
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const isPast = date < today
-    const dateString = formatDateForBackend(date)
-    const bookedSlots = bookings.filter(
-      (booking) => booking.bookeddate === dateString && booking.status !== "cancelled",
-    )
-
-    if (isPast) return "past"
-
-    const totalSlots = vendor?.timeSlots?.length || 0
-    const bookedSlotsCount = bookedSlots.length
-
-    if (bookedSlotsCount === 0) return "available"
-    if (bookedSlotsCount >= totalSlots) return "booked"
-    return "partial"
-  }
-
-  const getDateClassName = (date: Date | null, isCurrentMonth: boolean) => {
-    const baseClass =
-      "w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center text-xs sm:text-sm md:text-base font-medium transition-all relative group"
-
-    if (!isCurrentMonth || !date) {
-      return `${baseClass} text-gray-400 cursor-not-allowed`
-    }
-
-    const status = getDateStatus(date)
-    const isSelected = selectedDate && date.toDateString() === selectedDate.toDateString()
-
-    if (status === "past") {
-      return `${baseClass} bg-gray-100 text-gray-400 cursor-not-allowed`
-    }
-    if (status === "booked") {
-      return `${baseClass} bg-red-500 text-white cursor-not-allowed`
-    }
-    if (status === "partial") {
-      return isSelected
-        ? `${baseClass} bg-blue-600 text-white cursor-pointer hover:scale-105`
-        : `${baseClass} bg-yellow-400 text-yellow-900 cursor-pointer hover:bg-yellow-500 hover:scale-105`
-    }
-    return isSelected
-      ? `${baseClass} bg-blue-600 text-white cursor-pointer hover:scale-105`
-      : `${baseClass} bg-green-100 text-green-800 cursor-pointer hover:bg-green-200 hover:scale-105`
-  }
-
-  const getTooltipContent = (date: Date) => {
-    const slots = getTimeSlotStatus(date)
-    return (
-      <div className="absolute z-20 bg-white p-3 rounded-lg shadow-xl border border-gray-200 bottom-full mb-2 text-xs sm:text-sm max-w-[90vw] sm:max-w-xs bg-opacity-95 transform -translate-x-1/2 left-1/2">
-        <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-8 border-r-8 border-t-8 border-l-transparent border-r-transparent border-t-white"></div>
-        <p className="font-semibold text-gray-800 mb-2">Time Slots:</p>
-        {slots.length > 0 ? (
-          slots.map((slot) => (
-            <div key={slot.label} className="flex items-center gap-2">
-              <div className={`w-3 h-3 sm:w-4 sm:h-4 rounded-full ${slot.isBooked ? "bg-red-500" : "bg-green-500"}`}></div>
-              <p className={slot.isBooked ? "text-red-600" : "text-green-600"}>
-                {slot.label}: {slot.startTime} - {slot.endTime} {slot.isBooked ? "(Booked)" : "(Available)"}
-              </p>
-            </div>
-          ))
-        ) : (
-          <p className="text-gray-600">No time slots available</p>
-        )}
-      </div>
-    )
-  }
-
-  const handleDateClick = (date: Date | null) => {
-    if (date && ["available", "partial"].includes(getDateStatus(date) || "")) {
-      setSelectedDate(date)
-      setFormData((prev) => ({
-        ...prev,
-        timeSlot: "",
-      }))
-      setIsModalOpen(true)
+  const handleInquiryFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value, type } = e.target
+    if (type === "checkbox") {
+      const checked = (e.target as HTMLInputElement).checked
+      setInquiryFormData((prev) => ({ ...prev, [name]: checked }))
+    } else {
+      setInquiryFormData((prev) => ({ ...prev, [name]: value }))
     }
   }
 
-  const navigateMonth = (direction: "prev" | "next") => {
-    setCurrentDate((prev) => {
-      const newDate = new Date(prev)
-      const currentYear = new Date().getFullYear()
-      const currentMonth = new Date().getMonth()
-      newDate.setMonth(direction === "prev" ? prev.getMonth() - 1 : prev.getMonth() + 1)
-      if (newDate.getFullYear() < currentYear || 
-          (newDate.getFullYear() === currentYear && newDate.getMonth() < currentMonth)) {
-        return prev
-      }
-      setSelectedDate(null)
-      return newDate
-    })
-  }
-
-  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleReviewFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
+    setReviewFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleInquirySubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!selectedDate || !vendor) return
-    const bookedDate = formatDateForBackend(selectedDate)
-    setBookingData({
-      vendorName: vendor.name,
-      userEmail: formData.email,
+    if (!vendor) return
+
+    const notifications: string[] = []
+    if (inquiryFormData.notifyWhatsapp) notifications.push('whatsapp')
+    if (inquiryFormData.notifyEmail) notifications.push('email')
+
+    const dataToSend: InquiryData = {
       vendorId: vendor._id,
-      totalAmount: Number(vendor.totalamount),
-      advanceAmount: Number(vendor.advAmnt),
-      address: formData.address,
-      bookedDate,
-      timeSlot: formData.timeSlot,
-    })
-    setIsModalOpen(false)
-    setIsPaymentModalOpen(true)
-  }
-
-  const handlePaymentSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!paymentMethod || !bookingData) return
-
-    const paidAmount = paymentType === "advance" ? bookingData.advanceAmount : bookingData.totalAmount
-    const balanceAmount = paymentType === "advance" ? (bookingData.totalAmount - bookingData.advanceAmount) : 0
-
-    const dataToSend = {
-      ...bookingData,
-      paidAmount,
-      balanceAmount,
-      paymentMethod,
-      paymentType,
+      name: inquiryFormData.name,
+      email: inquiryFormData.email,
+      contact: inquiryFormData.contact,
+      eventDate: inquiryFormData.eventDate,
+      eventType: inquiryFormData.eventType,
+      message: inquiryFormData.message,
+      notifications,
     }
 
     try {
-      const response = await createVendorBooking(dataToSend)
-      setIsPaymentModalOpen(false)
-      setFormData({ email: "", address: "", timeSlot: "" })
-      setPaymentMethod("")
-      setPaymentType("advance")
-      setBookingData(null)
-      if (response.status) {
-        Swal.fire({
-          icon: 'success',
-          title: 'Booking Confirmed',
-          text: response.message || 'Your booking has been successfully created!',
-        })
-        await fetchVendorDetails()
-      } else {
-        Swal.fire({
-          icon: 'error',
-          title: 'Booking Failed',
-          text: response.message || 'There was an issue with your booking. Please try again.',
-        })
-      }
+      const response = await createVendorInquiry(dataToSend)
+      setInquiryFormData({
+        name: "",
+        email: "",
+        contact: "",
+        eventDate: "",
+        eventType: "",
+        message: "",
+        notifyWhatsapp: false,
+        notifyEmail: false,
+      })
+      // if (response.status) {
+      //   Swal.fire({
+      //     icon: 'success',
+      //     title: 'Inquiry Sent',
+      //     text: response.message || 'Your inquiry has been successfully submitted!',
+      //   })
+      // } else {
+      //   Swal.fire({
+      //     icon: 'error',
+      //     title: 'Inquiry Failed',
+      //     text: response.message || 'There was an issue with your inquiry. Please try again.',
+      //   })
+      // }
     } catch (err) {
-      console.error("Error submitting booking:", err)
+      console.error("Error submitting inquiry:", err)
       Swal.fire({
         icon: 'error',
         title: 'Error',
@@ -321,8 +190,50 @@ const VendorDetails: React.FC = () => {
     }
   }
 
-  const monthName = monthNames[currentDate.getMonth()]
-  const year = currentDate.getFullYear()
+  const handleReviewSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!vendor) return
+
+    const dataToSend: ReviewData = {
+      vendorId: vendor._id,
+      name: reviewFormData.name,
+      email: reviewFormData.email,
+      rating: Number(reviewFormData.rating),
+      comment: reviewFormData.comment,
+    }
+
+    try {
+      const response = await createVendorReview(dataToSend)
+      setReviewFormData({
+        name: "",
+        email: "",
+        rating: 0,
+        comment: "",
+        password: "",
+      })
+      // if (response.status) {
+      //   Swal.fire({
+      //     icon: 'success',
+      //     title: 'Review Posted',
+      //     text: response.message || 'Your review has been successfully submitted!',
+      //   })
+      //   fetchVendorDetails() // Refresh vendor details to get updated reviews
+      // } else {
+      //   Swal.fire({
+      //     icon: 'error',
+      //     title: 'Review Failed',
+      //     text: response.message || 'There was an issue with your review. Please try again.',
+      //   })
+      // }
+    } catch (err) {
+      console.error("Error submitting review:", err)
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'An unexpected error occurred. Please try again later.',
+      })
+    }
+  }
 
   if (loading) {
     return <div className="text-center py-8">Loading...</div>
@@ -331,6 +242,8 @@ const VendorDetails: React.FC = () => {
   if (!vendor) {
     return <div className="text-center py-8 text-red-600">No vendor found.</div>
   }
+
+  const today = new Date().toISOString().split('T')[0]
 
   return (
     <div className="bg-[#FDF8F1] min-h-screen">
@@ -360,28 +273,130 @@ const VendorDetails: React.FC = () => {
               {vendor.address}, {vendor.cities.join(", ")} {vendor.pincode}
             </span>
           </div>
-          <div className="mb-6 sm:mb-8">
-            <div className="relative bg-white rounded-lg shadow-lg overflow-hidden max-w-6xl mx-auto">
-              <img
-                src={vendor.images[0] || "/placeholder.svg?height=400&width=600"}
-                alt="Vendor"
-                className="w-full h-48 sm:h-64 md:h-80 lg:h-[400px] object-cover transition-all duration-700 ease-in-out"
-              />
+          <div className="flex flex-col lg:flex-row gap-6 mb-6 sm:mb-8">
+            <div className="w-full lg:w-2/3">
+              <div className="relative bg-white rounded-lg shadow-lg overflow-hidden h-[320px] sm:h-[420px] md:h-[520px]">
+                <img
+                  src={vendor.images[currentImageIndex] || "/placeholder.svg?height=420&width=600"}
+                  alt="Vendor"
+                  className="w-full h-full object-cover rounded-lg transition-opacity duration-500"
+                />
+              </div>
             </div>
-          </div>
-          <div className="flex flex-col lg:flex-row justify-between items-start mb-6 sm:mb-8 gap-4 lg:gap-6">
-            <div className="flex-1 lg:pr-6">
-              <h3 className="text-base sm:text-lg md:text-xl font-semibold text-left text-[#5B4336] mt-4 sm:mt-6 mb-3">
-                About {vendor.vendorType.charAt(0).toUpperCase() + vendor.vendorType.slice(1)}
-              </h3>
-              <p className="text-xs sm:text-sm md:text-base text-[#000000] text-left leading-relaxed">
-                {vendor.name} is a premier {vendor.vendorType} offering modern amenities and elegant services.
-              </p>
-            </div>
-            <div className="flex-shrink-0 w-full lg:w-auto">
-              <button className="bg-[#9c7c5d] hover:bg-[#d85c4e] mt-4 sm:mt-6 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-md font-medium transition-colors flex items-center space-x-2 w-full lg:w-auto justify-center text-xs sm:text-sm md:text-base">
-                <span>Go to Booking</span>
-              </button>
+            <div className="w-full lg:w-1/3">
+              <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 h-[320px] sm:h-[420px] md:h-[520px] flex flex-col">
+                <h3 className="text-base sm:text-lg md:text-xl font-semibold text-[#4A2C2A] mb-4">Send Inquiry</h3>
+                <form onSubmit={handleInquirySubmit} className="space-y-3 flex-grow">
+                  <div>
+                    {/* <label className="block text-xs sm:text-sm font-semibold text-[#78533F] mb-1">Name</label> */}
+                    <input
+                      type="text"
+                      name="name"
+                      value={inquiryFormData.name}
+                      onChange={handleInquiryFormChange}
+                      placeholder="Enter your name"
+                      required
+                      className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-xs sm:text-sm focus:ring-2 focus:ring-[#ED695A]"
+                    />
+                  </div>
+                  <div>
+                    {/* <label className="block text-xs sm:text-sm font-semibold text-[#78533F] mb-1">Email</label> */}
+                    <input
+                      type="email"
+                      name="email"
+                      value={inquiryFormData.email}
+                      onChange={handleInquiryFormChange}
+                      placeholder="Enter your email"
+                      required
+                      className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-xs sm:text-sm focus:ring-2 focus:ring-[#ED695A]"
+                    />
+                  </div>
+                  <div>
+                    {/* <label className="block text-xs sm:text-sm font-semibold text-[#78533F] mb-1">Contact</label> */}
+                    <input
+                      type="tel"
+                      name="contact"
+                      value={inquiryFormData.contact}
+                      onChange={handleInquiryFormChange}
+                      placeholder="Enter your contact"
+                      required
+                      className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-xs sm:text-sm focus:ring-2 focus:ring-[#ED695A]"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      {/* <label className="block text-xs sm:text-sm font-semibold text-[#78533F] mb-1">Event Date</label> */}
+                      <input
+                        type="date"
+                        name="eventDate"
+                        value={inquiryFormData.eventDate}
+                        onChange={handleInquiryFormChange}
+                        min={today}
+                        required
+                        className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-xs sm:text-sm focus:ring-2 focus:ring-[#ED695A]"
+                      />
+                    </div>
+                    <div>
+                      {/* <label className="block text-xs sm:text-sm font-semibold text-[#78533F] mb-1">Event Type</label> */}
+                      <select
+                        name="eventType"
+                        value={inquiryFormData.eventType}
+                        onChange={handleInquiryFormChange}
+                        required
+                        className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-xs sm:text-sm focus:ring-2 focus:ring-[#ED695A] appearance-none"
+                      >
+                        <option value="" disabled>Select event type</option>
+                        <option value="Wedding">Wedding</option>
+                        <option value="Birthday">Birthday</option>
+                        <option value="Corporate">Corporate</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    {/* <label className="block text-xs sm:text-sm font-semibold text-[#78533F] mb-1">Message</label> */}
+                    <textarea
+                      name="message"
+                      value={inquiryFormData.message}
+                      onChange={handleInquiryFormChange}
+                      placeholder="Enter your message"
+                      required
+                      className="w-full px-3 py-2 border border-[#b09d94] rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-[#ED695A] min-h-[80px]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs sm:text-sm font-semibold text-[#78533F] mb-1">Notifications</label>
+                    <div className="flex space-x-4">
+                      <label className="flex items-center text-xs sm:text-sm text-[#4A2C2A]">
+                        <input
+                          type="checkbox"
+                          name="notifyWhatsapp"
+                          checked={inquiryFormData.notifyWhatsapp}
+                          onChange={handleInquiryFormChange}
+                          className="mr-2 accent-[#ED695A]"
+                        />
+                        WhatsApp
+                      </label>
+                      <label className="flex items-center text-xs sm:text-sm text-[#4A2C2A]">
+                        <input
+                          type="checkbox"
+                          name="notifyEmail"
+                          checked={inquiryFormData.notifyEmail}
+                          onChange={handleInquiryFormChange}
+                          className="mr-2 accent-[#ED695A]"
+                        />
+                        Email
+                      </label>
+                    </div>
+                  </div>
+                  <button
+                    type="submit"
+                    className="w-full bg-[#78533F] text-white py-2 rounded-full font-semibold text-xs sm:text-sm hover:bg-[#634331] transition"
+                  >
+                    Submit Inquiry
+                  </button>
+                </form>
+              </div>
             </div>
           </div>
           <div className="mb-6 sm:mb-8">
@@ -399,6 +414,22 @@ const VendorDetails: React.FC = () => {
                 <span className="text-xs sm:text-sm md:text-base text-[#2A2929]">{vendor.email}</span>
               </div>
             </div>
+          </div>
+          <div className="mb-6 sm:mb-8">
+            <h3 className="text-base sm:text-lg md:text-xl font-semibold text-left text-[#49516F] mb-3 sm:mb-4">
+              About
+            </h3>
+            <p className="text-xs sm:text-sm md:text-base text-[#2A2929] text-left">
+              {vendor.about || "Our company is a reliable vendor committed to delivering high-quality products and services that meet the needs of every customer. With a strong focus on excellence, affordability, and trust, we ensure that every order is handled with care and professionalism. Over the years, we have built a reputation for timely delivery, customer satisfaction, and consistency in maintaining quality standards."}
+            </p>
+          </div>
+          <div className="mb-6 sm:mb-8">
+            <h3 className="text-base sm:text-lg md:text-xl font-semibold text-left text-[#49516F] mb-3 sm:mb-4">
+              Summary
+            </h3>
+            <p className="text-xs sm:text-sm md:text-base text-[#2A2929] text-left">
+              {vendor.summary || "As a trusted supplier, we specialize in offering a wide range of products and services to cater to different customer requirements. Our goal is to make every transaction simple, transparent, and reliable while providing the best possible value. Whether it’s for individuals, events, or businesses, we strive to be the go-to vendor by combining experience, efficiency, and dedication in everything we do."}
+            </p>
           </div>
           <div className="relative z-10">
             <img
@@ -438,397 +469,149 @@ const VendorDetails: React.FC = () => {
                 </div>
               </div>
             </div>
-            <div className="mt-8 mb-6 sm:mb-8 flex flex-col lg:flex-row gap-6">
-              <div className="w-full lg:w-1/2">
-                <h3 className="text-base sm:text-lg md:text-xl font-semibold text-left text-[#49516F] mb-3 sm:mb-4">
-                  Availability Calendar
-                </h3>
-                <div className="bg-white rounded-2xl shadow-md p-4 sm:p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <button 
-                      onClick={() => navigateMonth("prev")} 
-                      className="p-1 sm:p-2 hover:bg-gray-100 rounded-full transition-colors"
-                      disabled={currentDate.getFullYear() === new Date().getFullYear() && 
-                               currentDate.getMonth() === new Date().getMonth()}
-                    >
-                      <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                      </svg>
-                    </button>
-                    <div className="text-center font-medium text-gray-600 text-base sm:text-lg md:text-xl">
-                      {monthName} {year}
-                    </div>
-                    <button 
-                      onClick={() => navigateMonth("next")} 
-                      className="p-1 sm:p-2 hover:bg-gray-100 rounded-full transition-colors"
-                    >
-                      <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-7 gap-1 sm:gap-2 text-center text-xs sm:text-sm">
-                    {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day) => (
-                      <div key={day} className="h-6 sm:h-8 flex items-center justify-center text-xs sm:text-sm font-medium text-gray-500">
-                        {day}
-                      </div>
-                    ))}
-                    {generateCalendarDays().map((dateObj, index) => (
-                      <div
-                        key={index}
-                        className={getDateClassName(dateObj.date, dateObj.isCurrentMonth)}
-                        onClick={() => handleDateClick(dateObj.date)}
-                        style={{ aspectRatio: "1" }}
-                      >
-                        {dateObj.day || ""}
-                        {dateObj.isCurrentMonth && dateObj.date && (
-                          <div className="hidden group-hover:block">{getTooltipContent(dateObj.date)}</div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                  <div className="p-3 sm:p-4">
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
-                      <div className="flex items-center gap-2 text-xs sm:text-sm">
-                        <div className="w-3 h-3 sm:w-4 sm:h-4 bg-green-100 border-2 border-green-400 rounded-full"></div>
-                        <span className="text-gray-600">Available</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs sm:text-sm">
-                        <div className="w-3 h-3 sm:w-4 sm:h-4 bg-yellow-400 rounded-full"></div>
-                        <span className="text-gray-600">Partial</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs sm:text-sm">
-                        <div className="w-3 h-3 sm:w-4 sm:h-4 bg-red-500 rounded-full"></div>
-                        <span className="text-gray-600">Booked</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs sm:text-sm">
-                        <div className="w-3 h-3 sm:w-4 sm:h-4 bg-gray-100 border-2 border-gray-400 rounded-full"></div>
-                        <span className="text-gray-600">Past</span>
-                      </div>
-                    </div>
-                  </div>
+          </div>
+          <div className="mb-6 sm:mb-8 mt-6 sm:mt-8">
+            <h3 className="text-base sm:text-lg md:text-xl font-semibold text-left text-[#49516F] mb-3 sm:mb-4">
+              Gallery
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {vendor.images.map((img, index) => (
+                <div key={index} className="bg-white rounded-lg shadow-lg overflow-hidden">
+                  <img
+                    src={img || "/placeholder.svg"}
+                    alt={`Gallery image ${index + 1}`}
+                    className="w-full h-48 sm:h-56 md:h-64 object-cover"
+                  />
                 </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-     {isModalOpen && selectedDate && (
-  <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 px-2 sm:px-4 backdrop-blur-sm">
-    <div className="bg-[#FDF8F1] rounded-2xl shadow-2xl border-2 border-[#b09d94] p-4 sm:p-6 md:p-8 w-full max-w-2xl overflow-auto max-h-[90vh] transform transition-all">
-      <div className="text-center mb-4 sm:mb-6 pb-4 border-b-2 border-[#b09d94]">
-        <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-[#78533F] mb-2">
-          📅 Book {vendor.name}
-        </h2>
-        <p className="text-[#3C3A39] text-xs sm:text-sm font-medium">Complete your booking details below</p>
-      </div>
-
-      <form onSubmit={handleFormSubmit} className="space-y-4 sm:space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-          <div className="space-y-2">
-            <label className="block text-xs sm:text-sm font-semibold text-[#78533F] flex items-center">
-              <span className="mr-2">🏪</span>Vendor Name
-            </label>
-            <input
-              type="text"
-              value={vendor.name}
-              disabled
-              className="w-full rounded-xl border-2 border-[#b09d94] bg-white p-2 sm:p-3 text-xs sm:text-sm font-medium text-[#3C3A39] shadow-inner"
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="block text-xs sm:text-sm font-semibold text-[#78533F] flex items-center">
-              <span className="mr-2">📅</span>Selected Date
-            </label>
-            <input
-              type="text"
-              value={`${monthName} ${selectedDate.getDate()}, ${year}`}
-              disabled
-              className="w-full rounded-xl border-2 border-[#b09d94] bg-white p-2 sm:p-3 text-xs sm:text-sm font-medium text-[#3C3A39] shadow-inner"
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-          <div className="space-y-2">
-            <label className="block text-xs sm:text-sm font-semibold text-[#78533F] flex items-center">
-              <span className="mr-2">⏰</span>Time Slot
-            </label>
-            <select
-              name="timeSlot"
-              value={formData.timeSlot}
-              onChange={handleFormChange}
-              required
-              className="w-full rounded-xl border-2 border-[#b09d94] bg-white p-2 sm:p-3 text-xs sm:text-sm font-medium text-[#3C3A39] focus:border-[#ED695A] focus:ring-2 focus:ring-[#ED695A] transition-all appearance-none"
-            >
-              <option value="" disabled>
-                Select a time slot
-              </option>
-              {getTimeSlotStatus(selectedDate).map((slot, index) => (
-                <option
-                  key={index}
-                  value={`${slot.label}: ${slot.startTime} - ${slot.endTime}`}
-                  disabled={slot.isBooked}
-                  className={slot.isBooked ? "text-red-500" : "text-green-500"}
-                  style={{ color: slot.isBooked ? '#ef4444' : '#22c55e' }}
-                >
-                  {slot.label}: {slot.startTime} - {slot.endTime} {slot.isBooked ? "(Booked)" : "(Available)"}
-                </option>
               ))}
-            </select>
-          </div>
-          <div className="space-y-2">
-            <label className="block text-xs sm:text-sm font-semibold text-[#78533F] flex items-center">
-              <span className="mr-2">📧</span>Email
-            </label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleFormChange}
-              required
-              className="w-full rounded-xl border-2 border-[#b09d94] bg-white p-2 sm:p-3 text-xs sm:text-sm font-medium text-[#3C3A39] focus:border-[#ED695A] focus:ring-2 focus:ring-[#ED695A] transition-all"
-            />
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <label className="block text-xs sm:text-sm font-semibold text-[#78533F] flex items-center">
-            <span className="mr-2">📍</span>Address
-          </label>
-          <input
-            type="text"
-            name="address"
-            value={formData.address}
-            onChange={handleFormChange}
-            required
-            className="w-full rounded-xl border-2 border-[#b09d94] bg-white p-2 sm:p-3 text-xs sm:text-sm font-medium text-[#3C3A39] focus:border-[#ED695A] focus:ring-2 focus:ring-[#ED695A] transition-all"
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-          <div className="space-y-2">
-            <label className="block text-xs sm:text-sm font-semibold text-[#78533F] flex items-center">
-              <span className="mr-2">💰</span>Total Amount
-            </label>
-            <div className="bg-white rounded-xl border-2 border-[#b09d94] p-2 sm:p-3">
-              <span className="text-sm sm:text-base md:text-lg font-bold text-[#78533F]">
-                ₹{Number(vendor.totalamount).toLocaleString("en-IN")}
-              </span>
             </div>
           </div>
-          <div className="space-y-2">
-            <label className="block text-xs sm:text-sm font-semibold text-[#78533F] flex items-center">
-              <span className="mr-2">💳</span>Advance Amount
-            </label>
-            <div className="bg-white rounded-xl border-2 border-[#b09d94] p-2 sm:p-3">
-              <span className="text-sm sm:text-base md:text-lg font-bold text-[#78533F]">
-                ₹{Number(vendor.advAmnt).toLocaleString("en-IN")}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex justify-end gap-4 pt-4 sm:pt-6 border-t-2 border-[#b09d94]">
-          <button
-            type="button"
-            onClick={() => setIsModalOpen(false)}
-            className="px-3 sm:px-4 md:px-6 py-2 sm:py-3 bg-white hover:bg-gray-100 text-[#3C3A39] font-semibold rounded-xl transition-all transform hover:scale-105 shadow-lg text-xs sm:text-sm"
-          >
-            ❌ Cancel
-          </button>
-          <button
-            type="submit"
-            className="px-3 sm:px-4 md:px-6 py-2 sm:py-3 bg-[#ED695A] hover:bg-[#d85c4e] text-white font-semibold rounded-xl transition-all transform hover:scale-105 shadow-lg text-xs sm:text-sm"
-          >
-            💳 Proceed to Payment
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-)}
-
-      {isPaymentModalOpen && bookingData && (
-  <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 px-2 sm:px-4 backdrop-blur-sm">
-    <div className="bg-[#FDF8F1] rounded-2xl shadow-2xl border-2 border-[#b09d94] p-4 sm:p-6 md:p-8 w-full max-w-2xl overflow-auto max-h-[90vh] transform transition-all">
-      <div className="text-center mb-4 sm:mb-6 pb-4 border-b-2 border-[#b09d94]">
-        <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-[#78533F] mb-2">
-          💳 Payment for Booking
-        </h2>
-        <p className="text-[#3C3A39] text-xs sm:text-sm font-medium">Secure payment gateway</p>
-      </div>
-
-      <div className="mb-4 sm:mb-6 bg-white rounded-xl p-3 sm:p-4 border-2 border-[#b09d94]">
-        <h3 className="text-sm sm:text-base md:text-lg font-bold text-[#78533F] mb-3 flex items-center">
-          <span className="mr-2">📋</span>Booking Summary
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs sm:text-sm">
-          <div className="space-y-2">
-            <p className="flex justify-between">
-              <span className="font-semibold text-[#78533F]">Vendor:</span>{" "}
-              <span className="text-[#3C3A39]">{bookingData.vendorName}</span>
-            </p>
-            <p className="flex justify-between">
-              <span className="font-semibold text-[#78533F]">Email:</span>{" "}
-              <span className="text-[#3C3A39]">{bookingData.userEmail}</span>
-            </p>
-            <p className="flex justify-between">
-              <span className="font-semibold text-[#78533F]">Date:</span>{" "}
-              <span className="text-[#3C3A39]">{bookingData.bookedDate}</span>
-            </p>
-            <p className="flex justify-between">
-              <span className="font-semibold text-[#78533F]">Time:</span>{" "}
-              <span className="text-[#3C3A39]">{bookingData.timeSlot}</span>
-            </p>
-          </div>
-          <div className="space-y-2">
-            <p className="flex justify-between">
-              <span className="font-semibold text-[#78533F]">Total:</span>{" "}
-              <span className="text-[#3C3A39] font-bold">
-                ₹{bookingData.totalAmount.toLocaleString("en-IN")}
-              </span>
-            </p>
-            <p className="flex justify-between">
-              <span className="font-semibold text-[#78533F]">Advance:</span>{" "}
-              <span className="text-[#3C3A39] font-bold">
-                ₹{bookingData.advanceAmount.toLocaleString("en-IN")}
-              </span>
-            </p>
-            <p className="flex justify-between">
-              <span className="font-semibold text-[#78533F]">Paying:</span>{" "}
-              <span className="text-[#3C3A39] font-bold">
-                ₹
-                {paymentType === "advance"
-                  ? bookingData.advanceAmount.toLocaleString("en-IN")
-                  : bookingData.totalAmount.toLocaleString("en-IN")}
-              </span>
-            </p>
-            <p className="flex justify-between">
-              <span className="font-semibold text-[#78533F]">Balance:</span>{" "}
-              <span className="text-[#3C3A39] font-bold">
-                ₹
-                {paymentType === "advance"
-                  ? (bookingData.totalAmount - bookingData.advanceAmount).toLocaleString("en-IN")
-                  : "0"}
-              </span>
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <form onSubmit={handlePaymentSubmit} className="space-y-4 sm:space-y-6">
-        <div className="space-y-4">
-          <label className="block text-sm sm:text-base md:text-lg font-bold text-[#78533F] flex items-center">
-            <span className="mr-2">💰</span>Payment Type
-          </label>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="relative">
-              <input
-                id="advance"
-                name="paymentType"
-                type="radio"
-                value="advance"
-                checked={paymentType === "advance"}
-                onChange={(e) => setPaymentType(e.target.value as "advance" | "full")}
-                className="sr-only"
-              />
-              <label
-                htmlFor="advance"
-                className={`block p-3 sm:p-4 rounded-xl border-2 cursor-pointer transition-all transform hover:scale-105 ${paymentType === "advance" ? "border-[#ED695A] bg-[#FDF8F1] shadow-lg" : "border-[#b09d94] bg-white hover:border-[#ED695A]"}`}
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-sm sm:text-base md:text-lg font-bold text-[#78533F]">💳 Advance</span>
-                    <p className="text-xs sm:text-sm text-[#3C3A39]">Pay partial amount</p>
-                  </div>
-                  <span className="text-sm sm:text-base md:text-lg font-bold text-[#3C3A39]">
-                    ₹{bookingData.advanceAmount.toLocaleString("en-IN")}
-                  </span>
+          <div className="mb-6 sm:mb-8">
+            <h3 className="text-base sm:text-lg md:text-xl font-semibold text-left text-[#49516F] mb-3 sm:mb-4">
+              Reviews
+            </h3>
+            <div className="flex flex-col lg:flex-row gap-6">
+              <div className="w-full lg:w-1/2">
+                <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+                  <h4 className="text-sm sm:text-base md:text-lg font-semibold text-[#4A2C2A] mb-4">
+                    Existing Reviews
+                  </h4>
+                  {vendor.reviews && vendor.reviews.length > 0 ? (
+                    <div className="space-y-4">
+                      {vendor.reviews.map((review, index) => (
+                        <div key={index} className="border-b border-gray-200 pb-4">
+                          <div className="flex items-center mb-2">
+                            <span className="font-semibold text-[#2A2929]">{review.name}</span>
+                            <span className="ml-2 text-[#ED695A]">
+                              {"★".repeat(review.rating) + "☆".repeat(5 - review.rating)}
+                            </span>
+                          </div>
+                          <p className="text-xs sm:text-sm text-[#2A2929]">{review.comment}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs sm:text-sm text-[#2A2929]">No reviews yet.</p>
+                  )}
                 </div>
-              </label>
-            </div>
-            <div className="relative">
-              <input
-                id="full"
-                name="paymentType"
-                type="radio"
-                value="full"
-                checked={paymentType === "full"}
-                onChange={(e) => setPaymentType(e.target.value as "advance" | "full")}
-                className="sr-only"
-              />
-              <label
-                htmlFor="full"
-                className={`block p-3 sm:p-4 rounded-xl border-2 cursor-pointer transition-all transform hover:scale-105 ${paymentType === "full" ? "border-[#ED695A] bg-[#FDF8F1] shadow-lg" : "border-[#b09d94] bg-white hover:border-[#ED695A]"}`}
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-sm sm:text-base md:text-lg font-bold text-[#78533F]">💰 Full Payment</span>
-                    <p className="text-xs sm:text-sm text-[#3C3A39]">Pay complete amount</p>
-                  </div>
-                  <span className="text-sm sm:text-base md:text-lg font-bold text-[#3C3A39]">
-                    ₹{bookingData.totalAmount.toLocaleString("en-IN")}
-                  </span>
-                </div>
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <label className="block text-sm sm:text-base md:text-lg font-bold text-[#78533F] flex items-center">
-            <span className="mr-2">🏦</span>Payment Method
-          </label>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {[
-              { id: "credit", label: "Credit Card", icon: "💳", color: "ED695A" },
-              { id: "debit", label: "Debit Card", icon: "💳", color: "ED695A" },
-              { id: "upi", label: "UPI", icon: "📱", color: "ED695A" },
-              { id: "netbanking", label: "Net Banking", icon: "🏦", color: "ED695A" },
-            ].map((method) => (
-              <div key={method.id} className="relative">
-                <input
-                  id={method.id}
-                  name="paymentMethod"
-                  type="radio"
-                  value={method.id}
-                  checked={paymentMethod === method.id}
-                  onChange={(e) => setPaymentMethod(e.target.value)}
-                  className="sr-only"
-                />
-                <label
-                  htmlFor={method.id}
-                  className={`block p-2 sm:p-3 rounded-xl border-2 cursor-pointer transition-all transform hover:scale-105 text-center ${paymentMethod === method.id ? `border-[#${method.color}] bg-[#FDF8F1] shadow-lg` : "border-[#b09d94] bg-white hover:border-[#ED695A]"}`}
-                >
-                  <div className="text-lg sm:text-xl md:text-2xl mb-1">{method.icon}</div>
-                  <div className="text-xs sm:text-sm font-semibold text-[#3C3A39]">{method.label}</div>
-                </label>
               </div>
-            ))}
+              <div className="w-full lg:w-1/3">
+                <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+                  <h4 className="text-sm sm:text-base md:text-lg font-semibold text-[#4A2C2A] mb-4">
+                    Post a Review
+                  </h4>
+                  <form onSubmit={handleReviewSubmit} className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs sm:text-sm font-semibold text-[#78533F] mb-1">Name</label>
+                        <input
+                          type="text"
+                          name="name"
+                          value={reviewFormData.name}
+                          onChange={handleReviewFormChange}
+                          placeholder="Enter your name"
+                          required
+                          className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-xs sm:text-sm focus:ring-2 focus:ring-[#ED695A]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs sm:text-sm font-semibold text-[#78533F] mb-1">Email</label>
+                        <input
+                          type="email"
+                          name="email"
+                          value={reviewFormData.email}
+                          onChange={handleReviewFormChange}
+                          placeholder="Enter your email"
+                          required
+                          className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-xs sm:text-sm focus:ring-2 focus:ring-[#ED695A]"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs sm:text-sm font-semibold text-[#78533F] mb-1">Password</label>
+                      <div className="relative">
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          name="password"
+                          value={reviewFormData.password}
+                          onChange={handleReviewFormChange}
+                          placeholder="Enter your password"
+                          required
+                          className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-xs sm:text-sm pr-10 focus:ring-2 focus:ring-[#ED695A]"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        >
+                          {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs sm:text-sm font-semibold text-[#78533F] mb-1">Rating</label>
+                        <select
+                          name="rating"
+                          value={reviewFormData.rating}
+                          onChange={handleReviewFormChange}
+                          required
+                          className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-xs sm:text-sm focus:ring-2 focus:ring-[#ED695A] appearance-none"
+                        >
+                          <option value="" disabled>Select rating</option>
+                          <option value="1">1 Star</option>
+                          <option value="2">2 Stars</option>
+                          <option value="3">3 Stars</option>
+                          <option value="4">4 Stars</option>
+                          <option value="5">5 Stars</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs sm:text-sm font-semibold text-[#78533F] mb-1">Comment</label>
+                        <input
+                          type="text"
+                          name="comment"
+                          value={reviewFormData.comment}
+                          onChange={handleReviewFormChange}
+                          placeholder="Enter your comment"
+                          required
+                          className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-xs sm:text-sm focus:ring-2 focus:ring-[#ED695A]"
+                        />
+                      </div>
+                    </div>
+                    <button
+                      type="submit"
+                      className="w-full bg-[#78533F] text-white py-2 rounded-full font-semibold text-xs sm:text-sm hover:bg-[#634331] transition"
+                    >
+                      Submit Review
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-
-        <div className="flex justify-end gap-4 pt-4 sm:pt-6 border-t-2 border-[#b09d94]">
-          <button
-            type="button"
-            onClick={() => setIsPaymentModalOpen(false)}
-            className="px-3 sm:px-4 md:px-6 py-2 sm:py-3 bg-white hover:bg-gray-100 text-[#3C3A39] font-semibold rounded-xl transition-all transform hover:scale-105 shadow-lg text-xs sm:text-sm"
-          >
-            ❌ Cancel
-          </button>
-          <button
-            type="submit"
-            className="px-3 sm:px-4 md:px-6 py-2 sm:py-3 bg-[#ED695A] hover:bg-[#d85c4e] text-white font-semibold rounded-xl transition-all transform hover:scale-105 shadow-lg flex items-center text-xs sm:text-sm"
-          >
-            <span className="mr-2">🔒</span>Pay Now
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-)}
+      </div>
     </div>
   )
 }
