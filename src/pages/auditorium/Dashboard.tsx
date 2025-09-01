@@ -217,7 +217,7 @@ const DashboardOverview = () => {
           <div className="mb-6">
             <h2 className="text-2xl font-bold text-[#78533F] sm:text-3xl">
               Welcome to the Auditorium{" "}
-              <span className="text-sm bg-[#ED695A] text-white px-1 rounded">{auditoriumName.toUpperCase() || "N/A"}</span>
+              <span className="text-3xl bg-[#ED695A] text-white px-1 rounded">{auditoriumName.toUpperCase() || "N/A"}</span>
             </h2>
             <p className="text-gray-600 text-sm sm:text-base mt-1">
               Hello! Here's what's happening with your venues today.

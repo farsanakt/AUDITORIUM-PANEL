@@ -17,7 +17,7 @@ import {
   Upload,
   ImageIcon,
 } from "lucide-react"
-import { addVenueAPI, deleteVenueAPI, existingAllVenues, updateVenues } from "../../api/userApi"
+import { addVenueAPI, deleteVenueAPI, existingAllVenues, fetchAuditoriumUserdetails, findAuditoriumById, updateVenues } from "../../api/userApi"
 import { toast } from "react-toastify"
 import Swal from 'sweetalert2';
 
@@ -122,6 +122,7 @@ const availableAmenities = [
   "Decoration Services",
   "Valet Parking",
   "Wheelchair Accessible",
+  'other'
 ]
 
 const availableEvents = [
@@ -190,11 +191,11 @@ export default function VenueManagement() {
 
   const fetchUserData = async (): Promise<void> => {
     try {
-      // Using provided data and adding phone and email
+      const response=await fetchAuditoriumUserdetails(currentUser.id)
       setUserData({
-        address: "Vettukkad",
-        panchayat: "Anjuthengu",
-        phone: currentUser.phone || "1234567890",
+        address: response.data.address,
+        panchayat: response.data.panchayat,
+        phone: response.data.phone ,
         email: currentUser.email || "example@example.com",
       })
     } catch (error) {
@@ -919,23 +920,13 @@ export default function VenueManagement() {
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Panchayat *</label>
-                    <select
+                    <input
                       name="panchayat"
                       value={newVenue.panchayat || ""}
-                      onChange={(e) => handleInputChange(e, true)}
-                      className="w-full px-4 py-2 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553] text-sm bg-gray-100"
+                      className="w-full px-4 py-2 border border-[#b09d94] rounded-lg text-sm bg-gray-100"
                       required
                       disabled
-                    >
-                      <option value="" disabled>
-                        Select Panchayat
-                      </option>
-                      {panchayatOptions.map((panchayat) => (
-                        <option key={panchayat} value={panchayat}>
-                          {panchayat}
-                        </option>
-                      ))}
-                    </select>
+                    />
                   </div>
                   <div className="sm:col-span-2">
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Cities *</label>
