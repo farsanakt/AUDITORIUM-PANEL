@@ -34,10 +34,10 @@ interface InquiryData {
   name: string
   email: string
   contact: string
-  eventDate: string
-  eventType: string
-  message: string
-  notifications: string[]
+  eventDate: string,
+  eventType: string,
+  message: string,
+  notification: string
 }
 
 interface ReviewData {
@@ -60,8 +60,7 @@ const VendorDetails: React.FC = () => {
     eventDate: "",
     eventType: "",
     message: "",
-    notifyWhatsapp: false,
-    notifyEmail: false,
+    notification: "",
   })
   const [reviewFormData, setReviewFormData] = useState({
     name: "",
@@ -122,13 +121,8 @@ const VendorDetails: React.FC = () => {
   }, [id, vendor?.images.length])
 
   const handleInquiryFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value, type } = e.target
-    if (type === "checkbox") {
-      const checked = (e.target as HTMLInputElement).checked
-      setInquiryFormData((prev) => ({ ...prev, [name]: checked }))
-    } else {
-      setInquiryFormData((prev) => ({ ...prev, [name]: value }))
-    }
+    const { name, value } = e.target
+    setInquiryFormData((prev) => ({ ...prev, [name]: value }))
   }
 
   const handleReviewFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -140,10 +134,6 @@ const VendorDetails: React.FC = () => {
     e.preventDefault()
     if (!vendor) return
 
-    const notifications: string[] = []
-    if (inquiryFormData.notifyWhatsapp) notifications.push('whatsapp')
-    if (inquiryFormData.notifyEmail) notifications.push('email')
-
     const dataToSend: InquiryData = {
       vendorId: vendor._id,
       name: inquiryFormData.name,
@@ -152,7 +142,7 @@ const VendorDetails: React.FC = () => {
       eventDate: inquiryFormData.eventDate,
       eventType: inquiryFormData.eventType,
       message: inquiryFormData.message,
-      notifications,
+      notification: inquiryFormData.notification,
     }
 
     try {
@@ -164,22 +154,8 @@ const VendorDetails: React.FC = () => {
         eventDate: "",
         eventType: "",
         message: "",
-        notifyWhatsapp: false,
-        notifyEmail: false,
+        notification: "",
       })
-      // if (response.status) {
-      //   Swal.fire({
-      //     icon: 'success',
-      //     title: 'Inquiry Sent',
-      //     text: response.message || 'Your inquiry has been successfully submitted!',
-      //   })
-      // } else {
-      //   Swal.fire({
-      //     icon: 'error',
-      //     title: 'Inquiry Failed',
-      //     text: response.message || 'There was an issue with your inquiry. Please try again.',
-      //   })
-      // }
     } catch (err) {
       console.error("Error submitting inquiry:", err)
       Swal.fire({
@@ -211,20 +187,6 @@ const VendorDetails: React.FC = () => {
         comment: "",
         password: "",
       })
-      // if (response.status) {
-      //   Swal.fire({
-      //     icon: 'success',
-      //     title: 'Review Posted',
-      //     text: response.message || 'Your review has been successfully submitted!',
-      //   })
-      //   fetchVendorDetails() // Refresh vendor details to get updated reviews
-      // } else {
-      //   Swal.fire({
-      //     icon: 'error',
-      //     title: 'Review Failed',
-      //     text: response.message || 'There was an issue with your review. Please try again.',
-      //   })
-      // }
     } catch (err) {
       console.error("Error submitting review:", err)
       Swal.fire({
@@ -288,7 +250,6 @@ const VendorDetails: React.FC = () => {
                 <h3 className="text-base sm:text-lg md:text-xl font-semibold text-[#4A2C2A] mb-4">Send Inquiry</h3>
                 <form onSubmit={handleInquirySubmit} className="space-y-3 flex-grow">
                   <div>
-                    {/* <label className="block text-xs sm:text-sm font-semibold text-[#78533F] mb-1">Name</label> */}
                     <input
                       type="text"
                       name="name"
@@ -300,7 +261,6 @@ const VendorDetails: React.FC = () => {
                     />
                   </div>
                   <div>
-                    {/* <label className="block text-xs sm:text-sm font-semibold text-[#78533F] mb-1">Email</label> */}
                     <input
                       type="email"
                       name="email"
@@ -312,7 +272,6 @@ const VendorDetails: React.FC = () => {
                     />
                   </div>
                   <div>
-                    {/* <label className="block text-xs sm:text-sm font-semibold text-[#78533F] mb-1">Contact</label> */}
                     <input
                       type="tel"
                       name="contact"
@@ -325,7 +284,6 @@ const VendorDetails: React.FC = () => {
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      {/* <label className="block text-xs sm:text-sm font-semibold text-[#78533F] mb-1">Event Date</label> */}
                       <input
                         type="date"
                         name="eventDate"
@@ -337,7 +295,6 @@ const VendorDetails: React.FC = () => {
                       />
                     </div>
                     <div>
-                      {/* <label className="block text-xs sm:text-sm font-semibold text-[#78533F] mb-1">Event Type</label> */}
                       <select
                         name="eventType"
                         value={inquiryFormData.eventType}
@@ -354,7 +311,6 @@ const VendorDetails: React.FC = () => {
                     </div>
                   </div>
                   <div>
-                    {/* <label className="block text-xs sm:text-sm font-semibold text-[#78533F] mb-1">Message</label> */}
                     <textarea
                       name="message"
                       value={inquiryFormData.message}
@@ -365,13 +321,14 @@ const VendorDetails: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs sm:text-sm font-semibold text-[#78533F] mb-1">Notifications</label>
+                    <label className="block text-xs sm:text-sm font-semibold text-[#78533F] mb-1">Notification</label>
                     <div className="flex space-x-4">
                       <label className="flex items-center text-xs sm:text-sm text-[#4A2C2A]">
                         <input
-                          type="checkbox"
-                          name="notifyWhatsapp"
-                          checked={inquiryFormData.notifyWhatsapp}
+                          type="radio"
+                          name="notification"
+                          value="whatsapp"
+                          checked={inquiryFormData.notification === 'whatsapp'}
                           onChange={handleInquiryFormChange}
                           className="mr-2 accent-[#ED695A]"
                         />
@@ -379,9 +336,10 @@ const VendorDetails: React.FC = () => {
                       </label>
                       <label className="flex items-center text-xs sm:text-sm text-[#4A2C2A]">
                         <input
-                          type="checkbox"
-                          name="notifyEmail"
-                          checked={inquiryFormData.notifyEmail}
+                          type="radio"
+                          name="notification"
+                          value="email"
+                          checked={inquiryFormData.notification === 'email'}
                           onChange={handleInquiryFormChange}
                           className="mr-2 accent-[#ED695A]"
                         />

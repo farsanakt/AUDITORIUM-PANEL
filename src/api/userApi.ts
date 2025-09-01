@@ -96,7 +96,7 @@ export const fetchAuditoriumUserdetails=async(id:string)=>{
 
 export const createVendorInquiry=async(data:any)=>{
 
-
+    return await api.post('/vendorenquiry',data)
 
 }
 

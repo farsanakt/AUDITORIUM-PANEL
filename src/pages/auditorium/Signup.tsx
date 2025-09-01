@@ -36,6 +36,7 @@ const AuditoriumRegistrationPage: React.FC = () => {
     { value: "Engagement", label: "Engagement" },
     { value: "Anniversary", label: "Anniversary" },
     { value: "wedding", label: "Wedding" },
+    { value: "other", label: "other" },
   ]
 
   const locationOptions = [
