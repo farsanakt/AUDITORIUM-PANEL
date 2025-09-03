@@ -168,7 +168,7 @@ const VendorDetails: React.FC = () => {
       Swal.fire({
         icon: 'error',
         title: 'Error',
-        text: 'An unexpected error occurred. Please try again later.',
+        text: 'something went wrong, Please try again later.',
       })
     }
   }
