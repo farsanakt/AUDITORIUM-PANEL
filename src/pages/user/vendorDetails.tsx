@@ -156,6 +156,13 @@ const VendorDetails: React.FC = () => {
         message: "",
         notification: "",
       })
+        Swal.fire({
+    icon: 'success',
+    title: 'Thank you!',
+    text: 'Your enquiry has been submitted successfully.',
+    timer: 2000,
+    showConfirmButton: false
+  })
     } catch (err) {
       console.error("Error submitting inquiry:", err)
       Swal.fire({
@@ -178,23 +185,33 @@ const VendorDetails: React.FC = () => {
       comment: reviewFormData.comment,
     }
 
-    try {
-      const response = await createVendorReview(dataToSend)
-      setReviewFormData({
-        name: "",
-        email: "",
-        rating: 0,
-        comment: "",
-        password: "",
-      })
-    } catch (err) {
-      console.error("Error submitting review:", err)
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'An unexpected error occurred. Please try again later.',
-      })
-    }
+   try {
+  const response = await createVendorReview(dataToSend)
+
+  setReviewFormData({
+    name: "",
+    email: "",
+    rating: 0,
+    comment: "",
+    password: "",
+  })
+
+  Swal.fire({
+    icon: 'success',
+    title: 'Thank you!',
+    text: 'Your review has been submitted successfully.',
+    timer: 2000,
+    showConfirmButton: false
+  })
+} catch (err) {
+  console.error("Error submitting review:", err)
+  Swal.fire({
+    icon: 'error',
+    title: 'Error',
+    text: 'An unexpected error occurred. Please try again later.',
+  })
+}
+
   }
 
   if (loading) {

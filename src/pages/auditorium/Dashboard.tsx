@@ -183,8 +183,8 @@ const DashboardOverview = () => {
       selectedVenue === "All Venues"
         ? "All-Venues"
         : venues.find((v) => v._id === selectedVenue)?.name || "Unknown Venue",
-    totalBookings: selectedVenue === "All Venues" ? 128 : 0,
-    earnings: selectedVenue === "All Venues" ? { monthly: 356000, yearly: 4250000 } : { monthly: 0, yearly: 0 },
+    totalBookings: selectedVenue === "All Venues" ? 0 : 0,
+    earnings: selectedVenue === "All Venues" ? { monthly: 0, yearly: 0 } : { monthly: 0, yearly: 0 },
     upcomingEvents: getFilteredEvents(),
   };
 
@@ -217,8 +217,11 @@ const DashboardOverview = () => {
           <div className="mb-6">
             <h2 className="text-2xl font-bold text-[#78533F] sm:text-3xl">
               Welcome to the Auditorium{" "}
+              <br/>
+              <br/>
               <span className="text-3xl bg-[#ED695A] text-white px-1 rounded">{auditoriumName.toUpperCase() || "N/A"}</span>
             </h2>
+            <br/>
             <p className="text-gray-600 text-sm sm:text-base mt-1">
               Hello! Here's what's happening with your venues today.
             </p>
