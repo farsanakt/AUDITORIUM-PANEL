@@ -114,7 +114,7 @@ const VenuePage: React.FC = () => {
             </button>
           </div>
 
-          <div className="md:w-1/2 flex flex-col gap-3 sm:gap-4 items-start">
+          {/* <div className="md:w-1/2 flex flex-col gap-3 sm:gap-4 items-start">
             <div className="flex gap-3 sm:gap-4 w-full flex-wrap md:flex-nowrap">
               <div className="w-full md:w-1/2">
                 <select className="w-full p-2 sm:p-3 rounded shadow-md border text-xs sm:text-sm md:text-base">
@@ -139,7 +139,7 @@ const VenuePage: React.FC = () => {
                 <span className="ml-2">🔍</span>
               </button>
             </div>
-          </div>
+          </div> */}
         </div>
       </section>
 
@@ -212,12 +212,14 @@ const VenuePage: React.FC = () => {
                         <td className="py-2 px-3 sm:px-4 text-xs sm:text-sm">₹{Number(auditorium.totalamount).toLocaleString("en-IN")}</td>
                         <td className="py-2 px-3 sm:px-4 text-xs sm:text-sm">₹{Number(auditorium.advAmnt).toLocaleString("en-IN")}</td>
                         <td className="py-2 px-3 sm:px-4">
-                          <button
-                            className="text-[#6e3d2b] hover:underline text-xs sm:text-sm"
-                            onClick={() => navigate(`/auditoriumdetails/${auditorium._id}`)}
-                          >
-                            View Details
-                          </button>
+                        <button
+                        className="px-5 py-2 bg-gradient-to-r from-[#8B4513] to-[#D2691E] text-white rounded-full shadow-md hover:from-[#A0522D] hover:to-[#FF8C00] hover:shadow-lg transition-all duration-300 ease-in-out text-sm sm:text-base font-semibold tracking-wide whitespace-nowrap"
+                        onClick={() => navigate(`/auditoriumdetails/${auditorium._id}`)}
+                        >
+                        Book Now
+                        </button>
+
+
                         </td>
                       </tr>
                     ))}
@@ -225,7 +227,7 @@ const VenuePage: React.FC = () => {
                 </table>
               </div>
             </div>
-
+{/* 
             <div className="mt-4 sm:mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
               <button className="w-full px-3 sm:px-4 py-2 border rounded text-[#6e3d2b] hover:bg-[#fceee5] text-xs sm:text-sm md:text-base min-w-[80px]">
                 View Details
@@ -239,7 +241,7 @@ const VenuePage: React.FC = () => {
               <button className="w-full px-3 sm:px-4 py-2 border rounded text-[#6e3d2b] hover:bg-[#fceee5] text-xs sm:text-sm md:text-base min-w-[80px]">
                 Check Availability
               </button>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>
