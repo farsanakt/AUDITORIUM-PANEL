@@ -30,9 +30,7 @@ const VenueSelector: React.FC = () => {
       const mappedVenues: Venue[] = response.map((item: any, index: number) => ({
         id: item.auditorium._id,
         name: item.auditorium.auditoriumName || `Auditorium ${index + 1}`,
-        location: Array.isArray(item.auditorium.locations) 
-          ? item.auditorium.locations.join(", ") 
-          : item.auditorium.locations || "Unknown Location",
+        location: place || "Unknown Location", // Use the selected place from state
         image: item.images && item.images.length > 0 ? item.images[0] : "https://via.placeholder.com/400x300",
         category: "Auditorium",
         tag: item.auditorium.tag || "Indoor",

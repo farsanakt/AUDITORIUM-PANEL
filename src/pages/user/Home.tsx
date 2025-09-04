@@ -239,12 +239,12 @@ const HomePage: React.FC = () => {
         </div>
 
         <div className="absolute top-16 sm:top-20 left-4 sm:left-6 md:left-8 lg:left-12 xl:left-20 text-[#9c7c5d] text-xs sm:text-sm font-medium z-40">
-          {/* <div>EVENT DESIGN</div>
-          <div>COMPANY</div> */}
+          <div>EVENT DESIGN</div>
+          <div>COMPANY</div>
         </div>
 
         <div className="absolute top-16 sm:top-20 right-4 sm:right-6 md:right-8 lg:right-12 xl:right-20 text-[#9c7c5d] text-xs sm:text-sm font-medium z-40">
-          {/* Find Local Venues */}
+          Find Local Venues
         </div>
 
         <div className="relative z-10 h-full flex flex-col lg:flex-row items-center justify-between px-4 sm:px-6 md:px-8 lg:px-12 xl:px-20 py-8 pt-20 sm:pt-24">
