@@ -445,7 +445,7 @@ export default function VendorManagement() {
           <div className="bg-white p-6 rounded-lg shadow-sm mb-6 border border-gray-100">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
               <div>
-                <h2 className="text-xl font-semibold text-[#825F4C]">Vendors ({filteredVendors.length})</h2>
+                <h2 className="text-xl font-semibold text-[#825F4C]">Products({filteredVendors.length})</h2>
               </div>
               <button
                 onClick={() => setIsAddModalOpen(true)}
@@ -821,7 +821,7 @@ export default function VendorManagement() {
                   }
                   className="px-4 py-2 bg-[#ED695A] text-white rounded-lg hover:bg-[#D65A4C] disabled:bg-gray-300 disabled:cursor-not-allowed text-sm"
                 >
-                  Add Vendor
+                  Add Product
                 </button>
               </div>
             </div>
