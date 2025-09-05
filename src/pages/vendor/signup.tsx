@@ -16,6 +16,7 @@ const VendorRegistration: React.FC = () => {
     email: "",
     phone: "",
     password: "",
+    address: "",
     confirmPassword: "",
   })
 
@@ -51,7 +52,7 @@ const VendorRegistration: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen h-screen  flex flex-col items-center justify-center px-4 py-6 box-border">
+    <div className="min-h-screen h-screen flex flex-col items-center justify-center px-4 py-6 box-border">
       <Header />
       <div className="flex flex-col md:flex-row bg-white shadow-xl rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto box-border">
         {/* Form Section */}
@@ -154,6 +155,21 @@ const VendorRegistration: React.FC = () => {
                     required
                   />
                 </div>
+              </div>
+              <div className="space-y-1">
+                <label htmlFor="address" className="block text-[#78533F] font-medium text-sm">
+                  Address
+                </label>
+                <input
+                  type="text"
+                  id="address"
+                  name="address"
+                  className="w-full px-3 py-2 border border-[#b09d94] rounded-full focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200 text-sm"
+                  value={formData.address}
+                  onChange={handleChange}
+                  placeholder="Enter your address"
+                  required
+                />
               </div>
 
               <div className="flex items-center">
