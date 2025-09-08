@@ -11,7 +11,6 @@ import VenuePage from '../user/VenueList'
 import VendorList from '../user/Vendor'
 import VendorDetails from '../user/vendorDetails'
 import ProtectedRoute from '../../service/user/userProtectedRoute'
-import VendorProtectedRoute from '../../service/vendor/vendorProtectedRoute'
 
 // import DetailsForm from '../user/Details'
 
@@ -22,7 +21,7 @@ const UserRoute = () => {
      <Routes>
       
         <Route path='/auditoriumdetails/:id' element={<ProtectedRoute><AuditoriumDetails/></ProtectedRoute>} />
-        <Route path ='/bookings/:id' element={<Bookings/>}/>
+        <Route path ='/bookings/:id' element={<ProtectedRoute><Bookings/></ProtectedRoute>}/>
         <Route path='/details' element={<DetailsForm/>} />
         <Route path='/singup' element={<UserRegistrationPage/>} />
         <Route path='/login' element={<UserLoginPage/>} />
@@ -30,7 +29,7 @@ const UserRoute = () => {
         <Route path='/auditoriumlist' element={<AuditoriumList/>}/>
         <Route path='/venuelist/:id' element={<VenuePage/>}/>
         <Route path='/vendorslist/' element={<VendorList/>}/>
-        <Route path='/vendordetails/:id' element={<VendorProtectedRoute><VendorDetails/></VendorProtectedRoute>} />
+        <Route path='/vendordetails/:id' element={<ProtectedRoute><VendorDetails/></ProtectedRoute>} />
         </Routes> 
     </div>
   )
