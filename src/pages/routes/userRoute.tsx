@@ -11,6 +11,7 @@ import VenuePage from '../user/VenueList'
 import VendorList from '../user/Vendor'
 import VendorDetails from '../user/vendorDetails'
 import ProtectedRoute from '../../service/user/userProtectedRoute'
+import VendorProtectedRoute from '../../service/vendor/vendorProtectedRoute'
 
 // import DetailsForm from '../user/Details'
 
@@ -29,7 +30,7 @@ const UserRoute = () => {
         <Route path='/auditoriumlist' element={<AuditoriumList/>}/>
         <Route path='/venuelist/:id' element={<VenuePage/>}/>
         <Route path='/vendorslist/' element={<VendorList/>}/>
-        <Route path='/vendordetails/:id' element={<VendorDetails/>} />
+        <Route path='/vendordetails/:id' element={<VendorProtectedRoute><VendorDetails/></VendorProtectedRoute>} />
         </Routes> 
     </div>
   )
