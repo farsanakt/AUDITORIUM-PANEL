@@ -10,6 +10,8 @@ import AuditoriumList from '../user/AuditoriumList'
 import VenuePage from '../user/VenueList'
 import VendorList from '../user/Vendor'
 import VendorDetails from '../user/vendorDetails'
+import ProtectedRoute from '../../service/user/userProtectedRoute'
+
 // import DetailsForm from '../user/Details'
 
 const UserRoute = () => {
@@ -17,7 +19,8 @@ const UserRoute = () => {
   return (
     <div>
      <Routes>
-        <Route path='/auditoriumdetails/:id' element={<AuditoriumDetails/>} />
+      
+        <Route path='/auditoriumdetails/:id' element={<ProtectedRoute><AuditoriumDetails/></ProtectedRoute>} />
         <Route path ='/bookings/:id' element={<Bookings/>}/>
         <Route path='/details' element={<DetailsForm/>} />
         <Route path='/singup' element={<UserRegistrationPage/>} />
