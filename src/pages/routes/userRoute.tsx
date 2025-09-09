@@ -12,17 +12,17 @@ import VendorList from '../user/Vendor'
 import VendorDetails from '../user/vendorDetails'
 import ProtectedRoute from '../../service/user/userProtectedRoute'
 
-// import DetailsForm from '../user/Details'
+
 
 const UserRoute = () => {
-  console.log('hhhhhh')
+ 
   return (
     <div>
      <Routes>
       
         <Route path='/auditoriumdetails/:id' element={<ProtectedRoute><AuditoriumDetails/></ProtectedRoute>} />
         <Route path ='/bookings/:id' element={<ProtectedRoute><Bookings/></ProtectedRoute>}/>
-        <Route path='/details' element={<DetailsForm/>} />
+        <Route path='/details/:email' element={<DetailsForm/>} />
         <Route path='/singup' element={<UserRegistrationPage/>} />
         <Route path='/login' element={<UserLoginPage/>} />
         <Route path='/' element={<HomePage/>}/>

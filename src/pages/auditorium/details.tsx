@@ -1,11 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Calendar } from "lucide-react"
 import { cn } from "../../component/lib/utils"
 import Lines from '../../assets/vector.png'
 import Header from "../../component/user/Header"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useParams } from "react-router-dom"
 
 
 
@@ -14,6 +14,11 @@ type PersonType = "bride" | "groom"
 export default function DetailsForm() {
   const [personType, setPersonType] = useState<PersonType>("bride")
   const navigate=useNavigate()
+  const {email}=useParams()
+
+  useEffect(()=>{
+    console.log(email)
+  },[])
   
   const handleSave=()=>{
     navigate('/auditorium/payment')

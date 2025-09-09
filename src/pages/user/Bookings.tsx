@@ -6,6 +6,8 @@ import Lines from "../../assets/vector.png"
 import Homeicon from "../../assets/homeIcon.png"
 import { useNavigate, useParams } from "react-router-dom"
 import { singleVenueDetails, createBooking, existingBkngs } from "../../api/userApi"
+import { useSelector } from "react-redux"
+import { RootState } from "../../redux/store"
 
 class ErrorBoundary extends Component<{ children: React.ReactNode }, { hasError: boolean; error: Error | null }> {
   state = { hasError: false, error: null }
@@ -49,6 +51,7 @@ interface BookingFormData {
   paymentType: "full" | "advance"
   paidAmount: string
   balanceAmount: string
+  exactBookingTime?: string
 }
 
 interface TimeSlot {
@@ -97,12 +100,14 @@ const Bookings: React.FC = () => {
     paymentType: "advance",
     paidAmount: "",
     balanceAmount: "",
+    exactBookingTime: "",
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>("")
   const [bookings, setBookings] = useState<Booking[]>([])
   const navigate = useNavigate()
+  const { currentUser } = useSelector((state: RootState) => state.auth)
 
   const monthNames = [
     "January", "February", "March", "April", "May", "June",
@@ -114,6 +119,14 @@ const Bookings: React.FC = () => {
     const month = String(date.getMonth() + 1).padStart(2, "0")
     const day = String(date.getDate()).padStart(2, "0")
     return `${year}-${month}-${day}`
+  }
+
+  const formatExactTime = (date: Date): string => {
+    return date.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    })
   }
 
   const getDaysInMonth = (date: Date) => {
@@ -139,6 +152,7 @@ const Bookings: React.FC = () => {
         })
         setFormData((prev) => ({
           ...prev,
+          userEmail: currentUser?.email || "",
           venueName: venueData.name || "",
           totalAmount: venueData.totalamount || "",
           advanceAmount: venueData.advAmnt || "",
@@ -178,6 +192,7 @@ const Bookings: React.FC = () => {
   }
 
   useEffect(() => {
+    console.log(currentUser, 'ippoyathe user')
     if (id) {
       fetchVenueData()
       fetchExistingBookings()
@@ -358,6 +373,10 @@ const Bookings: React.FC = () => {
     }
     setShowModal(true)
     setCurrentPage("form")
+    setFormData((prev) => ({
+      ...prev,
+      exactBookingTime: formatExactTime(new Date()),
+    }))
   }
 
   const handleInputChange = (field: keyof BookingFormData, value: string) => {
@@ -413,6 +432,7 @@ const Bookings: React.FC = () => {
         bookedDate: formData.bookingDate,
         timeSlot: formData.timeSlot,
         address: formData.address,
+        exactBookingTime: formData.exactBookingTime,
       }
       const response = await createBooking(bookingData)
       console.log("Booking data sent to backend:", response)
@@ -491,7 +511,7 @@ const Bookings: React.FC = () => {
               </div>
             </div>
             <div className="grid lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
-              <div className="space-y-4 sm:space-y-6">
+              <div className="space-y-4 sm:space-y-6 temporarily-unavailable">
                 <h3 className="text-base sm:text-lg md:text-xl font-semibold text-[#78533F]">Availability Calendar</h3>
                 <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 border-2 border-[#b09d94]">
                   <div className="flex items-center justify-between mb-4 sm:mb-6">
@@ -790,7 +810,9 @@ const Bookings: React.FC = () => {
                         <div className="bg-white p-3 sm:p-4 rounded-xl border-2 border-[#b09d94]">
                           <p className="text-xs sm:text-sm text-[#78533F] font-medium">Venue: {formData.venueName}</p>
                           <p className="text-xs sm:text-sm text-[#78533F] font-medium">Date: {formData.bookingDate}</p>
-                          <p className="text-xs sm:text-sm text-[#78533F] font-medium">Time: {formData.timeSlot}</p>
+                          <p className="text-xs sm:text-sm text-[#78533F] font-medium">
+                            Time: {venue?.timeSlots.find(slot => slot.id === formData.timeSlot)?.label || formData.timeSlot}
+                          </p>
                           <p className="text-xs sm:text-sm text-[#78533F] font-medium">
                             Total Amount: ₹{Number(formData.totalAmount).toLocaleString("en-IN")}
                           </p>
@@ -894,7 +916,8 @@ const Bookings: React.FC = () => {
                         <div className="bg-white p-3 sm:p-4 rounded-xl border-2 border-[#b09d94]">
                           <p className="text-xs sm:text-sm text-[#78533F] font-medium">Venue: {formData.venueName}</p>
                           <p className="text-xs sm:text-sm text-[#78533F] font-medium">Date: {formData.bookingDate}</p>
-                          <p className="text-xs sm:text-sm text-[#78533F] font-medium">Time: {formData.timeSlot}</p>
+                          <p className="text-xs sm:text-sm text-[#78533F] font-medium">Time Slot: {formData.timeSlot}</p>
+                          <p className="text-xs sm:text-sm text-[#78533F] font-medium">Booking Time: {formData.exactBookingTime}</p>
                           <p className="text-xs sm:text-sm text-[#78533F] font-medium">Event Type: {eventType}</p>
                           <p className="text-xs sm:text-sm text-[#78533F] font-medium">AC Option: {acOption}</p>
                           <p className="text-xs sm:text-sm text-[#78533F] font-medium">Address: {formData.address}</p>
@@ -914,15 +937,38 @@ const Bookings: React.FC = () => {
                             Reference ID: {Math.random().toString(36).substr(2, 9).toUpperCase()}
                           </p>
                         </div>
-                        <button
-                          onClick={() => {
-                            closeModal()
-                            navigate("/")
-                          }}
-                          className="w-full mt-4 sm:mt-6 bg-[#ED695A] hover:bg-[#d85c4e] text-white py-2 sm:py-3 px-4 sm:px-6 rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl transform hover:scale-105 text-xs sm:text-sm"
-                        >
-                          Okay
-                        </button>
+                        {eventType.toLowerCase() === "wedding" ? (
+                          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mt-4 sm:mt-6">
+                            <button
+                              onClick={() => {
+                                closeModal()
+                                navigate("/")
+                              }}
+                              className="w-full sm:w-auto bg-[#ED695A] hover:bg-[#d85c4e] text-white py-2 sm:py-3 px-4 sm:px-6 rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl transform hover:scale-105 text-xs sm:text-sm"
+                            >
+                              Later
+                            </button>
+                            <button
+                              onClick={() => {
+                                closeModal()
+                                navigate(`/details/${currentUser?.email}`)
+                              }}
+                              className="w-full sm:w-auto bg-[#ED695A] hover:bg-[#d85c4e] text-white py-2 sm:py-3 px-4 sm:px-6 rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl transform hover:scale-105 text-xs sm:text-sm"
+                            >
+                              Nikkah Certificate Details
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => {
+                              closeModal()
+                              navigate("/")
+                            }}
+                            className="w-full mt-4 sm:mt-6 bg-[#ED695A] hover:bg-[#d85c4e] text-white py-2 sm:py-3 px-4 sm:px-6 rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl transform hover:scale-105 text-xs sm:text-sm"
+                          >
+                            Okay
+                          </button>
+                        )}
                       </div>
                     </div>
                   )}
