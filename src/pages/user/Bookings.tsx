@@ -433,6 +433,7 @@ const Bookings: React.FC = () => {
         timeSlot: formData.timeSlot,
         address: formData.address,
         exactBookingTime: formData.exactBookingTime,
+        eventType: eventType,
       }
       const response = await createBooking(bookingData)
       console.log("Booking data sent to backend:", response)
