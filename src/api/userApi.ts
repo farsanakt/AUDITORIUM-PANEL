@@ -233,6 +233,32 @@ export const existingBkngs=async(id:string)=>{
 
 }
 
+
+
+export const createOffer=async(data:any)=>{
+
+   const response=await api.post('/createoffer',data)
+
+   return response
+
+}
+
+export const updateOffer=async(email:string,data:any)=>{
+
+  
+
+}
+export const deleteOffer=async(id:string)=>{
+
+  
+
+}
+export const fetchOffers=async(email:string)=>{
+
+  
+
+}
+
 export const fetchUserBookingsByEmail=async(email:string)=>{
 
   const response=await api.get('/userexistingbooking',{params:{email}})

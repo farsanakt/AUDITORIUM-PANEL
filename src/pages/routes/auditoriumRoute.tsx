@@ -14,6 +14,7 @@ import InvoicePanel from "../auditorium/Invoice";
 import ProtectedRoute from "../../service/protectedRoute";
 import PublicRoute from "../../service/publicRoutes";
 import AuditoriumProfile from "../auditorium/profile";
+import Offer from "../auditorium/Offer";
 
 
 function AuditoriumRoute() {
@@ -35,6 +36,7 @@ function AuditoriumRoute() {
         <Route path='/staff' element={<StaffManagementUI/>}/>
         <Route path='/invoice' element={<InvoicePanel/>}/>
         <Route path='/profile' element={<ProtectedRoute><AuditoriumProfile/></ProtectedRoute>}/>
+        <Route path='/offer' element={<ProtectedRoute><Offer/></ProtectedRoute>}/>
       </Routes>
     </div>
   )
