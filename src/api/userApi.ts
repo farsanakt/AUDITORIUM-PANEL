@@ -233,6 +233,14 @@ export const existingBkngs=async(id:string)=>{
 
 }
 
+export const fetchUserBookingsByEmail=async(email:string)=>{
+
+  const response=await api.get('/userexistingbooking',{params:{email}})
+
+  return response
+
+}
+
 
 export const userSingUpRequest=async(formData:any)=>{
 
