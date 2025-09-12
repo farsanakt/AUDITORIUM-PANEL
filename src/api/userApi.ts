@@ -293,6 +293,20 @@ export const singleVendorDetails=async(id:string)=>{
 
 }
 
+export const submitBrideGroomDetails=async(formData:FormData)=>{
+
+
+
+  const response = await api.post('/bride-groom-details', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+
+  return response
+
+}
+
 
 export const findAuditoriumById=async(id:string)=>{
 
