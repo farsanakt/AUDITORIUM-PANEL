@@ -30,7 +30,7 @@ const Header: React.FC<HeaderProps> = () => {
   };
 
   const goToProfile = () => {
-    navigate("/profile");
+    navigate("/userprofile");
     setDropdownOpen(false);
     setMenuOpen(false);
   };

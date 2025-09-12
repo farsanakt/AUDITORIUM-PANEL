@@ -12,6 +12,7 @@ import VendorList from '../user/Vendor'
 import VendorDetails from '../user/vendorDetails'
 import ProtectedRoute from '../../service/user/userProtectedRoute'
 import UserProfile from '../user/userProfile'
+import UserBookings from '../user/userBookings'
 
 
 
@@ -32,6 +33,7 @@ const UserRoute = () => {
         <Route path='/vendorslist/' element={<VendorList/>}/>
         <Route path='/vendordetails/:id' element={<ProtectedRoute><VendorDetails/></ProtectedRoute>} />
         <Route path='/userprofile' element={<ProtectedRoute><UserProfile/></ProtectedRoute>} />
+        <Route path='/userbookings' element={<ProtectedRoute><UserBookings/></ProtectedRoute>} />
         </Routes> 
     </div>
   )
