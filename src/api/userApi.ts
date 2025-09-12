@@ -243,11 +243,10 @@ export const createOffer=async(data:any)=>{
 
 }
 
-export const updateOffer=async(email:string,data:any)=>{
-
-  
-
-}
+export const updateOffer = async (id: string, data: any) => {
+  const response = await api.put(`/offers/${id}`, data);
+  return response.data;
+};
 export const deleteOffer=async(id:string)=>{
 
   
