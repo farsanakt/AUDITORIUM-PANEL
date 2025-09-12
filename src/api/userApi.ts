@@ -253,10 +253,8 @@ export const deleteOffer=async(id:string)=>{
   
 
 }
-export const fetchOffers=async(email:string)=>{
-
-  
-
+export const fetchOffers = async (id: string) => {
+  return await api.get(`/fetchoffers/${id}`);
 }
 
 export const fetchUserBookingsByEmail=async(email:string)=>{

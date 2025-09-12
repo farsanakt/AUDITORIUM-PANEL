@@ -7,7 +7,7 @@ import Header from '../../component/user/Header';
 import { createOffer, updateOffer, deleteOffer, fetchOffers } from '../../api/userApi';
 
 interface Offer {
-  _id?: string;
+  _id: string;
   offerCode: string;
   discountType: 'percentage' | 'flat';
   discountValue: number;
@@ -15,6 +15,9 @@ interface Offer {
   validTo: string;
   isActive: boolean;
   userId: string;
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
 }
 
 const Offer: React.FC = () => {
@@ -31,20 +34,32 @@ const Offer: React.FC = () => {
     validTo: '',
     isActive: true,
   });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchUserOffers = async () => {
-    if (currentUser?.email) {
-      try {
-        const response = await fetchOffers(currentUser.id);
-        if (response.data.success) {
-          setOffers(response.data.offers);
-        } else {
-          toast.error(response.data.message);
-        }
-      } catch (error) {
-        toast.error('Error fetching offers');
-        console.error('Error fetching offers:', error);
+    if (!currentUser?.email) {
+      setError('User not logged in');
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const response = await fetchOffers(currentUser.id);
+      if (response.data.success) {
+        
+        setOffers(Array.isArray(response.data.data) ? response.data.data : []);
+      } else {
+        setError(response.data.message || 'Failed to fetch offers');
+        toast.error(response.data.message || 'Failed to fetch offers');
       }
+    } catch (error) {
+      setError('Error fetching offers');
+      toast.error('Error fetching offers');
+      console.error('Error fetching offers:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -70,9 +85,9 @@ const Offer: React.FC = () => {
       return;
     }
 
-    const offerData: Offer = {
+    const offerData: Omit<Offer, '_id' | 'createdAt' | 'updatedAt' | '__v'> = {
       ...formData,
-      userId: currentUser.id,
+      userId: currentUser.email,
     };
 
     try {
@@ -120,8 +135,8 @@ const Offer: React.FC = () => {
       offerCode: offer.offerCode,
       discountType: offer.discountType,
       discountValue: offer.discountValue,
-      validFrom: offer.validFrom.split('T')[0],
-      validTo: offer.validTo.split('T')[0],
+      validFrom: new Date(offer.validFrom).toISOString().split('T')[0],
+      validTo: new Date(offer.validTo).toISOString().split('T')[0],
       isActive: offer.isActive,
     });
     setIsEditing(true);
@@ -146,77 +161,83 @@ const Offer: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#FDF8F1] flex flex-col items-center justify-center px-4 py-6 box-border">
       <Header />
-      <div className="w-full max-w-4xl bg-white rounded-2xl shadow-2xl border border-[#b09d94] overflow-hidden my-8">
-        {/* Offers Header */}
-        <div className="bg-white p-4 sm:p-6 border-b border-[#b09d94] flex justify-between items-center">
-          <h2 className="text-lg md:text-2xl font-bold text-[#78533F] font-serif">Your Offers</h2>
-          <button
-            onClick={() => {
-              setIsModalOpen(true);
-              setIsEditing(false);
-              setFormData({
-                offerCode: '',
-                discountType: 'percentage',
-                discountValue: 0,
-                validFrom: '',
-                validTo: '',
-                isActive: true,
-              });
-            }}
-            className="bg-[#ED695A] text-white font-semibold py-2 px-4 rounded-full shadow-md hover:bg-[#d85c4e] transition-all duration-300 font-serif"
-          >
-            Add Offer
-          </button>
-        </div>
+      {isLoading ? (
+        <p className="text-[#78533F] font-serif text-center">Loading offers...</p>
+      ) : error ? (
+        <p className="text-[#ED695A] font-serif text-center">{error}</p>
+      ) : (
+        <div className="w-full max-w-4xl bg-white rounded-2xl shadow-2xl border border-[#b09d94] overflow-hidden my-8">
+          {/* Offers Header */}
+          <div className="bg-white p-4 sm:p-6 border-b border-[#b09d94] flex justify-between items-center">
+            <h2 className="text-lg md:text-2xl font-bold text-[#78533F] font-serif">Your Offers</h2>
+            <button
+              onClick={() => {
+                setIsModalOpen(true);
+                setIsEditing(false);
+                setFormData({
+                  offerCode: '',
+                  discountType: 'percentage',
+                  discountValue: 0,
+                  validFrom: '',
+                  validTo: '',
+                  isActive: true,
+                });
+              }}
+              className="bg-[#ED695A] text-white font-semibold py-2 px-4 rounded-full shadow-md hover:bg-[#d85c4e] transition-all duration-300 font-serif"
+            >
+              Add Offer
+            </button>
+          </div>
 
-        {/* Offers List */}
-        <div className="p-4 sm:p-6">
-          {offers.length === 0 ? (
-            <p className="text-center text-gray-600 font-serif">No offers found.</p>
-          ) : (
-            <div className="space-y-4">
-              {offers.map((offer) => (
-                <div
-                  key={offer._id}
-                  className="flex flex-col sm:flex-row items-center justify-between p-4 bg-white border border-[#b09d94] rounded-xl hover:bg-[#FDF8F1] transition-colors duration-300"
-                >
-                  <div className="flex items-center space-x-4 w-full sm:w-auto">
-                    <div className="text-left">
-                      <p className="text-[#78533F] font-semibold font-serif">{offer.offerCode}</p>
-                      <p className="text-sm text-gray-600 font-serif">
-                        {offer.discountType === 'percentage'
-                          ? `${offer.discountValue}% Off`
-                          : `₹${offer.discountValue.toLocaleString('en-IN')} Off`}
-                      </p>
-                      <p className="text-sm text-gray-600 font-serif">
-                        Valid: {new Date(offer.validFrom).toLocaleDateString()} -{' '}
-                        {new Date(offer.validTo).toLocaleDateString()}
-                      </p>
-                      <p className="text-sm text-gray-600 font-serif">
-                        Status: {offer.isActive ? 'Active' : 'Inactive'}
-                      </p>
+          {/* Offers List */}
+          <div className="p-4 sm:p-6">
+            {offers.length === 0 ? (
+              <p className="text-center text-gray-600 font-serif">No offers found.</p>
+            ) : (
+              <div className="space-y-4">
+                {offers.map((offer) => (
+                  <div
+                    key={offer._id}
+                    className="flex flex-col sm:flex-row items-center justify-between p-4 bg-white border border-[#b09d94] rounded-xl hover:bg-[#FDF8F1] transition-colors duration-300"
+                  >
+                    <div className="flex items-center space-x-4 w-full sm:w-auto">
+                      <div className="text-left">
+                        <p className="text-[#78533F] font-semibold font-serif">{offer.offerCode}</p>
+                        <p className="text-sm text-gray-600 font-serif">
+                          {offer.discountType === 'percentage'
+                            ? `${offer.discountValue}% Off`
+                            : `₹${offer.discountValue.toLocaleString('en-IN')} Off`}
+                        </p>
+                        <p className="text-sm text-gray-600 font-serif">
+                          Valid: {new Date(offer.validFrom).toLocaleDateString()} -{' '}
+                          {new Date(offer.validTo).toLocaleDateString()}
+                        </p>
+                        <p className="text-sm text-gray-600 font-serif">
+                          Status: {offer.isActive ? 'Active' : 'Inactive'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex space-x-2 mt-2 sm:mt-0">
+                      <button
+                        onClick={() => handleEdit(offer)}
+                        className="bg-[#78533F] text-white font-semibold py-2 px-3 rounded-full shadow-md hover:bg-[#634331] transition-all duration-300"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(offer._id)}
+                        className="bg-[#ED695A] text-white font-semibold py-2 px-3 rounded-full shadow-md hover:bg-[#d85c4e] transition-all duration-300"
+                      >
+                        <Trash className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
-                  <div className="flex space-x-2 mt-2 sm:mt-0">
-                    <button
-                      onClick={() => handleEdit(offer)}
-                      className="bg-[#78533F] text-white font-semibold py-2 px-3 rounded-full shadow-md hover:bg-[#634331] transition-all duration-300"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(offer._id!)}
-                      className="bg-[#ED695A] text-white font-semibold py-2 px-3 rounded-full shadow-md hover:bg-[#d85c4e] transition-all duration-300"
-                    >
-                      <Trash className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Offer Modal */}
       {isModalOpen && (
