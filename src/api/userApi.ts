@@ -243,15 +243,20 @@ export const createOffer=async(data:any)=>{
 
 }
 
+export const fetchEnquiries=async(id:string)=>{
+
+  return await api.get('/fetchenquiries',{params:{id}})
+
+}
+
 export const updateOffer = async (id: string, data: any) => {
   const response = await api.put(`/offers/${id}`, data);
   return response.data;
 };
-export const deleteOffer=async(id:string)=>{
-
-  
-
-}
+export const deleteOffer = async (id: string) => {
+  const response = await api.delete(`/offers/${id}`);
+  return response.data;
+};
 export const fetchOffers = async (id: string) => {
   return await api.get(`/fetchoffers/${id}`);
 }

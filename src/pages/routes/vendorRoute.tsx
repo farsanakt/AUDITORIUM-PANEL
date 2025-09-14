@@ -3,6 +3,7 @@ import Login from "../vendor/login"
 import Dashboard from "../vendor/dashboard"
 import Signup from "../vendor/signup"
 import VendorManagement from "../vendor/addVendor"
+import VendorEnquiries from "../vendor/vendorEnquires"
 
 
 const VendorRoute = () => {
@@ -14,6 +15,7 @@ const VendorRoute = () => {
         <Route path='/dashboard' element={<Dashboard/>}/>
         <Route path="/signup" element={<Signup/>}/>
         <Route path='/addvendor' element={<VendorManagement/>}/>
+        <Route path='/vendorenquires' element={<VendorEnquiries/>}/>
         </Routes> 
     </div>
   )

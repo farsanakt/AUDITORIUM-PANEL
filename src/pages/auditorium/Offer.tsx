@@ -3,6 +3,7 @@ import { X, Edit, Trash } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../redux/store';
 import { toast } from 'react-toastify';
+import Swal from 'sweetalert2';
 import Header from '../../component/user/Header';
 import { createOffer, updateOffer, deleteOffer, fetchOffers } from '../../api/userApi';
 
@@ -38,7 +39,7 @@ const Offer: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const fetchUserOffers = async () => {
-    if (!currentUser?.email) {
+    if (!currentUser?.id) {
       setError('User not logged in');
       setIsLoading(false);
       return;
@@ -48,16 +49,15 @@ const Offer: React.FC = () => {
       setIsLoading(true);
       const response = await fetchOffers(currentUser.id);
       if (response.data.success) {
-        
         setOffers(Array.isArray(response.data.data) ? response.data.data : []);
       } else {
         setError(response.data.message || 'Failed to fetch offers');
         toast.error(response.data.message || 'Failed to fetch offers');
       }
-    } catch (error) {
+    } catch (error: any) {
       setError('Error fetching offers');
       toast.error('Error fetching offers');
-      console.error('Error fetching offers:', error);
+      console.error('Error fetching offers:', error.message || error);
     } finally {
       setIsLoading(false);
     }
@@ -80,36 +80,32 @@ const Offer: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentUser?.email) {
+    if (!currentUser?.id) {
       toast.error('User not logged in');
+      setError('User not logged in');
       return;
     }
 
     const offerData: Omit<Offer, '_id' | 'createdAt' | 'updatedAt' | '__v'> = {
       ...formData,
-      userId: currentUser.email,
+      userId: currentUser.id,
     };
 
     try {
       if (isEditing && selectedOffer?._id) {
         const response = await updateOffer(selectedOffer._id, offerData);
-        if (response.data.success) {
-          toast.success('Offer updated successfully');
-          setOffers((prev) =>
-            prev.map((offer) =>
-              offer._id === selectedOffer._id ? { ...offer, ...offerData } : offer
-            )
-          );
-        } else {
-          toast.error(response.data.message);
-        }
+        console.log('updateOffer response:', response.data); // Debug log
+        // Re-fetch offers to confirm update in DB
+        await fetchUserOffers();
+        toast.success('Offer updated successfully');
       } else {
         const response = await createOffer(offerData);
         if (response.data.success) {
           toast.success('Offer created successfully');
-          setOffers((prev) => [...prev, response.data.offer]);
+          await fetchUserOffers();
         } else {
-          toast.error(response.data.message);
+          toast.error(response.data.message || 'Failed to create offer');
+          setError(response.data.message || 'Failed to create offer');
         }
       }
       setIsModalOpen(false);
@@ -123,9 +119,10 @@ const Offer: React.FC = () => {
       });
       setIsEditing(false);
       setSelectedOffer(null);
-    } catch (error) {
+    } catch (error: any) {
       toast.error('Error saving offer');
-      console.error('Error saving offer:', error);
+      setError('Error saving offer');
+      console.error('Error saving offer:', error.message || error);
     }
   };
 
@@ -143,18 +140,36 @@ const Offer: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (offerId: string) => {
+  const handleDelete = async (offerId: string, offerCode: string) => {
+    const result = await Swal.fire({
+      title: 'Confirm Deletion',
+      text: `Are you sure you want to delete the offer "${offerCode}"?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ED695A',
+      cancelButtonColor: '#b09d94',
+      confirmButtonText: 'Yes, delete it',
+      cancelButtonText: 'Cancel',
+      background: '#FDF8F1',
+      customClass: {
+        title: 'text-[#78533F] font-serif text-lg font-bold',
+        htmlContainer: 'text-[#78533F] font-serif',
+        confirmButton: 'font-serif',
+        cancelButton: 'font-serif',
+      },
+    });
+
+    if (!result.isConfirmed) return;
+
     try {
       const response = await deleteOffer(offerId);
-      if (response.data.success) {
-        toast.success('Offer deleted successfully');
-        setOffers((prev) => prev.filter((offer) => offer._id !== offerId));
-      } else {
-        toast.error(response.data.message);
-      }
-    } catch (error) {
+      console.log('deleteOffer response:', response.data); // Debug log
+      await fetchUserOffers();
+      toast.success('Offer deleted successfully');
+    } catch (error: any) {
       toast.error('Error deleting offer');
-      console.error('Error deleting offer:', error);
+      setError('Error deleting offer');
+      console.error('Error deleting offer:', error.message || error);
     }
   };
 
@@ -225,7 +240,7 @@ const Offer: React.FC = () => {
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => handleDelete(offer._id)}
+                        onClick={() => handleDelete(offer._id, offer.offerCode)}
                         className="bg-[#ED695A] text-white font-semibold py-2 px-3 rounded-full shadow-md hover:bg-[#d85c4e] transition-all duration-300"
                       >
                         <Trash className="w-4 h-4" />
