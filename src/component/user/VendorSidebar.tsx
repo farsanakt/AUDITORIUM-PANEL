@@ -9,7 +9,7 @@ const Sidebar: React.FC = () => {
 
   useEffect(() => {
     
-    const validPaths = ["/vendor/dashboard", "/vendor-bookings", "/vendor/addvendor", "/settings"];
+    const validPaths = ["/vendor/dashboard", "/vendor/vendorenquires", "/vendor/addvendor", "#"];
     if (validPaths.includes(location.pathname)) {
       setActiveItem(location.pathname);
     } else {
@@ -19,9 +19,9 @@ const Sidebar: React.FC = () => {
 
   const menuItems = [
     { title: "Dashboard", path: "/vendor/dashboard" },
-    { title: "Vendor Bookings", path: "/vendor-bookings" },
+    { title: "Vendor Bookings", path: "/vendor/vendorenquires" },
     { title: "Vendor", path: "/vendor/addvendor" },
-    { title: "Settings", path: "/settings" },
+    { title: "Settings", path: "#" },
   ];
 
   return (
