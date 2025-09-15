@@ -269,6 +269,12 @@ export const fetchUserBookingsByEmail=async(email:string)=>{
 
 }
 
+export const currentVendorUserData=async(id:string)=>{
+
+  return await api.get('/currentvendorUser',{params:{id}})
+
+}
+
 
 export const userSingUpRequest=async(formData:any)=>{
 

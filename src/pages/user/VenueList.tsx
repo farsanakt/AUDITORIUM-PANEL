@@ -14,7 +14,7 @@ interface Auditorium {
   tariff: { wedding: string; reception: string };
   phone: string;
   audiUserId: string;
-  totalamount: string;
+  startingPrice: string;
   advAmnt: string;
 }
 
@@ -209,7 +209,7 @@ const VenuePage: React.FC = () => {
                         <td className="py-2 px-3 sm:px-4 text-xs sm:text-sm">{auditorium.name}</td>
                         <td className="py-2 px-3 sm:px-4 text-xs sm:text-sm">{auditorium.acType}</td>
                         <td className="py-2 px-3 sm:px-4 text-xs sm:text-sm">{auditorium.seatingCapacity}</td>
-                        <td className="py-2 px-3 sm:px-4 text-xs sm:text-sm">₹{Number(auditorium.totalamount).toLocaleString("en-IN")}</td>
+                        <td className="py-2 px-3 sm:px-4 text-xs sm:text-sm">₹{Number(auditorium.startingPrice).toLocaleString("en-IN")}</td>
                         <td className="py-2 px-3 sm:px-4 text-xs sm:text-sm">₹{Number(auditorium.advAmnt).toLocaleString("en-IN")}</td>
                         <td className="py-2 px-3 sm:px-4">
                         <button

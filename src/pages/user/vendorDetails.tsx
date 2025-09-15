@@ -22,7 +22,7 @@ interface Vendor {
   images: string[]
   pincode: string
   timeSlots: { label: string; startTime: string; endTime: string }[]
-  totalamount: string
+  startingPrice: string
   vendorType: string
   about?: string
   summary?: string
@@ -426,7 +426,7 @@ const VendorDetails: React.FC = () => {
                     Pricing
                   </h4>
                   <ul className="list-disc list-inside space-y-1 text-left">
-                    <li>Total Amount: ₹{Number(vendor.totalamount).toLocaleString("en-IN")}</li>
+                    <li>Total Amount: ₹{Number(vendor.startingPrice).toLocaleString("en-IN")}</li>
                     <li>Advance Amount: ₹{Number(vendor.advAmnt).toLocaleString("en-IN")}</li>
                   </ul>
                 </div>

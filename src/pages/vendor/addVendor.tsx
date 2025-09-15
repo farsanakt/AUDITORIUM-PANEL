@@ -14,7 +14,7 @@ import {
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
 import { useSelector } from "react-redux";
-import { addVendorAPI, existingAllVendors } from "../../api/userApi";
+import { addVendorAPI, currentVendorUserData, existingAllVendors } from "../../api/userApi";
 import Header from "../../component/user/Header";
 import VendorSidebar from "../../component/user/VendorSidebar";
 
@@ -47,11 +47,14 @@ interface RootState {
   auth: {
     currentUser: {
       id: string;
+      email: string;
+      role: string;
+      address?: string;
     };
   };
 }
 
-// Mock API functions (replace with actual implementations)
+
 const deleteVendorAPI = async (id: string) => ({ success: true });
 
 const updateVendorAPI = async (formData: FormData, id: string) => ({
@@ -103,11 +106,33 @@ export default function VendorManagement() {
 
   const { currentUser } = useSelector((state: RootState) => state.auth);
 
+  // Fetch user data and set default address
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const response = await currentVendorUserData(currentUser?.id);
+        setNewVendor((prev) => ({
+          ...prev,
+          address: response.data.address || "No address provided",
+        }));
+      } catch (error) {
+        console.error("Failed to fetch user data:", error);
+        setNewVendor((prev) => ({
+          ...prev,
+          address: "No address provided",
+        }));
+      }
+    };
+
+    fetchUserData();
+  }, [currentUser?.id]);
+
   // Fetch vendors
   useEffect(() => {
     const fetchVendors = async () => {
       try {
         const response = await existingAllVendors(currentUser.id);
+        console.log(response.data,'thisseee')
         setVendors(response.data);
       } catch (error) {
         toast.error("Failed to load vendors.");
@@ -157,7 +182,7 @@ export default function VendorManagement() {
   const resetAddModal = () => {
     setNewVendor({
       name: "",
-      address: "",
+      address: newVendor.address || "",
       phone: "",
       altPhone: "",
       email: "",
@@ -187,7 +212,7 @@ export default function VendorManagement() {
     if (isNewVendor) {
       setNewVendor((prev) => updateState(prev));
     } else if (selectedVendor) {
-      setSelectedVendor((prev) => (prev ? updateState(prev) : null));
+      setSelectedVendor((prev) => (prev ? { ...prev, ...updateState(prev) } : null));
     }
   };
 
@@ -203,15 +228,15 @@ export default function VendorManagement() {
   const handleTimeSlotToggle = (timeSlot: TimeSlot) => {
     setNewVendor((prev) => ({
       ...prev,
-      timeSlots: prev.timeSlots?.some((s) => s.id === timeSlot.id)
-        ? prev.timeSlots.filter((s) => s.id !== timeSlot.id)
-        : [...(prev.timeSlots || []), { ...timeSlot, startTime: "", endTime: "" }],
+      timeSlots: prev.timeSlots!.some((s) => s.id === timeSlot.id)
+        ? prev.timeSlots!.filter((s) => s.id !== timeSlot.id)
+        : [...prev.timeSlots!, { ...timeSlot, startTime: "", endTime: "" }],
     }));
   };
 
   const updateAddTimeSlot = (index: number, field: "startTime" | "endTime", value: string) => {
     setNewVendor((prev) => {
-      const newSlots = [...(prev.timeSlots || [])];
+      const newSlots = [...prev.timeSlots!];
       newSlots[index] = { ...newSlots[index], [field]: value };
       return { ...prev, timeSlots: newSlots };
     });
@@ -451,7 +476,7 @@ export default function VendorManagement() {
                 onClick={() => setIsAddModalOpen(true)}
                 className="w-full sm:w-auto px-6 py-2 bg-[#ED695A] text-white rounded-lg flex items-center justify-center hover:bg-[#D65A4C] transition-all text-sm"
               >
-                <Plus size={16} className="mr-2" /> Add New Vendor
+                <Plus size={16} className="mr-2" /> Add New Product
               </button>
             </div>
 
@@ -573,7 +598,7 @@ export default function VendorManagement() {
             <div className="flex-1 overflow-y-auto scrollbar-custom px-6 py-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Vendor Name *</label>
+                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Product Name *</label>
                   <input
                     name="name"
                     value={newVendor.name || ""}
@@ -584,7 +609,7 @@ export default function VendorManagement() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Vendor Type *</label>
+                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Product Type *</label>
                   <select
                     name="vendorType"
                     value={newVendor.vendorType || ""}
@@ -603,10 +628,10 @@ export default function VendorManagement() {
                   <textarea
                     name="address"
                     value={newVendor.address || ""}
-                    onChange={(e) => handleInputChange(e, true)}
+                    disabled
                     rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ED695A] text-sm resize-none"
-                    placeholder="Enter address"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-sm resize-none cursor-not-allowed"
+                    placeholder="Address (non-editable)"
                     required
                   />
                 </div>
@@ -714,7 +739,7 @@ export default function VendorManagement() {
                         type="button"
                         onClick={() => handleTimeSlotToggle(slot)}
                         className={`px-3 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
-                          newVendor.timeSlots?.some((s) => s.id === slot.id)
+                          newVendor.timeSlots!.some((s) => s.id === slot.id)
                             ? "border-[#ED695A] bg-[#ED695A]/10 text-[#ED695A]"
                             : "border-gray-200 hover:border-gray-300 text-[#825F4C]"
                         }`}
@@ -723,10 +748,10 @@ export default function VendorManagement() {
                       </button>
                     ))}
                   </div>
-                  {newVendor.timeSlots?.length > 0 && (
+                  {newVendor.timeSlots!.length > 0 && (
                     <div className="mt-4">
                       <p className="text-sm font-medium text-[#825F4C] mb-2">Set Times for Selected Slots *</p>
-                      {newVendor.timeSlots.map((slot, index) => (
+                      {newVendor.timeSlots!.map((slot, index) => (
                         <div key={slot.id} className="flex flex-wrap items-center gap-2 mb-2">
                           <span className="w-24 text-sm text-[#825F4C]">{slot.label}</span>
                           <input
@@ -814,10 +839,10 @@ export default function VendorManagement() {
                     !newVendor.cancellationPolicy ||
                     !newVendor.totalAmount ||
                     !newVendor.advanceAmount ||
-                    !newVendor.timeSlots?.length ||
+                    !newVendor.timeSlots!.length ||
                     !newVendor.vendorType ||
                     selectedImages.length !== 4 ||
-                    newVendor.timeSlots?.some((slot) => !slot.startTime || !slot.endTime)
+                    newVendor.timeSlots!.some((slot) => !slot.startTime || !slot.endTime)
                   }
                   className="px-4 py-2 bg-[#ED695A] text-white rounded-lg hover:bg-[#D65A4C] disabled:bg-gray-300 disabled:cursor-not-allowed text-sm"
                 >
@@ -939,7 +964,7 @@ export default function VendorManagement() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Total Amount</label>
+                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Starting Price</label>
                   <input
                     name="totalAmount"
                     type="number"
