@@ -15,6 +15,8 @@ import ProtectedRoute from "../../service/protectedRoute";
 import PublicRoute from "../../service/publicRoutes";
 import AuditoriumProfile from "../auditorium/profile";
 import Offer from "../auditorium/Offer";
+import NikahCertificate from "../auditorium/Certificate";
+import MarriageCertificateTemplate from "../auditorium/Certificate";
 
 
 function AuditoriumRoute() {
@@ -37,6 +39,7 @@ function AuditoriumRoute() {
         <Route path='/invoice' element={<InvoicePanel/>}/>
         <Route path='/profile' element={<ProtectedRoute><AuditoriumProfile/></ProtectedRoute>}/>
         <Route path='/offer' element={<ProtectedRoute><Offer/></ProtectedRoute>}/>
+        <Route path='/certificate' element={<MarriageCertificateTemplate/>}/>
       </Routes>
     </div>
   )

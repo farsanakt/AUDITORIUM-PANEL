@@ -1076,6 +1076,17 @@ export default function VenueManagement() {
                       placeholder="Enter reception tariff"
                     />
                   </div>
+                     <div className="sm:col-span-2">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Terms and Conditions</label>
+                    <textarea
+                      name="decorPolicy"
+                      value={newVenue.decorPolicy || ""}
+                      onChange={(e) => handleInputChange(e, true)}
+                      rows={2}
+                      className="w-full px-4 py-2 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553] text-sm resize-none"
+                      placeholder="Enter terms and conditions"
+                    />
+                  </div>
                   <div className="sm:col-span-2">
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Cancellation Policy</label>
                     <input
@@ -1086,6 +1097,8 @@ export default function VenueManagement() {
                       placeholder="Enter cancellation policy"
                     />
                   </div>
+
+                
                   <div className="sm:col-span-2">
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Food Policy</label>
                     <textarea
@@ -1096,17 +1109,7 @@ export default function VenueManagement() {
                       className="w-full px-4 py-2 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553] text-sm resize-none"
                       placeholder="Enter food policy"
                     />
-                  </div>
-                  <div className="sm:col-span-2">
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Decoration Policy</label>
-                    <textarea
-                      name="decorPolicy"
-                      value={newVenue.decorPolicy || ""}
-                      onChange={(e) => handleInputChange(e, true)}
-                      rows={2}
-                      className="w-full px-4 py-2 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553] text-sm resize-none"
-                      placeholder="Enter decoration policy"
-                    />
+                 
                   </div>
                   <div className="sm:col-span-2">
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Venue Images (minimum 4) *</label>
@@ -1534,7 +1537,7 @@ export default function VenueManagement() {
                     />
                   </div>
                   <div className="sm:col-span-2">
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Decoration Policy</label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Terms and conditions</label>
                     <textarea
                       name="decorPolicy"
                       value={selectedVenue.decorPolicy}
