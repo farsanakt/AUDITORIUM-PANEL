@@ -187,7 +187,7 @@ export const findCount=async()=>{
 
 
 export const fetchAllStaff=async()=>{
-
+return await api.get('/allstaff')
 }
 
 export const addStaff=async(data:any)=>{
@@ -196,15 +196,15 @@ export const addStaff=async(data:any)=>{
 
 }
 
-export const updateStaff=async(id:string,data:any)=>{
+export const updateStaff=async(staffid:string,data:any)=>{
 
-
+ return await api.put(`/updatestaff/${staffid}`,data)
 
 }
 
 export const deleteStaff=async(id:string)=>{
 
-
+return await api.delete(`/deletestaff/${id}`)
 
 }
 
