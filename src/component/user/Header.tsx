@@ -57,7 +57,7 @@ const Header: React.FC<HeaderProps> = () => {
           <nav className="hidden md:flex items-center space-x-6 text-[#825F4C]">
             <a href="/vendor/login" className="hover:text-gray-800">Vendor</a>
             <a href="/auditorium/login" className="hover:text-gray-800">Auditorium</a>
-            <a href="#" className="hover:text-gray-800">Admin</a>
+            <a href="/admin/login" className="hover:text-gray-800">Admin</a>
 
             {!currentUser ? (
               <button
@@ -135,7 +135,7 @@ const Header: React.FC<HeaderProps> = () => {
             </button>
             <button
               onClick={() => {
-                navigate("/admin");
+                navigate("/admin/login");
                 setMenuOpen(false);
               }}
               className="block text-left w-full hover:text-gray-800"

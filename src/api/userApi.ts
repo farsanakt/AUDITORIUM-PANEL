@@ -157,6 +157,13 @@ export const upComingEvents=async(id:string)=>{
 }
 
 
+export const findCount=async()=>{
+
+  return await api.get('/findcount')
+
+}
+
+
 
 // user api
 export const userLogin =async (email:string,password:string)=>{

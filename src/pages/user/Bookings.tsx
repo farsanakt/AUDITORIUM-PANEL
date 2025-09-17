@@ -956,7 +956,7 @@ const Bookings: React.FC = () => {
                               }}
                               className="w-full sm:w-auto bg-[#ED695A] hover:bg-[#d85c4e] text-white py-2 sm:py-3 px-4 sm:px-6 rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl transform hover:scale-105 text-xs sm:text-sm"
                             >
-                              Nikkah Certificate Details
+                              Marriage Certificate Details
                             </button>
                           </div>
                         ) : (

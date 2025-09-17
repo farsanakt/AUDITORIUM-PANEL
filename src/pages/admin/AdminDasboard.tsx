@@ -5,6 +5,7 @@ import { RootState } from '../../redux/store';
 import { toast } from 'react-toastify';
 import { Home, Users, Building, DollarSign, Mail } from 'lucide-react';
 import Header from '../../component/user/Header';
+import { findCount } from '../../api/userApi';
 
 interface DashboardStats {
   totalVendors: number;
@@ -21,24 +22,19 @@ interface RecentActivity {
   date: string;
 }
 
-const dummyStats: DashboardStats = {
-  totalVendors: 15,
-  totalAuditoriums: 8,
-  totalUsers: 120,
-  totalAmount: 250000,
-  totalEnquiries: 45,
-};
-
 const dummyRecentActivity: RecentActivity[] = [
   { id: '1', type: 'Auditorium Added', name: 'Grand Hall', date: '2025-09-14' },
   { id: '2', type: 'User Registered', name: 'John Doe', date: '2025-09-13' },
   { id: '3', type: 'Vendor Updated', name: 'Elite Events', date: '2025-09-12' },
 ];
 
-const fetchDashboardStats = async (userId: string): Promise<DashboardStats> => {
-  return new Promise((resolve) => {
-    setTimeout(() => resolve(dummyStats), 1000);
-  });
+// Fallback data in case API fails (for debugging)
+const fallbackStats: DashboardStats = {
+  totalVendors: 5,
+  totalAuditoriums: 6,
+  totalUsers: 1,
+  totalAmount: 0,
+  totalEnquiries: 0,
 };
 
 const AdminDashboard: React.FC = () => {
@@ -46,31 +42,42 @@ const AdminDashboard: React.FC = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  
   const navigate = useNavigate();
 
+  const fetchDashboardStats = async () => {
+    
+   
+    try {
+      setIsLoading(true);
+      const response = await findCount();
+
+      const backendData = response.data.data || {};
+      const dashboardStats: DashboardStats = {
+        totalUsers: backendData.totalUsers || 0,
+        totalVendors: backendData.totalVendors || 0,
+        totalAuditoriums: backendData.totalAuditorium || 0, 
+        totalAmount: backendData.totalAmount || 0,
+        totalEnquiries: backendData.totalEnquiries || 0,
+      };
+      console.log('Mapped stats:', dashboardStats);
+      setStats(dashboardStats);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Error fetching dashboard stats';
+      console.error('API error:', error); 
+      setError(errorMessage);
+      toast.error(errorMessage);
+     
+      setStats(fallbackStats);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchStats = async () => {
-      if (!currentUser?.id) {
-        // setError('Not authenticated');
-        // setIsLoading(false);
-        return;
-      }
-
-      try {
-        setIsLoading(true);
-        const response = await fetchDashboardStats(currentUser.id);
-        setStats(response);
-      } catch (error: unknown) {
-        const errorMessage = error instanceof Error ? error.message : 'Error fetching dashboard stats';
-        setError(errorMessage);
-        toast.error(errorMessage);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchStats();
-  }, [currentUser]);
+    console.log('Fetching stats on mount or currentUser change');
+    fetchDashboardStats();
+  }, []);
 
   const navItems: { path: string; label: string; icon: React.ComponentType<{ size?: number; className?: string }>; count: string | number | undefined }[] = [
     { path: '/admin/auditoriums', label: 'All Auditoriums', icon: Building, count: stats?.totalAuditoriums },
@@ -89,10 +96,10 @@ const AdminDashboard: React.FC = () => {
             Admin Dashboard
           </h2>
 
-          {!isLoading ? (
+          {isLoading ? (
             <p className="text-[#78533F] font-serif text-center">Loading dashboard...</p>
           ) : error ? (
-            <p className="text-[#ED695A] font-serif text-center">{error}</p>
+            <p className="text-[#ED695A] font-serif text-center">{error} (Using fallback data)</p>
           ) : (
             <div className="space-y-8">
               {/* Navigation Cards */}
