@@ -156,6 +156,24 @@ export const upComingEvents=async(id:string)=>{
 
 }
 
+//  acceptAuditorium, rejectAuditorium
+
+export const getAllAuditoriums=async()=>{
+  
+  return await api.get('/allaudilist')
+
+}
+
+export const acceptAuditorium=async(id:string)=>{
+ 
+
+}
+
+export const rejectAuditorium=async(id:string)=>{
+ 
+
+}
+
 
 export const findCount=async()=>{
 
