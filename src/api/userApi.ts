@@ -165,13 +165,15 @@ export const getAllAuditoriums=async()=>{
 }
 
 export const acceptAuditorium=async(id:string)=>{
- 
+  
+  return await api.post(`/acceptauditorium/${id}`)
 
 }
 
 export const rejectAuditorium=async(id:string)=>{
  
-
+  return await api.post(`/rejectauditorium/${id}`)
+ 
 }
 
 
@@ -181,6 +183,30 @@ export const findCount=async()=>{
 
 }
 
+ 
+
+
+export const fetchAllStaff=async()=>{
+
+}
+
+export const addStaff=async(data:any)=>{
+
+   return await api.post('/addstaff',data)
+
+}
+
+export const updateStaff=async(id:string,data:any)=>{
+
+
+
+}
+
+export const deleteStaff=async(id:string)=>{
+
+
+
+}
 
 
 // user api

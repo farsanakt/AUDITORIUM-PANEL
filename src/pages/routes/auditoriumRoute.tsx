@@ -35,7 +35,7 @@ function AuditoriumRoute() {
         <Route path='payment' element={<PaymentDetails/>}/>
         <Route path='Bookingconfirmation' element={<BookingConfirmation/>}/>
         
-        <Route path='/staff' element={<StaffManagementUI/>}/>
+        <Route path='/staff' element={<ProtectedRoute><StaffManagementUI/></ProtectedRoute>}/>
         <Route path='/invoice' element={<InvoicePanel/>}/>
         <Route path='/profile' element={<ProtectedRoute><AuditoriumProfile/></ProtectedRoute>}/>
         <Route path='/offer' element={<ProtectedRoute><Offer/></ProtectedRoute>}/>

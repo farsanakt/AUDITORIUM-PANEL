@@ -1,7 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Eye, RefreshCw, User, Mail, Shield, Key, X } from 'lucide-react';
 import Header from '../../component/user/Header';
 import Sidebar from '../../component/auditorium/Sidebar';
+import { toast } from 'react-toastify';
+import { fetchAllStaff, addStaff, updateStaff, deleteStaff } from '../../api/userApi';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../redux/store';
+
 
 type StaffRole = 'Admin' | 'Manager' | 'Staff';
 type StaffStatus = 'active' | 'inactive';
@@ -24,34 +29,9 @@ interface NewStaffForm {
 }
 
 const StaffManagementUI: React.FC = () => {
-  const [staff, setStaff] = useState<Staff[]>([
-    {
-      id: '1',
-      name: 'John Doe',
-      email: 'john@example.com',
-      role: 'Admin',
-      status: 'active',
-      createdAt: '2024-01-15'
-    },
-    {
-      id: '2',
-      name: 'Jane Smith',
-      email: 'jane@example.com',
-      role: 'Manager',
-      status: 'active',
-      createdAt: '2024-01-20'
-    },
-    {
-      id: '3',
-      name: 'Mike Johnson',
-      email: 'mike@example.com',
-      role: 'Staff',
-      status: 'inactive',
-      createdAt: '2024-02-01'
-    }
-  ]);
-
+  const [staff, setStaff] = useState<Staff[]>([]);
   const [showModal, setShowModal] = useState<boolean>(false);
+  const [editStaffId, setEditStaffId] = useState<string | null>(null);
   const [newStaff, setNewStaff] = useState<NewStaffForm>({
     name: '',
     email: '',
@@ -59,6 +39,38 @@ const StaffManagementUI: React.FC = () => {
     password: '',
     status: 'active'
   });
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+    const { currentUser } = useSelector((state: RootState) => state.auth);
+
+  const fetchStaff = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const response = await fetchAllStaff();
+      console.log('Staff API response:', response.data); // Debug: Log response
+      setStaff(response.data.map((s: any) => ({
+        id: s._id,
+        name: s.name,
+        email: s.email,
+        role: s.role as StaffRole,
+        audiId:currentUser?.id,
+        status: s.status as StaffStatus,
+        createdAt: new Date(s.createdAt).toISOString().split('T')[0]
+      })));
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Error fetching staff';
+      console.error('Fetch staff error:', error);
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStaff();
+  }, []);
 
   const generatePassword = (): void => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
@@ -69,24 +81,65 @@ const StaffManagementUI: React.FC = () => {
     setNewStaff({ ...newStaff, password });
   };
 
-  const handleAddStaff = (): void => {
-    if (!newStaff.name || !newStaff.email || !newStaff.password) return;
-    
-    const staffMember: Staff = {
-      id: Date.now().toString(),
-      name: newStaff.name,
-      email: newStaff.email,
-      role: newStaff.role,
-      status: newStaff.status,
-      createdAt: new Date().toISOString().split('T')[0]
-    };
-    setStaff([...staff, staffMember]);
-    setNewStaff({ name: '', email: '', role: 'Staff', password: '', status: 'active' });
-    setShowModal(false);
+  const handleAddStaff = async (): Promise<void> => {
+    if (!newStaff.name || !newStaff.email || !newStaff.password) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    try {
+      const staffData = {
+        name: newStaff.name,
+        email: newStaff.email,
+        role: newStaff.role,
+        password: newStaff.password,
+        status: newStaff.status,
+        audiUserId:currentUser?.id,
+      };
+      
+      if (editStaffId) {
+        // Update existing staff
+        await updateStaff(editStaffId, staffData);
+        toast.success('Staff updated successfully');
+      } else {
+        // Add new staff
+        await addStaff(staffData);
+        toast.success('Staff added successfully');
+      }
+      
+      setNewStaff({ name: '', email: '', role: 'Staff', password: '', status: 'active' });
+      setEditStaffId(null);
+      setShowModal(false);
+      await fetchStaff(); // Refresh staff list
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Error saving staff';
+      console.error('Save staff error:', error);
+      toast.error(errorMessage);
+    }
   };
 
-  const handleDeleteStaff = (id: string): void => {
-    setStaff(staff.filter(s => s.id !== id));
+  const handleEditStaff = (member: Staff): void => {
+    setNewStaff({
+      name: member.name,
+      email: member.email,
+      role: member.role,
+      password: '', // Don't prefill password for security
+      status: member.status
+    });
+    setEditStaffId(member.id);
+    setShowModal(true);
+  };
+
+  const handleDeleteStaff = async (id: string): Promise<void> => {
+    try {
+      await deleteStaff(id);
+      toast.success('Staff deleted successfully');
+      await fetchStaff(); // Refresh staff list
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Error deleting staff';
+      console.error('Delete staff error:', error);
+      toast.error(errorMessage);
+    }
   };
 
   const getRoleColor = (role: StaffRole): string => {
@@ -121,7 +174,11 @@ const StaffManagementUI: React.FC = () => {
                   <p className="text-gray-600">Manage your staff and track activities</p>
                 </div>
                 <button
-                  onClick={() => setShowModal(true)}
+                  onClick={() => {
+                    setEditStaffId(null);
+                    setNewStaff({ name: '', email: '', role: 'Staff', password: '', status: 'active' });
+                    setShowModal(true);
+                  }}
                   className="px-4 py-2 bg-[#ED695A] text-white rounded-lg hover:bg-[#f09c87ce] transition-colors flex items-center gap-2"
                 >
                   <Plus className="w-4 h-4" />
@@ -135,61 +192,72 @@ const StaffManagementUI: React.FC = () => {
               <div className="p-6 border-b border-gray-200">
                 <h2 className="text-xl font-semibold text-gray-900">Staff List</h2>
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {staff.map((member) => (
-                      <tr key={member.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{member.name}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{member.email}</td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${getRoleColor(member.role)}`}>
-                            {member.role}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(member.status)}`}>
-                            {member.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{member.createdAt}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <div className="flex space-x-2">
-                            <button className="text-blue-600 hover:text-blue-900 p-1 rounded">
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button 
-                              onClick={() => handleDeleteStaff(member.id)}
-                              className="text-red-600 hover:text-red-900 p-1 rounded"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                            <button className="text-gray-600 hover:text-gray-900 p-1 rounded">
-                              <Eye className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
+              {isLoading ? (
+                <div className="p-6 text-center text-gray-600">Loading staff...</div>
+              ) : error ? (
+                <div className="p-6 text-center text-red-600">{error}</div>
+              ) : staff.length === 0 ? (
+                <div className="p-6 text-center text-gray-600">No staff members found.</div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {staff.map((member) => (
+                        <tr key={member.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{member.name}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{member.email}</td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${getRoleColor(member.role)}`}>
+                              {member.role}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(member.status)}`}>
+                              {member.status}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{member.createdAt}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div className="flex space-x-2">
+                              <button 
+                                onClick={() => handleEditStaff(member)}
+                                className="text-blue-600 hover:text-blue-900 p-1 rounded"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </button>
+                              <button 
+                                onClick={() => handleDeleteStaff(member.id)}
+                                className="text-red-600 hover:text-red-900 p-1 rounded"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                              <button className="text-gray-600 hover:text-gray-900 p-1 rounded">
+                                <Eye className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
         </main>
       </div>
 
-      {/* Add Staff Modal */}
+      {/* Add/Edit Staff Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
@@ -197,10 +265,14 @@ const StaffManagementUI: React.FC = () => {
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
                   <Plus className="w-5 h-5" />
-                  Add New Staff
+                  {editStaffId ? 'Edit Staff' : 'Add New Staff'}
                 </h2>
                 <button
-                  onClick={() => setShowModal(false)}
+                  onClick={() => {
+                    setShowModal(false);
+                    setEditStaffId(null);
+                    setNewStaff({ name: '', email: '', role: 'Staff', password: '', status: 'active' });
+                  }}
                   className="text-gray-400 hover:text-gray-600"
                 >
                   <X className="w-6 h-6" />
@@ -265,7 +337,7 @@ const StaffManagementUI: React.FC = () => {
                       value={newStaff.password}
                       onChange={(e) => handleInputChange('password', e.target.value)}
                       className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Enter password or generate"
+                      placeholder={editStaffId ? "Enter new password (optional)" : "Enter password or generate"}
                     />
                     <button
                       type="button"
@@ -292,7 +364,11 @@ const StaffManagementUI: React.FC = () => {
               
               <div className="flex justify-end gap-3 mt-6">
                 <button
-                  onClick={() => setShowModal(false)}
+                  onClick={() => {
+                    setShowModal(false);
+                    setEditStaffId(null);
+                    setNewStaff({ name: '', email: '', role: 'Staff', password: '', status: 'active' });
+                  }}
                   className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
                 >
                   Cancel
@@ -302,7 +378,7 @@ const StaffManagementUI: React.FC = () => {
                   className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
                 >
                   <Plus className="w-4 h-4" />
-                  Add Staff Member
+                  {editStaffId ? 'Update Staff' : 'Add Staff Member'}
                 </button>
               </div>
             </div>

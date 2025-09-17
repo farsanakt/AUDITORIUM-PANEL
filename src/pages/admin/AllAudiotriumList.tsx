@@ -135,13 +135,13 @@ const AuditoriumList: React.FC = () => {
                         )}
                       </td>
                       <td className="p-4 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-                        <button
+                        {/* <button
                           onClick={() => openDetails(aud)}
                           className="bg-[#ED695A] text-white px-3 py-1 rounded-md flex items-center space-x-1 hover:bg-[#d65a4f] transition-colors"
                         >
                           <Eye size={16} />
                           <span>Details</span>
-                        </button>
+                        </button> */}
                         {!aud.isVerified && (
                           <>
                             <button

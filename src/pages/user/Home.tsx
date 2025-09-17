@@ -62,7 +62,7 @@ const HomePage: React.FC = () => {
   const [eventManagements, setEventManagements] = useState<Artist[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeSection, setActiveSection] = useState<string>("all"); // State to track active section
+  const [activeSection, setActiveSection] = useState<string>("all");
   const navigate = useNavigate();
 
   const venuesRef = useRef<HTMLDivElement>(null);
@@ -130,17 +130,19 @@ const HomePage: React.FC = () => {
       setError(null);
       const response = await existingVenues();
       console.log("Venues API response:", response.data);
-      const mappedVenues = response.data.map((venue: any) => ({
-        id: venue._id,
-        name: venue.name || venue.venueName || "Unknown Venue",
-        location: venue.address || "Unknown Location",
-        images: venue.images && Array.isArray(venue.images) && venue.images.length > 0
-          ? venue.images
-          : ["/placeholder.svg?height=200&width=300"],
-        price: venue.totalamount || venue.tariff?.wedding || "Price not available",
-        rating: venue.rating || 4.5,
-        review: venue.review || "Great venue with excellent amenities!",
-      }));
+      const mappedVenues = response.data
+        .filter((venue: any) => venue.isVerified === true) // Filter for verified venues only
+        .map((venue: any) => ({
+          id: venue._id,
+          name: venue.name || venue.venueName || "Unknown Venue",
+          location: venue.address || "Unknown Location",
+          images: venue.images && Array.isArray(venue.images) && venue.images.length > 0
+            ? venue.images
+            : ["/placeholder.svg?height=200&width=300"],
+          price: venue.totalamount || venue.tariff?.wedding || "Price not available",
+          rating: venue.rating || 4.5,
+          review: venue.review || "Great venue with excellent amenities!",
+        }));
       setVenues(mappedVenues);
     } catch (err) {
       console.error("Error fetching venues:", err);
@@ -189,7 +191,6 @@ const HomePage: React.FC = () => {
     }
   };
 
-  // Handle section click
   const handleSectionClick = (section: string) => {
     setActiveSection(section);
   };
@@ -242,10 +243,6 @@ const HomePage: React.FC = () => {
           {/* <div>EVENT DESIGN</div>
           <div>COMPANY</div> */}
         </div>
-
-        {/* <div className="absolute top-16 sm:top-20 right-4 sm:right-6 md:right-8 lg:right-12 xl:right-20 text-[#9c7c5d] text-xs sm:text-sm font-medium z-40">
-          Find Local Venues
-        </div> */}
 
         <div className="relative z-10 h-full flex flex-col lg:flex-row items-center justify-between px-4 sm:px-6 md:px-8 lg:px-12 xl:px-20 py-8 pt-20 sm:pt-24">
           <div className="w-full lg:w-1/2 flex flex-col justify-center text-left space-y-4 sm:space-y-6 lg:space-y-8 mb-8 lg:mb-0">
@@ -372,7 +369,7 @@ const HomePage: React.FC = () => {
                     type="date"
                     name="date"
                     value={formData.date}
-                    onChange={handleInputChange}
+                    on-StepChange={handleInputChange}
                     className="w-full h-10 sm:h-12 pl-10 sm:pl-12 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
                   />
                 </div>
@@ -468,7 +465,7 @@ const HomePage: React.FC = () => {
             ) : error ? (
               <div className="text-center text-red-600">{error}</div>
             ) : venues.length === 0 ? (
-              <div className="text-center text-gray-600">No venues available.</div>
+              <div className="text-center text-gray-600">No verified venues available.</div>
             ) : (
               <div className="relative">
                 {venues.length > 4 && (
@@ -576,7 +573,9 @@ const HomePage: React.FC = () => {
                       style={{ backgroundImage: `url(${artist.image})` }}
                     >
                       <div className="absolute inset-0 bg-black opacity-20 group-hover:opacity-30 transition duration-300"></div>
-                      <img
+                      <
+
+img
                         src={artist.image}
                         alt={artist.name}
                         className="w-full h-full object-cover rounded-xl"
