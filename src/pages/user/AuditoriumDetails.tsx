@@ -3,7 +3,18 @@ import { useParams, useNavigate } from "react-router-dom";
 import Header from "../../component/user/Header";
 import Lines from "../../assets/Group 52 (1).png";
 import Bshape from "../../assets/02 2.png";
-import { singleVenueDetails } from "../../api/userApi";
+import { singleVenueDetails, fetchAllExistingOffer } from "../../api/userApi";
+
+interface Offer {
+  _id: string;
+  userId: string;
+  offerCode: string;
+  discountType: "percentage" | "fixed";
+  discountValue: number;
+  validFrom: string;
+  validTo: string;
+  isActive: boolean;
+}
 
 interface Auditorium {
   _id: string;
@@ -28,13 +39,16 @@ interface Auditorium {
   audiUserId: string;
   tariff: { wedding: string; reception: string };
   totalamount: string;
-  advAmnt: string;
+  advAmnt?: string;
+  advamnt?: string; // Handle potential typo
+  offer?: Offer;
 }
 
 const AuditoriumDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [auditorium, setAuditorium] = useState<Auditorium | null>(null);
+  const [offers, setOffers] = useState<Offer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [current, setCurrent] = useState(0);
@@ -43,15 +57,41 @@ const AuditoriumDetails: React.FC = () => {
     try {
       setLoading(true);
       console.log("Fetching venue details with id:", id);
-      const response = await singleVenueDetails(id!);
-      console.log("API Response:", response.data);
-      if (!response.data) {
+      const [venueResponse, offerResponse] = await Promise.all([
+        singleVenueDetails(id!),
+        fetchAllExistingOffer(),
+      ]);
+      console.log("Venue API Response:", JSON.stringify(venueResponse.data, null, 2));
+      console.log("Fetched offers:", JSON.stringify(offerResponse.data, null, 2));
+
+      if (!venueResponse.data) {
         throw new Error(`No venue found with id: ${id}`);
       }
-      setAuditorium(response.data);
+
+      const currentDate = new Date();
+      console.log("Current date:", currentDate.toISOString());
+
+      const matchingOffer = offerResponse.data.find((offer: Offer) => {
+        const isMatch = offer.userId === venueResponse.data.audiUserId && offer.isActive;
+        console.log(
+          `Checking auditorium ${venueResponse.data._id}: audiUserId=${venueResponse.data.audiUserId}, offer.userId=${
+            offer.userId
+          }, isActive=${offer.isActive}, validFrom=${offer.validFrom}, validTo=${offer.validTo}, match=${isMatch}`
+        );
+        return isMatch;
+      });
+
+      const auditoriumData = {
+        ...venueResponse.data,
+        advAmnt: venueResponse.data.advAmnt || venueResponse.data.advamnt,
+        offer: matchingOffer,
+      };
+      console.log("Mapped auditorium with offer:", JSON.stringify(auditoriumData, null, 2));
+      setAuditorium(auditoriumData);
+      setOffers(offerResponse.data);
       setLoading(false);
     } catch (err: any) {
-      console.error("Error fetching venue details:", err);
+      console.error("Error fetching venue details or offers:", err);
       setError(err.message || "Failed to load venue details. Please try again.");
       setLoading(false);
     }
@@ -87,6 +127,42 @@ const AuditoriumDetails: React.FC = () => {
     navigate(`/bookings/${id}`);
   };
 
+  const getFormattedPrice = (amount: string | undefined, offer?: Offer) => {
+    console.log(`Formatting price:`, { amount, offer });
+    if (!amount || isNaN(parseFloat(amount))) {
+      console.warn(`Invalid price format: ${amount}`);
+      return <span>Price not available</span>;
+    }
+
+    const originalPrice = parseFloat(amount);
+    if (!offer) {
+      return <span>₹{originalPrice.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>;
+    }
+
+    let discountedPrice: number;
+    if (offer.discountType === "percentage") {
+      discountedPrice = originalPrice * (1 - offer.discountValue / 100);
+    } else {
+      discountedPrice = originalPrice - offer.discountValue;
+    }
+
+    return (
+      <div className="flex flex-col">
+        <div>
+          <span className="line-through text-gray-500 mr-2">
+            ₹{originalPrice.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </span>
+          <span className="text-green-600">
+            ₹{discountedPrice.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </span>
+        </div>
+        <span className="text-xs text-green-600">
+          ({offer.discountValue}{offer.discountType === "percentage" ? "%" : "₹"} off with {offer.offerCode})
+        </span>
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#FDF8F1]">
@@ -105,6 +181,20 @@ const AuditoriumDetails: React.FC = () => {
 
   return (
     <div className="bg-[#FDF8F1] min-h-screen">
+      <style>
+        {`
+          .offer-badge {
+            background-color: #ef4444;
+            color: white;
+            font-weight: bold;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            line-height: 1rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+          }
+        `}
+      </style>
       <img
         src={Lines}
         alt="Lines"
@@ -148,6 +238,12 @@ const AuditoriumDetails: React.FC = () => {
                   (e.target as HTMLImageElement).src = "/placeholder.svg?height=400&width=600";
                 }}
               />
+              {auditorium.offer && (
+                <span className="absolute top-2 sm:top-3 left-3 offer-badge">
+                  {auditorium.offer.discountValue}
+                  {auditorium.offer.discountType === "percentage" ? "%" : "₹"} OFF
+                </span>
+              )}
               {auditorium.images.length > 1 && (
                 <>
                   <button
@@ -254,23 +350,6 @@ const AuditoriumDetails: React.FC = () => {
             />
             <div className="bg-white border mt-6 sm:mt-8 md:mt-10 border-gray-200 rounded-xl shadow-sm p-3 sm:p-4 md:p-6 text-gray-800 max-w-6xl mx-auto">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6 text-xs sm:text-sm md:text-base">
-                {/* Timing Slots */}
-                {/* <div className="text-left">
-                  <h4 className="font-semibold text-sm sm:text-base md:text-lg text-[#2A2929] mb-2">Timing Slots</h4>
-                  {auditorium.timeSlots.length > 0 ? (
-                    auditorium.timeSlots.map((slot, index) => (
-                      <p key={index} className="mb-1">
-                        Slot {index + 1}:{" "}
-                        <span className="font-semibold">
-                          {slot.start && slot.end ? `${slot.start} - ${slot.end}` : JSON.stringify(slot)}
-                        </span>
-                      </p>
-                    ))
-                  ) : (
-                    <p className="mb-1">No time slots available</p>
-                  )}
-                </div> */}
-
                 {/* Lodging */}
                 <div>
                   <h4 className="font-semibold text-sm sm:text-base md:text-lg text-[#2A2929] mb-2 text-left">Lodging</h4>
@@ -327,10 +406,10 @@ const AuditoriumDetails: React.FC = () => {
                   <h4 className="font-semibold text-sm sm:text-base md:text-lg text-[#2A2929] mb-2 text-left">Pricing</h4>
                   <ul className="list-disc list-inside space-y-1 text-left">
                     <li>
-                      Total Amount: <span className="font-semibold">₹{Number(auditorium.totalamount).toLocaleString("en-IN")}</span>
+                      Total Amount: {getFormattedPrice(auditorium.totalamount, auditorium.offer)}
                     </li>
                     <li>
-                      Advance Amount: <span className="font-semibold">₹{Number(auditorium.advAmnt).toLocaleString("en-IN")}</span>
+                      Advance Amount: {getFormattedPrice(auditorium.advAmnt, auditorium.offer)}
                     </li>
                   </ul>
                 </div>

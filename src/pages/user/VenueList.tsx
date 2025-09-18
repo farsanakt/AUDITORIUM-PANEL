@@ -2,7 +2,18 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Header from "../../component/user/Header";
 import bgImg from "../../assets/vector.png";
-import { FetchAuditoriumById } from "../../api/userApi";
+import { FetchAuditoriumById, fetchAllExistingOffer } from "../../api/userApi";
+
+interface Offer {
+  _id: string;
+  userId: string;
+  offerCode: string;
+  discountType: "percentage" | "fixed";
+  discountValue: number;
+  validFrom: string;
+  validTo: string;
+  isActive: boolean;
+}
 
 interface Auditorium {
   _id: string;
@@ -14,14 +25,17 @@ interface Auditorium {
   tariff: { wedding: string; reception: string };
   phone: string;
   audiUserId: string;
-  startingPrice: string;
-  advAmnt: string;
+  totalamount: string;
+  advAmnt?: string; // Optional to handle typo
+  advamnt?: string; // Handle typo in API response
+  offer?: Offer;
 }
 
 const VenuePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [auditoriums, setAuditoriums] = useState<Auditorium[]>([]);
+  const [offers, setOffers] = useState<Offer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -29,17 +43,48 @@ const VenuePage: React.FC = () => {
   const fetchAuditoriums = async () => {
     try {
       setLoading(true);
-      const response = await FetchAuditoriumById(id!);
-      const auditoriumData = Array.isArray(response.data)
-        ? response.data.filter((item: Auditorium) => item.audiUserId === id)
+      const [auditoriumResponse, offerResponse] = await Promise.all([
+        FetchAuditoriumById(id!),
+        fetchAllExistingOffer(),
+      ]);
+      console.log("Auditorium API response:", JSON.stringify(auditoriumResponse.data, null, 2));
+      console.log("Fetched offers:", JSON.stringify(offerResponse.data, null, 2));
+
+      const currentDate = new Date();
+      console.log("Current date:", currentDate.toISOString());
+
+      const auditoriumData = Array.isArray(auditoriumResponse.data)
+        ? auditoriumResponse.data.map((item: Auditorium) => {
+            const matchingOffer = offerResponse.data.find(
+              (offer: Offer) => {
+                const isMatch = offer.userId === item.audiUserId && offer.isActive;
+                console.log(
+                  `Checking auditorium ${item._id}: audiUserId=${item.audiUserId}, offer.userId=${
+                    offer.userId
+                  }, isActive=${offer.isActive}, validFrom=${offer.validFrom}, validTo=${
+                    offer.validTo
+                  }, match=${isMatch}`
+                );
+                return isMatch;
+              }
+            );
+            return {
+              ...item,
+              advAmnt: item.advAmnt || item.advamnt, // Handle typo
+              offer: matchingOffer,
+            };
+          })
         : [];
+
       if (!auditoriumData.length) {
         throw new Error(`No auditoriums found with audiUserId: ${id}`);
       }
+      console.log("Mapped auditoriums with offers:", JSON.stringify(auditoriumData, null, 2));
       setAuditoriums(auditoriumData);
+      setOffers(offerResponse.data);
       setLoading(false);
     } catch (err: any) {
-      console.error("Error fetching auditoriums:", err);
+      console.error("Error fetching auditoriums or offers:", err);
       setError(err.message || "Failed to load venue details. Please try again.");
       setLoading(false);
     }
@@ -65,6 +110,42 @@ const VenuePage: React.FC = () => {
     }
   }, [auditoriums]);
 
+  const getFormattedPrice = (amount: string | undefined, offer?: Offer) => {
+    console.log(`Formatting price:`, { amount, offer });
+    if (!amount || isNaN(parseFloat(amount))) {
+      console.warn(`Invalid price format: ${amount}`);
+      return <span>Price not available</span>;
+    }
+
+    const originalPrice = parseFloat(amount);
+    if (!offer) {
+      return <span>₹{originalPrice.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>;
+    }
+
+    let discountedPrice: number;
+    if (offer.discountType === "percentage") {
+      discountedPrice = originalPrice * (1 - offer.discountValue / 100);
+    } else {
+      discountedPrice = originalPrice - offer.discountValue;
+    }
+
+    return (
+      <div className="flex flex-col">
+        <div>
+          <span className="line-through text-gray-500 mr-2">
+            ₹{originalPrice.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </span>
+          <span className="text-green-600">
+            ₹{discountedPrice.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </span>
+        </div>
+        <span className="text-xs text-green-600">
+          ({offer.discountValue}{offer.discountType === "percentage" ? "%" : "₹"} off with {offer.offerCode})
+        </span>
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#fff9f4]">
@@ -83,6 +164,20 @@ const VenuePage: React.FC = () => {
 
   return (
     <section className="min-h-screen bg-[#fff9f4] px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+      <style>
+        {`
+          .offer-badge {
+            background-color: #ef4444;
+            color: white;
+            font-weight: bold;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            line-height: 1rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+          }
+        `}
+      </style>
       {/* Header and Hero Section */}
       <section className="relative min-h-[60vh] sm:min-h-[70vh] md:min-h-[80vh] flex items-center justify-center overflow-hidden pt-8">
         <div
@@ -113,33 +208,6 @@ const VenuePage: React.FC = () => {
               View Details
             </button>
           </div>
-
-          {/* <div className="md:w-1/2 flex flex-col gap-3 sm:gap-4 items-start">
-            <div className="flex gap-3 sm:gap-4 w-full flex-wrap md:flex-nowrap">
-              <div className="w-full md:w-1/2">
-                <select className="w-full p-2 sm:p-3 rounded shadow-md border text-xs sm:text-sm md:text-base">
-                  <option>Place</option>
-                </select>
-              </div>
-              <div className="w-full md:w-1/2">
-                <input
-                  type="date"
-                  className="w-full p-2 sm:p-3 rounded shadow-md border text-xs sm:text-sm md:text-base"
-                />
-              </div>
-            </div>
-            <div className="flex gap-3 sm:gap-4 w-full flex-wrap md:flex-nowrap">
-              <div className="w-full md:w-1/2">
-                <select className="w-full p-2 sm:p-3 rounded shadow-md border text-xs sm:text-sm md:text-base">
-                  <option>Event</option>
-                </select>
-              </div>
-              <button className="bg-[#6e3d2b] text-white px-4 sm:px-6 py-2 sm:py-3 rounded shadow-md hover:bg-[#5a2f20] w-full md:w-1/2 flex items-center justify-center text-xs sm:text-sm md:text-base">
-                Find Venues
-                <span className="ml-2">🔍</span>
-              </button>
-            </div>
-          </div> */}
         </div>
       </section>
 
@@ -168,6 +236,12 @@ const VenuePage: React.FC = () => {
             >
               {auditoriums[0].acType}
             </span>
+            {auditoriums[0].offer && (
+              <span className="absolute top-2 sm:top-3 left-16 offer-badge">
+                {auditoriums[0].offer.discountValue}
+                {auditoriums[0].offer.discountType === "percentage" ? "%" : "₹"} OFF
+              </span>
+            )}
           </div>
 
           {/* Venue Details */}
@@ -209,17 +283,19 @@ const VenuePage: React.FC = () => {
                         <td className="py-2 px-3 sm:px-4 text-xs sm:text-sm">{auditorium.name}</td>
                         <td className="py-2 px-3 sm:px-4 text-xs sm:text-sm">{auditorium.acType}</td>
                         <td className="py-2 px-3 sm:px-4 text-xs sm:text-sm">{auditorium.seatingCapacity}</td>
-                        <td className="py-2 px-3 sm:px-4 text-xs sm:text-sm">₹{Number(auditorium.startingPrice).toLocaleString("en-IN")}</td>
-                        <td className="py-2 px-3 sm:px-4 text-xs sm:text-sm">₹{Number(auditorium.advAmnt).toLocaleString("en-IN")}</td>
+                        <td className="py-2 px-3 sm:px-4 text-xs sm:text-sm">
+                          {getFormattedPrice(auditorium.totalamount, auditorium.offer)}
+                        </td>
+                        <td className="py-2 px-3 sm:px-4 text-xs sm:text-sm">
+                          {getFormattedPrice(auditorium.advAmnt, auditorium.offer)}
+                        </td>
                         <td className="py-2 px-3 sm:px-4">
-                        <button
-                        className="px-5 py-2 bg-gradient-to-r from-[#8B4513] to-[#D2691E] text-white rounded-full shadow-md hover:from-[#A0522D] hover:to-[#FF8C00] hover:shadow-lg transition-all duration-300 ease-in-out text-sm sm:text-base font-semibold tracking-wide whitespace-nowrap"
-                        onClick={() => navigate(`/auditoriumdetails/${auditorium._id}`)}
-                        >
-                        Book Now
-                        </button>
-
-
+                          <button
+                            className="px-5 py-2 bg-gradient-to-r from-[#8B4513] to-[#D2691E] text-white rounded-full shadow-md hover:from-[#A0522D] hover:to-[#FF8C00] hover:shadow-lg transition-all duration-300 ease-in-out text-sm sm:text-base font-semibold tracking-wide whitespace-nowrap"
+                            onClick={() => navigate(`/auditoriumdetails/${auditorium._id}`)}
+                          >
+                            Book Now
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -227,21 +303,6 @@ const VenuePage: React.FC = () => {
                 </table>
               </div>
             </div>
-{/* 
-            <div className="mt-4 sm:mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-              <button className="w-full px-3 sm:px-4 py-2 border rounded text-[#6e3d2b] hover:bg-[#fceee5] text-xs sm:text-sm md:text-base min-w-[80px]">
-                View Details
-              </button>
-              <button className="w-full px-3 sm:px-4 py-2 border rounded text-[#6e3d2b] hover:bg-[#fceee5] text-xs sm:text-sm md:text-base min-w-[80px]">
-                Shortlist
-              </button>
-              <button className="w-full px-3 sm:px-4 py-2 border rounded text-[#6e3d2b] hover:bg-[#fceee5] text-xs sm:text-sm md:text-base min-w-[80px]">
-                Send Query
-              </button>
-              <button className="w-full px-3 sm:px-4 py-2 border rounded text-[#6e3d2b] hover:bg-[#fceee5] text-xs sm:text-sm md:text-base min-w-[80px]">
-                Check Availability
-              </button>
-            </div> */}
           </div>
         </div>
       </div>
@@ -249,4 +310,4 @@ const VenuePage: React.FC = () => {
   );
 };
 
-export default VenuePage;
+export default VenuePage
