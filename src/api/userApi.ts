@@ -196,6 +196,12 @@ export const addStaff=async(data:any)=>{
 
 }
 
+export const fetchAllExistingOffer=async()=>{
+
+  return await api.get('/fetchalloffers')
+
+}
+
 export const updateStaff=async(staffid:string,data:any)=>{
 
  return await api.put(`/updatestaff/${staffid}`,data)

@@ -14,7 +14,7 @@ import bgImg from "../../assets/Rectangle 50.png";
 import pjct from "../../assets/image 16.png";
 import pjct1 from "../../assets/Rectangle 30.png";
 import { useNavigate } from "react-router-dom";
-import { existingVenues, fetchAllVendors } from "../../api/userApi";
+import { existingVenues, fetchAllExistingOffer, fetchAllVendors } from "../../api/userApi";
 
 interface Service {
   id: number;
@@ -33,6 +33,17 @@ interface Artist {
   review: string;
 }
 
+interface Offer {
+  _id: string;
+  userId: string;
+  offerCode: string;
+  discountType: "percentage" | "fixed";
+  discountValue: number;
+  validFrom: string;
+  validTo: string;
+  isActive: boolean;
+}
+
 interface Venue {
   id: string;
   name: string;
@@ -41,6 +52,8 @@ interface Venue {
   price: string;
   rating: number;
   review: string;
+  audiUserId: string;
+  offer?: Offer;
 }
 
 interface Project {
@@ -60,6 +73,7 @@ const HomePage: React.FC = () => {
   const [venues, setVenues] = useState<Venue[]>([]);
   const [makeupArtists, setMakeupArtists] = useState<Artist[]>([]);
   const [eventManagements, setEventManagements] = useState<Artist[]>([]);
+  const [offers, setOffers] = useState<Offer[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<string>("all");
@@ -68,6 +82,137 @@ const HomePage: React.FC = () => {
   const venuesRef = useRef<HTMLDivElement>(null);
   const eventManagementsRef = useRef<HTMLDivElement>(null);
   const artistsRef = useRef<HTMLDivElement>(null);
+
+  const projects: Project[] = [
+    {
+      id: 1,
+      title: "Romantic Beach Wedding",
+      image: pjct1,
+      category: "Beach Wedding",
+    },
+    {
+      id: 2,
+      title: "Garden Party Reception",
+      image: pjct,
+      category: "Garden Wedding",
+    },
+    {
+      id: 3,
+      title: "Garden Party Reception",
+      image: pjct,
+      category: "Garden Wedding",
+    },
+  ];
+
+  const fetchAllOffers = async () => {
+    try {
+      const response = await fetchAllExistingOffer();
+      console.log("Fetched offers:", response.data);
+      setOffers(response.data);
+    } catch (err) {
+      console.error("Error fetching offers:", err);
+      setError("Failed to load offers. Please try again.");
+      setOffers([]);
+    }
+  };
+
+  const fetchVenues = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await existingVenues();
+      console.log("Venues API response:", response.data);
+      const mappedVenues = response.data
+        .filter((venue: any) => venue.isVerified === true)
+        .map((venue: any) => {
+          const matchingOffer = offers.find(
+            (offer) => {
+              const isMatch = offer.userId === venue.audiUserId && offer.isActive;
+              console.log(
+                `Checking venue ${venue._id}: audiUserId=${venue.audiUserId}, offer.userId=${offer.userId}, isActive=${offer.isActive}, match=${isMatch}`
+              );
+              return isMatch;
+            }
+          );
+          return {
+            id: venue._id,
+            name: venue.name || venue.venueName || "Unknown Venue",
+            location: venue.address || "Unknown Location",
+            images:
+              venue.images &&
+              Array.isArray(venue.images) &&
+              venue.images.length > 0
+                ? venue.images
+                : ["/placeholder.svg?height=200&width=300"],
+            price: venue.totalamount || venue.tariff?.wedding || "Price not available",
+            rating: venue.rating || 4.5,
+            review: venue.review || "Great venue with excellent amenities!",
+            audiUserId: venue.audiUserId || "",
+            offer: matchingOffer,
+          };
+        });
+      console.log("Mapped venues with offers:", mappedVenues);
+      setVenues(mappedVenues);
+    } catch (err) {
+      console.error("Error fetching venues:", err);
+      setError("Failed to load venues. Please try again.");
+      setVenues([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchVendors = async () => {
+    try {
+      const response = await fetchAllVendors();
+      console.log("Vendors data:", response.data);
+      const vendors = response.data;
+
+      const mappedMakeupArtists = vendors
+        .filter((v: any) => v.vendorType === "makeup artist")
+        .map((v: any) => ({
+          id: v._id,
+          name: v.name,
+          role: "Makeup Artist",
+          image: v.images[0],
+          rating: 4.5,
+          location: v.cities[0] || v.address.split(",").pop()?.trim() || "Unknown",
+          review: "",
+        }));
+
+      const mappedEventManagements = vendors
+        .filter((v: any) => v.vendorType === "event management")
+        .map((v: any) => ({
+          id: v._id,
+          name: v.name,
+          role: "Event Management",
+          image: v.images[0],
+          rating: 4.5,
+          location: v.cities[0] || v.address.split(",").pop()?.trim() || "Unknown",
+          review: "",
+        }));
+
+      setMakeupArtists(mappedMakeupArtists);
+      setEventManagements(mappedEventManagements);
+    } catch (err) {
+      console.error("Error fetching vendors:", err);
+      setError("Failed to load vendors. Please try again.");
+    }
+  };
+
+  useEffect(() => {
+    const loadData = async () => {
+      await fetchAllOffers();
+    };
+    loadData();
+  }, []);
+
+  useEffect(() => {
+    if (offers.length >= 0) {
+      fetchVenues();
+      fetchVendors();
+    }
+  }, [offers]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -91,94 +236,6 @@ const HomePage: React.FC = () => {
     navigate(`/auditoriumlist?place=${formData.place}&date=${formData.date}&event=${formData.event}`);
   };
 
-  const fetchVendors = async () => {
-    const response = await fetchAllVendors();
-    console.log(response.data, "vendors data");
-    const vendors = response.data;
-
-    const mappedMakeupArtists = vendors
-      .filter((v: any) => v.vendorType === "makeup artist")
-      .map((v: any) => ({
-        id: v._id,
-        name: v.name,
-        role: "Makeup Artist",
-        image: v.images[0],
-        rating: 4.5,
-        location: v.cities[0] || v.address.split(",").pop()?.trim() || "Unknown",
-        review: "",
-      }));
-
-    const mappedEventManagements = vendors
-      .filter((v: any) => v.vendorType === "event management")
-      .map((v: any) => ({
-        id: v._id,
-        name: v.name,
-        role: "Event Management",
-        image: v.images[0],
-        rating: 4.5,
-        location: v.cities[0] || v.address.split(",").pop()?.trim() || "Unknown",
-        review: "",
-      }));
-
-    setMakeupArtists(mappedMakeupArtists);
-    setEventManagements(mappedEventManagements);
-  };
-
-  const fetchVenues = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await existingVenues();
-      console.log("Venues API response:", response.data);
-      const mappedVenues = response.data
-        .filter((venue: any) => venue.isVerified === true) // Filter for verified venues only
-        .map((venue: any) => ({
-          id: venue._id,
-          name: venue.name || venue.venueName || "Unknown Venue",
-          location: venue.address || "Unknown Location",
-          images: venue.images && Array.isArray(venue.images) && venue.images.length > 0
-            ? venue.images
-            : ["/placeholder.svg?height=200&width=300"],
-          price: venue.totalamount || venue.tariff?.wedding || "Price not available",
-          rating: venue.rating || 4.5,
-          review: venue.review || "Great venue with excellent amenities!",
-        }));
-      setVenues(mappedVenues);
-    } catch (err) {
-      console.error("Error fetching venues:", err);
-      setError("Failed to load venues. Please try again.");
-      setVenues([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchVenues();
-    fetchVendors();
-  }, []);
-
-  const projects: Project[] = [
-    {
-      id: 1,
-      title: "Romantic Beach Wedding",
-      image: pjct1,
-      category: "Beach Wedding",
-    },
-    {
-      id: 2,
-      title: "Garden Party Reception",
-      image: pjct,
-      category: "Garden Wedding",
-    },
-    {
-      id: 3,
-      title: "Garden Party Reception",
-      image: pjct,
-      category: "Garden Wedding",
-    },
-  ];
-
   const scrollLeft = (ref: React.RefObject<HTMLDivElement>) => {
     if (ref.current) {
       ref.current.scrollBy({ left: -300, behavior: "smooth" });
@@ -193,6 +250,43 @@ const HomePage: React.FC = () => {
 
   const handleSectionClick = (section: string) => {
     setActiveSection(section);
+  };
+
+  const getFormattedPrice = (venue: Venue) => {
+    console.log(`Formatting price for venue ${venue.name}:`, { price: venue.price, offer: venue.offer });
+    if (!venue.offer || !venue.price || venue.price === "Price not available") {
+      return <span>{venue.price}</span>;
+    }
+
+    const originalPrice = parseFloat(venue.price);
+    if (isNaN(originalPrice)) {
+      return <span>{venue.price}</span>;
+    }
+
+    let discountedPrice: number;
+    if (venue.offer.discountType === "percentage") {
+      discountedPrice = originalPrice * (1 - venue.offer.discountValue / 100);
+    } else {
+      discountedPrice = originalPrice - venue.offer.discountValue;
+    }
+
+    return (
+      <div className="flex flex-col">
+        <div>
+          <span className="line-through text-gray-500 mr-2">
+            ₹{originalPrice.toFixed(2)}
+          </span>
+          <span className="text-green-600">
+            ₹{discountedPrice.toFixed(2)}
+          </span>
+        </div>
+        <span className="text-xs text-green-600">
+          ({venue.offer.discountValue}
+          {venue.offer.discountType === "percentage" ? "%" : "₹"} off with{" "}
+          {venue.offer.offerCode})
+        </span>
+      </div>
+    );
   };
 
   return (
@@ -221,6 +315,16 @@ const HomePage: React.FC = () => {
           }
           .group:hover .card-content {
             transform: translateY(-5px);
+          }
+          .offer-badge {
+            background-color: #ef4444;
+            color: white;
+            font-weight: bold;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            line-height: 1rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
           }
         `}
       </style>
@@ -369,7 +473,7 @@ const HomePage: React.FC = () => {
                     type="date"
                     name="date"
                     value={formData.date}
-                    on-StepChange={handleInputChange}
+                    onChange={handleInputChange}
                     className="w-full h-10 sm:h-12 pl-10 sm:pl-12 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
                   />
                 </div>
@@ -408,10 +512,14 @@ const HomePage: React.FC = () => {
               }`}
             >
               <div onClick={() => handleSectionClick("venues")}>VENUE</div>
-              <div onClick={() => handleSectionClick("eventManagement")}>EVENT-MANAGEMENT</div>
+              <div onClick={() => handleSectionClick("eventManagement")}>
+                EVENT-MANAGEMENT
+              </div>
               <div onClick={() => handleSectionClick("artists")}>MAKEUP-ARTISTS</div>
               <div onClick={() => handleSectionClick("projects")}>DESIGNS</div>
-              <div onClick={() => handleSectionClick("all")} className="mt-2">SHOW ALL</div>
+              <div onClick={() => handleSectionClick("all")} className="mt-2">
+                SHOW ALL
+              </div>
             </div>
           </div>
         </div>
@@ -465,7 +573,9 @@ const HomePage: React.FC = () => {
             ) : error ? (
               <div className="text-center text-red-600">{error}</div>
             ) : venues.length === 0 ? (
-              <div className="text-center text-gray-600">No verified venues available.</div>
+              <div className="text-center text-gray-600">
+                No verified venues available.
+              </div>
             ) : (
               <div className="relative">
                 {venues.length > 4 && (
@@ -495,6 +605,11 @@ const HomePage: React.FC = () => {
                         style={{ backgroundImage: `url(${venue.images[0]})` }}
                       >
                         <div className="absolute inset-0 bg-black opacity-20 group-hover:opacity-30 transition duration-300"></div>
+                        {venue.offer && (
+                          <div className="absolute top-2 left-2 offer-badge">
+                            {venue.offer.discountValue}{venue.offer.discountType === "percentage" ? "%" : "₹"} OFF
+                          </div>
+                        )}
                         <img
                           src={venue.images[0]}
                           alt={venue.name}
@@ -509,6 +624,9 @@ const HomePage: React.FC = () => {
                           <MapPin className="h-4 w-4 text-gray-600 mr-1" />
                           {venue.location}
                         </p>
+                        <div className="text-sm text-gray-600 mb-1">
+                          {getFormattedPrice(venue)}
+                        </div>
                         <div className="flex items-center text-sm text-gray-600">
                           <Star className="h-4 w-4 text-yellow-500 mr-1" />
                           <span>{venue.rating.toFixed(1)}</span>
@@ -534,14 +652,18 @@ const HomePage: React.FC = () => {
       )}
 
       {(activeSection === "all" || activeSection === "eventManagement") && (
-        <section id="eventManagement" className="py-12 sm:py-16 lg:py-20 bg-gradient-to-b">
+        <section
+          id="eventManagement"
+          className="py-12 sm:py-16 lg:py-20 bg-gradient-to-b"
+        >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-left mb-12 sm:mb-16">
               <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#5B4336] mb-4">
                 Event Management
               </h2>
               <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl">
-                Our expert event management teams ensure every detail of your special day is perfectly executed.
+                Our expert event management teams ensure every detail of your
+                special day is perfectly executed.
               </p>
             </div>
 
@@ -573,9 +695,7 @@ const HomePage: React.FC = () => {
                       style={{ backgroundImage: `url(${artist.image})` }}
                     >
                       <div className="absolute inset-0 bg-black opacity-20 group-hover:opacity-30 transition duration-300"></div>
-                      <
-
-img
+                      <img
                         src={artist.image}
                         alt={artist.name}
                         className="w-full h-full object-cover rounded-xl"
