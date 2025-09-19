@@ -208,6 +208,12 @@ export const updateStaff=async(staffid:string,data:any)=>{
 
 }
 
+export const staff=async(staffid:string,data:any)=>{
+
+ return await api.put(`/updatestaff/${staffid}`,data)
+
+}
+
 export const deleteStaff=async(id:string)=>{
 
 return await api.delete(`/deletestaff/${id}`)
