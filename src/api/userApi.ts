@@ -206,13 +206,11 @@ export const updateStaff=async(staffid:string,data:any)=>{
 
  return await api.put(`/updatestaff/${staffid}`,data)
 
-}
-
-export const staff=async(staffid:string,data:any)=>{
-
- return await api.put(`/updatestaff/${staffid}`,data)
+ console.log(data)
 
 }
+
+
 
 export const deleteStaff=async(id:string)=>{
 
