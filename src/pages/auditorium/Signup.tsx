@@ -14,6 +14,8 @@ const AuditoriumRegistrationPage: React.FC = () => {
   const [showLocationsDropdown, setShowLocationsDropdown] = useState(false)
   const [showDistrictDropdown, setShowDistrictDropdown] = useState(false)
   const [showPanchayatDropdown, setShowPanchayatDropdown] = useState(false)
+  const [showMunicipalityDropdown, setShowMunicipalityDropdown] = useState(false)
+  const [showCorporationDropdown, setShowCorporationDropdown] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
@@ -28,7 +30,10 @@ const AuditoriumRegistrationPage: React.FC = () => {
     locations: [] as string[],
     address: "",
     district: "",
-    panchayat: ""
+    adminType: "", // Added for Municipality, Corporation, or Panchayat
+    panchayat: "",
+    municipality: "",
+    corporation: ""
   })
 
   const eventOptions = [
@@ -63,81 +68,183 @@ const AuditoriumRegistrationPage: React.FC = () => {
     { value: "Kasaragod", label: "Kasaragod" }
   ]
 
-  // Sample panchayats data (expand with full lists from sources mentioned)
-  const panchayatsData: { [key: string]: { value: string; label: string }[] } = {
-    "Thiruvananthapuram": [
-      { value: "Anjuthengu", label: "Anjuthengu" },
-      { value: "Aryanad", label: "Aryanad" },
-      // Add more...
-    ],
-    "Kollam": [
-      { value: "Adichanalloor", label: "Adichanalloor" },
-      { value: "Alappad", label: "Alappad" },
-      // Add more...
-    ],
-    "Pathanamthitta": [
-      { value: "Adoor", label: "Adoor" },
-      { value: "Aranmula", label: "Aranmula" },
-      // Add more...
-    ],
-    "Alappuzha": [
-      { value: "Arookutty", label: "Arookutty" },
-      { value: "Ala", label: "Ala" },
-      // Add more...
-    ],
-    "Kottayam": [
-      { value: "Akalakunnam", label: "Akalakunnam" },
-      { value: "Ayarkunnam", label: "Ayarkunnam" },
-      // Add more...
-    ],
-    "Idukki": [
-      { value: "Adimaly", label: "Adimaly" },
-      { value: "Alakode", label: "Alakode" },
-      // Add more...
-    ],
-    "Ernakulam": [
-      { value: "Aikaranad", label: "Aikaranad" },
-      { value: "Alangad", label: "Alangad" },
-      // Add more...
-    ],
-    "Thrissur": [
-      { value: "Adat", label: "Adat" },
-      { value: "Alagappanagar", label: "Alagappanagar" },
-      // Add more...
-    ],
-    "Palakkad": [
-      { value: "Agali", label: "Agali" },
-      { value: "Akathethara", label: "Akathethara" },
-      // Add more...
-    ],
-    "Malappuram": [
-      { value: "Alamkode", label: "Alamkode" },
-      { value: "Alanallur", label: "Alanallur" },
-      // Add more...
-    ],
-    "Kozhikode": [
-      { value: "Arikkulam", label: "Arikkulam" },
-      { value: "Azhiyur", label: "Azhiyur" },
-      // Add more...
-    ],
-    "Wayanad": [
-      { value: "Ambalavayal", label: "Ambalavayal" },
-      { value: "Edavaka", label: "Edavaka" },
-      // Add more...
-    ],
-    "Kannur": [
-      { value: "Alakode", label: "Alakode" },
-      { value: "Anjarakandy", label: "Anjarakandy" },
-      // Add more...
-    ],
-    "Kasaragod": [
-      { value: "Ajanur", label: "Ajanur" },
-      { value: "Badiadka", label: "Badiadka" },
-      // Add more...
-    ]
+  const adminTypeOptions = [
+    { value: "Panchayat", label: "Panchayat" },
+    { value: "Municipality", label: "Municipality" },
+    { value: "Corporation", label: "Corporation" }
+  ]
+
+  // Sample administrative data (expand with full lists from sources)
+  const adminData: { [key: string]: { [key: string]: { value: string; label: string }[] } } = {
+    "Thiruvananthapuram": {
+      Panchayat: [
+        { value: "Anjuthengu", label: "Anjuthengu" },
+        { value: "Aryanad", label: "Aryanad" },
+      ],
+      Municipality: [
+        { value: "Neyyattinkara", label: "Neyyattinkara" },
+        { value: "Nedumangad", label: "Nedumangad" },
+      ],
+      Corporation: [
+        { value: "Thiruvananthapuram Corporation", label: "Thiruvananthapuram Corporation" }
+      ]
+    },
+    "Kollam": {
+      Panchayat: [
+        { value: "Adichanalloor", label: "Adichanalloor" },
+        { value: "Alappad", label: "Alappad" },
+      ],
+      Municipality: [
+        { value: "Paravur", label: "Paravur" },
+        { value: "Punalur", label: "Punalur" },
+      ],
+      Corporation: [
+        { value: "Kollam Corporation", label: "Kollam Corporation" }
+      ]
+    },
+    "Pathanamthitta": {
+      Panchayat: [
+        { value: "Adoor", label: "Adoor" },
+        { value: "Aranmula", label: "Aranmula" },
+      ],
+      Municipality: [
+        { value: "Thiruvalla", label: "Thiruvalla" },
+        { value: "Pathanamthitta", label: "Pathanamthitta" },
+      ],
+      Corporation: []
+    },
+    "Alappuzha": {
+      Panchayat: [
+        { value: "Arookutty", label: "Arookutty" },
+        { value: "Ala", label: "Ala" },
+      ],
+      Municipality: [
+        { value: "Chengannur", label: "Chengannur" },
+        { value: "Kayamkulam", label: "Kayamkulam" },
+      ],
+      Corporation: [
+        { value: "Alappuzha Corporation", label: "Alappuzha Corporation" }
+      ]
+    },
+    "Kottayam": {
+      Panchayat: [
+        { value: "Akalakunnam", label: "Akalakunnam" },
+        { value: "Ayarkunnam", label: "Ayarkunnam" },
+      ],
+      Municipality: [
+        { value: "Kottayam", label: "Kottayam" },
+        { value: "Changanassery", label: "Changanassery" },
+      ],
+      Corporation: []
+    },
+    "Idukki": {
+      Panchayat: [
+        { value: "Adimaly", label: "Adimaly" },
+        { value: "Alakode", label: "Alakode" },
+      ],
+      Municipality: [
+        { value: "Thodupuzha", label: "Thodupuzha" },
+      ],
+      Corporation: []
+    },
+    "Ernakulam": {
+      Panchayat: [
+        { value: "Aikaranad", label: "Aikaranad" },
+        { value: "Alangad", label: "Alangad" },
+      ],
+      Municipality: [
+        { value: "Aluva", label: "Aluva" },
+        { value: "Kothamangalam", label: "Kothamangalam" },
+      ],
+      Corporation: [
+        { value: "Kochi Corporation", label: "Kochi Corporation" }
+      ]
+    },
+    "Thrissur": {
+      Panchayat: [
+        { value: "Adat", label: "Adat" },
+        { value: "Alagappanagar", label: "Alagappanagar" },
+      ],
+      Municipality: [
+        { value: "Guruvayur", label: "Guruvayur" },
+        { value: "Chavakkad", label: "Chavakkad" },
+      ],
+      Corporation: [
+        { value: "Thrissur Corporation", label: "Thrissur Corporation" }
+      ]
+    },
+    "Palakkad": {
+      Panchayat: [
+        { value: "Agali", label: "Agali" },
+        { value: "Akathethara", label: "Akathethara" },
+      ],
+      Municipality: [
+        { value: "Palakkad", label: "Palakkad" },
+        { value: "Ottapalam", label: "Ottapalam" },
+      ],
+      Corporation: []
+    },
+    "Malappuram": {
+      Panchayat: [
+        { value: "Alamkode", label: "Alamkode" },
+        { value: "Alanallur", label: "Alanallur" },
+      ],
+      Municipality: [
+        { value: "Manjeri", label: "Manjeri" },
+        { value: "Perinthalmanna", label: "Perinthalmanna" },
+      ],
+      Corporation: []
+    },
+    "Kozhikode": {
+      Panchayat: [
+        { value: "Arikkulam", label: "Arikkulam" },
+        { value: "Azhiyur", label: "Azhiyur" },
+      ],
+      Municipality: [
+        { value: "Koyilandy", label: "Koyilandy" },
+        { value: "Vatakara", label: "Vatakara" },
+      ],
+      Corporation: [
+        { value: "Kozhikode Corporation", label: "Kozhikode Corporation" }
+      ]
+    },
+    "Wayanad": {
+      Panchayat: [
+        { value: "Ambalavayal", label: "Ambalavayal" },
+        { value: "Edavaka", label: "Edavaka" },
+      ],
+      Municipality: [
+        { value: "Kalpetta", label: "Kalpetta" },
+      ],
+      Corporation: []
+    },
+    "Kannur": {
+      Panchayat: [
+        { value: "Alakode", label: "Alakode" },
+        { value: "Anjarakandy", label: "Anjarakandy" },
+      ],
+      Municipality: [
+        { value: "Thalassery", label: "Thalassery" },
+        { value: "Mattannur", label: "Mattannur" },
+      ],
+      Corporation: [
+        { value: "Kannur Corporation", label: "Kannur Corporation" }
+      ]
+    },
+    "Kasaragod": {
+      Panchayat: [
+        { value: "Ajanur", label: "Ajanur" },
+        { value: "Badiadka", label: "Badiadka" },
+      ],
+      Municipality: [
+        { value: "Kanhangad", label: "Kanhangad" },
+        { value: "Kasaragod", label: "Kasaragod" },
+      ],
+      Corporation: []
+    }
   }
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type, checked } = e.target
     if (type === "checkbox") {
       setFormData(prev => ({
@@ -155,13 +262,30 @@ const AuditoriumRegistrationPage: React.FC = () => {
   }
 
   const handleDistrictSelect = (value: string) => {
-    setFormData(prev => ({ ...prev, district: value, panchayat: "" })) // Reset panchayat on district change
+    setFormData(prev => ({ ...prev, district: value, adminType: "", panchayat: "", municipality: "", corporation: "" }))
     setShowDistrictDropdown(false)
+  }
+
+  const handleAdminTypeSelect = (value: string) => {
+    setFormData(prev => ({ ...prev, adminType: value, panchayat: "", municipality: "", corporation: "" }))
+    setShowPanchayatDropdown(false)
+    setShowMunicipalityDropdown(false)
+    setShowCorporationDropdown(false)
   }
 
   const handlePanchayatSelect = (value: string) => {
     setFormData(prev => ({ ...prev, panchayat: value }))
     setShowPanchayatDropdown(false)
+  }
+
+  const handleMunicipalitySelect = (value: string) => {
+    setFormData(prev => ({ ...prev, municipality: value }))
+    setShowMunicipalityDropdown(false)
+  }
+
+  const handleCorporationSelect = (value: string) => {
+    setFormData(prev => ({ ...prev, corporation: value }))
+    setShowCorporationDropdown(false)
   }
 
   const handleOtpModal = () => {
@@ -174,8 +298,16 @@ const AuditoriumRegistrationPage: React.FC = () => {
       toast.error('Select at least one event and location.')
       return
     }
-    if (formData.district === "" || formData.panchayat === "") {
-      toast.error('Select district and panchayat.')
+    if (formData.district === "" || formData.adminType === "") {
+      toast.error('Select district and administrative type.')
+      return
+    }
+    if (
+      (formData.adminType === "Panchayat" && formData.panchayat === "") ||
+      (formData.adminType === "Municipality" && formData.municipality === "") ||
+      (formData.adminType === "Corporation" && formData.corporation === "")
+    ) {
+      toast.error('Select a valid administrative area.')
       return
     }
     const response = await singUpRequest(formData)
@@ -195,7 +327,9 @@ const AuditoriumRegistrationPage: React.FC = () => {
     navigate('/auditorium/login')
   }
 
-  const selectedPanchayatOptions = formData.district ? panchayatsData[formData.district] || [] : []
+  const selectedPanchayatOptions = formData.district ? adminData[formData.district]?.Panchayat || [] : []
+  const selectedMunicipalityOptions = formData.district ? adminData[formData.district]?.Municipality || [] : []
+  const selectedCorporationOptions = formData.district ? adminData[formData.district]?.Corporation || [] : []
 
   return (
     <div className="min-h-screen bg-[#FDF8F1] flex flex-col items-center justify-center px-4 py-6 box-border">
@@ -408,24 +542,24 @@ const AuditoriumRegistrationPage: React.FC = () => {
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <label className="block text-[#78533F] font-medium text-xs sm:text-sm font-serif">Panchayat</label>
+                  <label className="block text-[#78533F] font-medium text-xs sm:text-sm font-serif">Administrative Type</label>
                   <div className="relative">
                     <div
                       className="w-full px-3 py-2 border border-[#b09d94] rounded-full bg-white text-xs sm:text-sm cursor-pointer flex items-center justify-between"
                       onClick={() => formData.district && setShowPanchayatDropdown(!showPanchayatDropdown)}
                     >
-                      <span className={formData.panchayat ? "text-[#3C3A39]" : "text-[#b09d94]"}>
-                        {formData.panchayat || (formData.district ? "Select panchayat" : "Select district first")}
+                      <span className={formData.adminType ? "text-[#3C3A39]" : "text-[#b09d94]"}>
+                        {formData.adminType || (formData.district ? "Select administrative type" : "Select district first")}
                       </span>
                       <span className="text-[#78533F]">&#9662;</span>
                     </div>
-                    {showPanchayatDropdown && (
+                    {showPanchayatDropdown && formData.district && (
                       <div className="absolute z-10 w-full mt-1 bg-white border border-[#b09d94] rounded-md shadow-lg max-h-28 overflow-y-auto">
-                        {selectedPanchayatOptions.map(option => (
+                        {adminTypeOptions.map(option => (
                           <div
                             key={option.value}
                             className="p-1.5 hover:bg-[#FDF8F1] cursor-pointer text-[#3C3A39] text-xs sm:text-sm font-serif"
-                            onClick={() => handlePanchayatSelect(option.value)}
+                            onClick={() => handleAdminTypeSelect(option.value)}
                           >
                             {option.label}
                           </div>
@@ -434,6 +568,93 @@ const AuditoriumRegistrationPage: React.FC = () => {
                     )}
                   </div>
                 </div>
+                {formData.adminType === "Panchayat" && (
+                  <div className="space-y-1">
+                    <label className="block text-[#78533F] font-medium text-xs sm:text-sm font-serif">Panchayat</label>
+                    <div className="relative">
+                      <div
+                        className="w-full px-3 py-2 border border-[#b09d94] rounded-full bg-white text-xs sm:text-sm cursor-pointer flex items-center justify-between"
+                        onClick={() => formData.district && setShowPanchayatDropdown(!showPanchayatDropdown)}
+                      >
+                        <span className={formData.panchayat ? "text-[#3C3A39]" : "text-[#b09d94]"}>
+                          {formData.panchayat || "Select panchayat"}
+                        </span>
+                        <span className="text-[#78533F]">&#9662;</span>
+                      </div>
+                      {showPanchayatDropdown && (
+                        <div className="absolute z-10 w-full mt-1 bg-white border border-[#b09d94] rounded-md shadow-lg max-h-28 overflow-y-auto">
+                          {selectedPanchayatOptions.map(option => (
+                            <div
+                              key={option.value}
+                              className="p-1.5 hover:bg-[#FDF8F1] cursor-pointer text-[#3C3A39] text-xs sm:text-sm font-serif"
+                              onClick={() => handlePanchayatSelect(option.value)}
+                            >
+                              {option.label}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {formData.adminType === "Municipality" && (
+                  <div className="space-y-1">
+                    <label className="block text-[#78533F] font-medium text-xs sm:text-sm font-serif">Municipality</label>
+                    <div className="relative">
+                      <div
+                        className="w-full px-3 py-2 border border-[#b09d94] rounded-full bg-white text-xs sm:text-sm cursor-pointer flex items-center justify-between"
+                        onClick={() => formData.district && setShowMunicipalityDropdown(!showMunicipalityDropdown)}
+                      >
+                        <span className={formData.municipality ? "text-[#3C3A39]" : "text-[#b09d94]"}>
+                          {formData.municipality || "Select municipality"}
+                        </span>
+                        <span className="text-[#78533F]">&#9662;</span>
+                      </div>
+                      {showMunicipalityDropdown && (
+                        <div className="absolute z-10 w-full mt-1 bg-white border border-[#b09d94] rounded-md shadow-lg max-h-28 overflow-y-auto">
+                          {selectedMunicipalityOptions.map(option => (
+                            <div
+                              key={option.value}
+                              className="p-1.5 hover:bg-[#FDF8F1] cursor-pointer text-[#3C3A39] text-xs sm:text-sm font-serif"
+                              onClick={() => handleMunicipalitySelect(option.value)}
+                            >
+                              {option.label}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {formData.adminType === "Corporation" && (
+                  <div className="space-y-1">
+                    <label className="block text-[#78533F] font-medium text-xs sm:text-sm font-serif">Corporation</label>
+                    <div className="relative">
+                      <div
+                        className="w-full px-3 py-2 border border-[#b09d94] rounded-full bg-white text-xs sm:text-sm cursor-pointer flex items-center justify-between"
+                        onClick={() => formData.district && setShowCorporationDropdown(!showCorporationDropdown)}
+                      >
+                        <span className={formData.corporation ? "text-[#3C3A39]" : "text-[#b09d94]"}>
+                          {formData.corporation || "Select corporation"}
+                        </span>
+                        <span className="text-[#78533F]">&#9662;</span>
+                      </div>
+                      {showCorporationDropdown && (
+                        <div className="absolute z-10 w-full mt-1 bg-white border border-[#b09d94] rounded-md shadow-lg max-h-28 overflow-y-auto">
+                          {selectedCorporationOptions.map(option => (
+                            <div
+                              key={option.value}
+                              className="p-1.5 hover:bg-[#FDF8F1] cursor-pointer text-[#3C3A39] text-xs sm:text-sm font-serif"
+                              onClick={() => handleCorporationSelect(option.value)}
+                            >
+                              {option.label}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
                 <div className="space-y-1">
                   <label htmlFor="password" className="block text-[#78533F] font-medium text-xs sm:text-sm font-serif">Password</label>
                   <div className="relative">
