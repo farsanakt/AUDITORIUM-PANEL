@@ -17,10 +17,9 @@ import {
   Upload,
   ImageIcon,
 } from "lucide-react"
-import { addVenueAPI, deleteVenueAPI, existingAllVenues, fetchAuditoriumUserdetails, findAuditoriumById, updateVenues } from "../../api/userApi"
+import { addVenueAPI, deleteVenueAPI, existingAllVenues, fetchAuditoriumUserdetails, updateVenues } from "../../api/userApi"
 import { toast } from "react-toastify"
 import Swal from 'sweetalert2';
-
 import Header from "../../component/user/Header"
 import Sidebar from "../../component/auditorium/Sidebar"
 import { useSelector } from "react-redux"
@@ -75,6 +74,15 @@ interface RootState {
   }
 }
 
+interface UserData {
+  address: string
+  panchayat: string
+  municipality: string
+  corporation: string
+  phone?: string
+  email?: string
+}
+
 const fixedTimeSlots: TimeSlot[] = [
   { id: "morning", label: "Morning", startTime: "06:00", endTime: "12:00" },
   { id: "afternoon", label: "Afternoon", startTime: "12:00", endTime: "18:00" },
@@ -94,19 +102,6 @@ const availableCities = [
   "Malappuram",
   "Kannur",
   "Kasaragod",
-]
-
-const panchayatOptions = [
-  "Nedumangad",
-  "Varkala",
-  "Kallara",
-  "Pothencode",
-  "Kilimanoor",
-  "Vamanapuram",
-  "Kollam",
-  "Alappuzha",
-  "Kozhikode",
-  "Thrissur",
 ]
 
 const availableAmenities = [
@@ -175,7 +170,8 @@ export default function VenueManagement() {
     startTime: "",
     endTime: "",
   })
-  const [userData, setUserData] = useState<{ address: string; panchayat: string; phone?: string; email?: string } | null>(null)
+  const [userData, setUserData] = useState<UserData | null>(null)
+  const [locationLabel, setLocationLabel] = useState("Panchayat")
 
   const { currentUser } = useSelector((state: RootState) => state.auth)
 
@@ -191,13 +187,38 @@ export default function VenueManagement() {
 
   const fetchUserData = async (): Promise<void> => {
     try {
-      const response=await fetchAuditoriumUserdetails(currentUser.id)
-      setUserData({
+      const response = await fetchAuditoriumUserdetails(currentUser.id)
+      const data = {
         address: response.data.address,
         panchayat: response.data.panchayat,
-        phone: response.data.phone ,
+        municipality: response.data.municipality,
+        corporation: response.data.corporation,
+        phone: response.data.phone,
         email: currentUser.email || "example@example.com",
-      })
+      }
+      setUserData(data)
+
+      // Determine the default location and label
+      let defaultLocation = ""
+      let label = "Panchayat"
+      if (data.municipality && data.municipality !== "") {
+        defaultLocation = data.municipality
+        label = "Municipality"
+      } else if (data.corporation && data.corporation !== "") {
+        defaultLocation = data.corporation
+        label = "Corporation"
+      } else if (data.panchayat && data.panchayat !== "") {
+        defaultLocation = data.panchayat
+        label = "Panchayat"
+      }
+      setLocationLabel(label)
+      setNewVenue((prev) => ({
+        ...prev,
+        address: data.address,
+        panchayat: defaultLocation,
+        phone: data.phone || "",
+        email: data.email || "",
+      }))
     } catch (error) {
       console.error("Error fetching user data:", error)
       toast.error("Failed to load user data.")
@@ -209,23 +230,19 @@ export default function VenueManagement() {
     fetchUserData()
   }, [])
 
-  useEffect(() => {
-    if (userData) {
-      setNewVenue((prev) => ({
-        ...prev,
-        address: userData.address,
-        panchayat: userData.panchayat,
-        phone: userData.phone || "",
-        email: userData.email || "",
-      }))
-    }
-  }, [userData])
-
   const toggleVenueExpand = (id: string): void => {
     setExpandedVenue(expandedVenue === id ? null : id)
   }
 
   const selectVenue = (venue: Venue): void => {
+    // Set the location label based on userData for the Edit modal
+    let label = "Panchayat"
+    if (userData?.municipality && userData.municipality !== "") {
+      label = "Municipality"
+    } else if (userData?.corporation && userData.corporation !== "") {
+      label = "Corporation"
+    }
+    setLocationLabel(label)
     setSelectedVenue(venue)
     setEditImages([])
     setIsEditModalOpen(true)
@@ -271,7 +288,7 @@ export default function VenueManagement() {
       phone: userData?.phone || "",
       email: userData?.email || "",
       pincode: "",
-      panchayat: userData?.panchayat || "",
+      panchayat: userData?.municipality || userData?.corporation || userData?.panchayat || "",
       cities: [],
       acType: "AC",
       seatingCapacity: 0,
@@ -296,7 +313,7 @@ export default function VenueManagement() {
     setIsAddModalOpen(false)
   }
 
- const handleAddVenue = async (): Promise<void> => {
+  const handleAddVenue = async (): Promise<void> => {
     try {
       const formData = new FormData()
       Object.entries(newVenue).forEach(([key, value]) => {
@@ -539,6 +556,38 @@ export default function VenueManagement() {
       (venueTypeFilter === "all" || venue.acType === venueTypeFilter),
   )
 
+  // Determine if the location field should be disabled
+  const isLocationDisabled = () => {
+    return (
+      (userData?.municipality && userData.municipality !== "") ||
+      (userData?.corporation && userData.corporation !== "") ||
+      (userData?.panchayat && userData.panchayat !== "")
+    )
+  }
+
+  // Get location options based on the determined label
+  const getLocationOptions = () => {
+    if (userData?.municipality && userData.municipality !== "") {
+      return [userData.municipality] // Only show the municipality value
+    } else if (userData?.corporation && userData.corporation !== "") {
+      return [userData.corporation] // Only show the corporation value
+    } else if (userData?.panchayat && userData.panchayat !== "") {
+      return [userData.panchayat] // Only show the panchayat value
+    }
+    return [
+      "Nedumangad",
+      "Varkala",
+      "Kallara",
+      "Pothencode",
+      "Kilimanoor",
+      "Vamanapuram",
+      "Kollam",
+      "Alappuzha",
+      "Kozhikode",
+      "Thrissur",
+    ]
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex flex-col">
       <style jsx global>{`
@@ -560,7 +609,6 @@ export default function VenueManagement() {
         .scrollbar-custom::-webkit-scrollbar-thumb:hover {
           background: #9ca3af;
         }
-        /* Responsive SweetAlert2 styles */
         .swal2-container-responsive {
           padding: 4vw !important;
         }
@@ -789,8 +837,8 @@ export default function VenueManagement() {
                             <div className="flex items-start">
                               <MapPin size={14} className="mr-2 mt-1 text-gray-400 flex-shrink-0" />
                               <div className="min-w-0">
-                                <p className="text-sm font-medium text-gray-700">Location</p>
-                                <p className="text-sm text-gray-600">Panchayat: {venue.panchayat}</p>
+                                <p className="text-sm font-medium text-gray-700">{locationLabel}</p>
+                                <p className="text-sm text-gray-600">{venue.panchayat}</p>
                                 <p className="text-sm text-gray-600">Cities: {venue.cities.join(", ")}</p>
                               </div>
                             </div>
@@ -823,7 +871,6 @@ export default function VenueManagement() {
       {isAddModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl w-full max-w-[95vw] sm:max-w-4xl max-h-[95vh] flex flex-col">
-            {/* Fixed Header */}
             <div className="flex-shrink-0 border-b border-gray-200 px-4 sm:px-6 py-4 rounded-t-xl">
               <div className="flex justify-between items-center">
                 <h2 className="text-lg sm:text-xl font-bold text-gray-800">Add New Venue</h2>
@@ -833,7 +880,6 @@ export default function VenueManagement() {
               </div>
             </div>
 
-            {/* Scrollable Content */}
             <div className="flex-1 overflow-y-auto scrollbar-custom px-4 sm:px-6 py-4">
               <div className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -919,14 +965,24 @@ export default function VenueManagement() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Panchayat *</label>
-                    <input
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">{locationLabel} *</label>
+                    <select
                       name="panchayat"
                       value={newVenue.panchayat || ""}
-                      className="w-full px-4 py-2 border border-[#b09d94] rounded-lg text-sm bg-gray-100"
+                      onChange={(e) => handleInputChange(e, true)}
+                      className="w-full px-4 py-2 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553] text-sm bg-gray-100"
                       required
-                      disabled
-                    />
+                      disabled={isLocationDisabled()}
+                    >
+                      <option value="" disabled>
+                        Select {locationLabel}
+                      </option>
+                      {getLocationOptions().map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   <div className="sm:col-span-2">
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Cities *</label>
@@ -1076,17 +1132,6 @@ export default function VenueManagement() {
                       placeholder="Enter reception tariff"
                     />
                   </div>
-                     <div className="sm:col-span-2">
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Terms and Conditions</label>
-                    <textarea
-                      name="decorPolicy"
-                      value={newVenue.decorPolicy || ""}
-                      onChange={(e) => handleInputChange(e, true)}
-                      rows={2}
-                      className="w-full px-4 py-2 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553] text-sm resize-none"
-                      placeholder="Enter terms and conditions"
-                    />
-                  </div>
                   <div className="sm:col-span-2">
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Cancellation Policy</label>
                     <input
@@ -1097,8 +1142,6 @@ export default function VenueManagement() {
                       placeholder="Enter cancellation policy"
                     />
                   </div>
-
-                
                   <div className="sm:col-span-2">
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Food Policy</label>
                     <textarea
@@ -1109,7 +1152,17 @@ export default function VenueManagement() {
                       className="w-full px-4 py-2 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553] text-sm resize-none"
                       placeholder="Enter food policy"
                     />
-                 
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Terms and Conditions</label>
+                    <textarea
+                      name="decorPolicy"
+                      value={newVenue.decorPolicy || ""}
+                      onChange={(e) => handleInputChange(e, true)}
+                      rows={2}
+                      className="w-full px-4 py-2 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553] text-sm resize-none"
+                      placeholder="Enter terms and conditions"
+                    />
                   </div>
                   <div className="sm:col-span-2">
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Venue Images (minimum 4) *</label>
@@ -1240,7 +1293,6 @@ export default function VenueManagement() {
               </div>
             </div>
 
-            {/* Fixed Footer */}
             <div className="flex-shrink-0 border-t border-gray-200 px-4 sm:px-6 py-4 rounded-b-xl bg-gray-50">
               <div className="flex justify-end space-x-3">
                 <button
@@ -1279,7 +1331,6 @@ export default function VenueManagement() {
       {isEditModalOpen && selectedVenue && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl w-full max-w-[95vw] sm:max-w-4xl max-h-[95vh] flex flex-col">
-            {/* Fixed Header */}
             <div className="flex-shrink-0 border-b border-gray-200 px-4 sm:px-6 py-4 rounded-t-xl">
               <div className="flex justify-between items-center">
                 <h2 className="text-lg sm:text-xl font-bold text-gray-800 truncate">
@@ -1291,7 +1342,6 @@ export default function VenueManagement() {
               </div>
             </div>
 
-            {/* Scrollable Content */}
             <div className="flex-1 overflow-y-auto scrollbar-custom px-4 sm:px-6 py-4">
               <div className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1365,19 +1415,20 @@ export default function VenueManagement() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Panchayat</label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">{locationLabel}</label>
                     <select
                       name="panchayat"
                       value={selectedVenue.panchayat || ""}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553] text-sm"
+                      className="w-full px-4 py-2 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553] text-sm bg-gray-100"
+                      disabled={isLocationDisabled()}
                     >
                       <option value="" disabled>
-                        Select Panchayat
+                        Select {locationLabel}
                       </option>
-                      {panchayatOptions.map((panchayat) => (
-                        <option key={panchayat} value={panchayat}>
-                          {panchayat}
+                      {getLocationOptions().map((option) => (
+                        <option key={option} value={option}>
+                          {option}
                         </option>
                       ))}
                     </select>
@@ -1537,7 +1588,7 @@ export default function VenueManagement() {
                     />
                   </div>
                   <div className="sm:col-span-2">
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Terms and conditions</label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Terms and Conditions</label>
                     <textarea
                       name="decorPolicy"
                       value={selectedVenue.decorPolicy}
