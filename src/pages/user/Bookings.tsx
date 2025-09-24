@@ -1130,12 +1130,12 @@ const Bookings: React.FC = () => {
                           <p className="text-xs sm:text-sm text-[#78533F] font-medium">
                             Advance Amount: {getFormattedPrice(formData.advanceAmount)}
                           </p>
-                          {appliedOffer && (
+                          {/* {appliedOffer && (
                             <p className="text-xs sm:text-sm text-green-600 font-medium">
                               Discount Applied: {appliedOffer.offerCode} ({appliedOffer.discountValue}
                               {appliedOffer.discountType === "percentage" ? "%" : "₹"} off)
                             </p>
-                          )}
+                          )} */}
                         </div>
                         <div>
                           <label className="block text-xs sm:text-sm font-semibold text-[#78533F] flex items-center mb-2">
@@ -1228,7 +1228,7 @@ const Bookings: React.FC = () => {
                       </div>
                       <div className="space-y-4 sm:space-y-6 text-center">
                         <div className="flex justify-center">
-                          <CheckCircle className="w-12 h-12 sm:w-16 sm:h-16 text-green-500" />
+                          {/* <CheckCircle className="w-12 h-12 sm:w-16 sm:h-16 text-green-500" /> */}
                         </div>
                         <div className="bg-white p-3 sm:p-4 rounded-xl border-2 border-[#b09d94]">
                           <p className="text-xs sm:text-sm text-[#78533F] font-medium">Venue: {formData.venueName}</p>
@@ -1257,11 +1257,11 @@ const Bookings: React.FC = () => {
                           <p className="text-xs sm:text-sm text-[#78533F] font-medium">
                             Reference ID: {Math.random().toString(36).substr(2, 9).toUpperCase()}
                           </p>
-                          {formData.couponCode && (
+                          {/* {formData.couponCode && (
                             <p className="text-xs sm:text-sm text-green-600 font-medium">
                               Coupon Applied: {formData.couponCode}
                             </p>
-                          )}
+                          )} */}
                         </div>
                         {eventType.toLowerCase() === "wedding" ? (
                           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mt-4 sm:mt-6">

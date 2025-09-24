@@ -54,7 +54,6 @@ interface RootState {
   };
 }
 
-
 const deleteVendorAPI = async (id: string) => ({ success: true });
 
 const updateVendorAPI = async (formData: FormData, id: string) => ({
@@ -113,13 +112,13 @@ export default function VendorManagement() {
         const response = await currentVendorUserData(currentUser?.id);
         setNewVendor((prev) => ({
           ...prev,
-          address: response.data.address || "No address provided",
+          address: response.data.address || "",
         }));
       } catch (error) {
         console.error("Failed to fetch user data:", error);
         setNewVendor((prev) => ({
           ...prev,
-          address: "No address provided",
+          address: "",
         }));
       }
     };
@@ -132,7 +131,6 @@ export default function VendorManagement() {
     const fetchVendors = async () => {
       try {
         const response = await existingAllVendors(currentUser.id);
-        console.log(response.data,'thisseee')
         setVendors(response.data);
       } catch (error) {
         toast.error("Failed to load vendors.");
@@ -335,64 +333,25 @@ export default function VendorManagement() {
   };
 
   const validateForm = (vendor: Partial<Vendor>, images: File[]) => {
-    if (!vendor.name) {
-      toast.error("Vendor name is required.");
-      return false;
-    }
-    if (!vendor.address) {
-      toast.error("Address is required.");
-      return false;
-    }
-    if (!vendor.phone || !/^\d{10}$/.test(vendor.phone)) {
-      toast.error("Valid phone number is required.");
-      return false;
-    }
-    if (!vendor.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(vendor.email)) {
-      toast.error("Valid email is required.");
-      return false;
-    }
-    if (!vendor.pincode || !/^\d{6}$/.test(vendor.pincode)) {
-      toast.error("Valid 6-digit pincode is required.");
-      return false;
-    }
-    if (!vendor.cities?.length) {
-      toast.error("At least one city must be selected.");
-      return false;
-    }
-    if (!vendor.cancellationPolicy) {
-      toast.error("Cancellation policy is required.");
-      return false;
-    }
-    if (!vendor.totalAmount || vendor.totalAmount <= 0) {
-      toast.error("Valid total amount is required.");
-      return false;
-    }
-    if (!vendor.advanceAmount || vendor.advanceAmount <= 0 || vendor.advanceAmount > (vendor.totalAmount || 0)) {
-      toast.error("Valid advance amount (less than total) is required.");
-      return false;
-    }
-    if (!vendor.timeSlots?.length) {
-      toast.error("At least one time slot must be selected.");
-      return false;
-    }
-    for (const slot of vendor.timeSlots) {
-      if (!slot.startTime || !slot.endTime) {
-        toast.error("Start and end times are required for all selected time slots.");
-        return false;
-      }
-      if (slot.startTime >= slot.endTime) {
-        toast.error("Start time must be before end time for all time slots.");
-        return false;
-      }
-    }
-    if (!vendor.vendorType) {
-      toast.error("Vendor type is required.");
-      return false;
-    }
+    // Only validate that exactly 4 images are provided
     if (images.length + (vendor.images?.length || 0) !== 4) {
       toast.error("Exactly 4 images are required.");
       return false;
     }
+    // Allow time slots to be optional, but if provided, ensure start and end times are valid
+    if (vendor.timeSlots && vendor.timeSlots.length > 0) {
+      for (const slot of vendor.timeSlots) {
+        if ((slot.startTime && !slot.endTime) || (!slot.startTime && slot.endTime)) {
+          toast.error("Both start and end times must be provided for selected time slots.");
+          return false;
+        }
+        if (slot.startTime && slot.endTime && slot.startTime >= slot.endTime) {
+          toast.error("Start time must be before end time for all time slots.");
+          return false;
+        }
+      }
+    }
+    // Allow all other fields to be optional
     return true;
   };
 
@@ -598,24 +557,22 @@ export default function VendorManagement() {
             <div className="flex-1 overflow-y-auto scrollbar-custom px-6 py-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Product Name *</label>
+                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Product Name</label>
                   <input
                     name="name"
                     value={newVendor.name || ""}
                     onChange={(e) => handleInputChange(e, true)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ED695A] text-sm"
                     placeholder="Enter vendor name"
-                    required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Product Type *</label>
+                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Product Type</label>
                   <select
                     name="vendorType"
                     value={newVendor.vendorType || ""}
                     onChange={(e) => handleInputChange(e, true)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ED695A] text-sm"
-                    required
                   >
                     <option value="" disabled>Select Vendor Type</option>
                     {vendorTypes.map((type) => (
@@ -624,7 +581,7 @@ export default function VendorManagement() {
                   </select>
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Address *</label>
+                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Address</label>
                   <textarea
                     name="address"
                     value={newVendor.address || ""}
@@ -632,18 +589,16 @@ export default function VendorManagement() {
                     rows={3}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-sm resize-none cursor-not-allowed"
                     placeholder="Address (non-editable)"
-                    required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Phone Number *</label>
+                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Phone Number</label>
                   <input
                     name="phone"
                     value={newVendor.phone || ""}
                     onChange={(e) => handleInputChange(e, true)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ED695A] text-sm"
                     placeholder="Enter phone number"
-                    required
                   />
                 </div>
                 <div>
@@ -657,7 +612,7 @@ export default function VendorManagement() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Email *</label>
+                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Email</label>
                   <input
                     name="email"
                     type="email"
@@ -665,22 +620,20 @@ export default function VendorManagement() {
                     onChange={(e) => handleInputChange(e, true)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ED695A] text-sm"
                     placeholder="Enter email"
-                    required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Pincode *</label>
+                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Pincode</label>
                   <input
                     name="pincode"
                     value={newVendor.pincode || ""}
                     onChange={(e) => handleInputChange(e, true)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ED695A] text-sm"
                     placeholder="Enter pincode"
-                    required
                   />
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Cities *</label>
+                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Cities</label>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-32 overflow-y-auto border border-gray-300 rounded-lg p-3 bg-gray-50 scrollbar-custom">
                     {availableCities.map((city) => (
                       <label key={city} className="flex items-center space-x-2 cursor-pointer">
@@ -696,18 +649,17 @@ export default function VendorManagement() {
                   </div>
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Cancellation Policy *</label>
+                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Cancellation Policy</label>
                   <input
                     name="cancellationPolicy"
                     value={newVendor.cancellationPolicy || ""}
                     onChange={(e) => handleInputChange(e, true)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ED695A] text-sm"
                     placeholder="Enter cancellation policy"
-                    required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Total Amount *</label>
+                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Total Amount</label>
                   <input
                     name="totalAmount"
                     type="number"
@@ -715,11 +667,10 @@ export default function VendorManagement() {
                     onChange={(e) => handleInputChange(e, true)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ED695A] text-sm"
                     placeholder="Enter total amount"
-                    required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Advance Amount *</label>
+                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Advance Amount</label>
                   <input
                     name="advanceAmount"
                     type="number"
@@ -727,11 +678,10 @@ export default function VendorManagement() {
                     onChange={(e) => handleInputChange(e, true)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ED695A] text-sm"
                     placeholder="Enter advance amount"
-                    required
                   />
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Time Slots *</label>
+                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Time Slots</label>
                   <div className="flex flex-wrap gap-2 mb-4">
                     {fixedTimeSlots.map((slot) => (
                       <button
@@ -750,7 +700,7 @@ export default function VendorManagement() {
                   </div>
                   {newVendor.timeSlots!.length > 0 && (
                     <div className="mt-4">
-                      <p className="text-sm font-medium text-[#825F4C] mb-2">Set Times for Selected Slots *</p>
+                      <p className="text-sm font-medium text-[#825F4C] mb-2">Set Times for Selected Slots</p>
                       {newVendor.timeSlots!.map((slot, index) => (
                         <div key={slot.id} className="flex flex-wrap items-center gap-2 mb-2">
                           <span className="w-24 text-sm text-[#825F4C]">{slot.label}</span>
@@ -759,7 +709,6 @@ export default function VendorManagement() {
                             value={slot.startTime || ""}
                             onChange={(e) => updateAddTimeSlot(index, "startTime", e.target.value)}
                             className="px-2 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ED695A] text-sm"
-                            required
                           />
                           <span className="text-sm text-[#825F4C]">to</span>
                           <input
@@ -767,7 +716,6 @@ export default function VendorManagement() {
                             value={slot.endTime || ""}
                             onChange={(e) => updateAddTimeSlot(index, "endTime", e.target.value)}
                             className="px-2 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ED695A] text-sm"
-                            required
                           />
                         </div>
                       ))}
@@ -775,7 +723,7 @@ export default function VendorManagement() {
                   )}
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Vendor Images (exactly 4) *</label>
+                  <label className="block text-sm font-semibold text-[#825F4C] mb-2">Vendor Images (exactly 4)</label>
                   <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-[#ED695A] transition-colors">
                     <input
                       type="file"
@@ -829,21 +777,7 @@ export default function VendorManagement() {
                 </button>
                 <button
                   onClick={handleAddVendor}
-                  disabled={
-                    !newVendor.name ||
-                    !newVendor.address ||
-                    !newVendor.phone ||
-                    !newVendor.email ||
-                    !newVendor.pincode ||
-                    !newVendor.cities?.length ||
-                    !newVendor.cancellationPolicy ||
-                    !newVendor.totalAmount ||
-                    !newVendor.advanceAmount ||
-                    !newVendor.timeSlots!.length ||
-                    !newVendor.vendorType ||
-                    selectedImages.length !== 4 ||
-                    newVendor.timeSlots!.some((slot) => !slot.startTime || !slot.endTime)
-                  }
+                  disabled={selectedImages.length !== 4}
                   className="px-4 py-2 bg-[#ED695A] text-white rounded-lg hover:bg-[#D65A4C] disabled:bg-gray-300 disabled:cursor-not-allowed text-sm"
                 >
                   Add Product
