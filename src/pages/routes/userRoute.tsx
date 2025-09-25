@@ -28,7 +28,7 @@ const UserRoute = () => {
         <Route path='/singup' element={<UserRegistrationPage/>} />
         <Route path='/login' element={<UserLoginPage/>} />
         <Route path='/' element={<HomePage/>}/>
-        <Route path='/auditoriumlist' element={<AuditoriumList/>}/>
+        <Route path='/auditoriumlist' element={ <ProtectedRoute><AuditoriumList/></ProtectedRoute>}/>
         <Route path='/venuelist/:id' element={<VenuePage/>}/>
         <Route path='/vendorslist/' element={<VendorList/>}/>
         <Route path='/vendordetails/:id' element={<ProtectedRoute><VendorDetails/></ProtectedRoute>} />
