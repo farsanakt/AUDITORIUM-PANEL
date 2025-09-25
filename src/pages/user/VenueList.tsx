@@ -110,15 +110,15 @@ const VenuePage: React.FC = () => {
     }
   }, [auditoriums]);
 
-  const getFormattedPrice = (amount: string | undefined, offer?: Offer) => {
-    console.log(`Formatting price:`, { amount, offer });
+  const getFormattedPrice = (amount: string | undefined, offer?: Offer, isTotalAmount: boolean = false) => {
+    console.log(`Formatting price:`, { amount, offer, isTotalAmount });
     if (!amount || isNaN(parseFloat(amount))) {
       console.warn(`Invalid price format: ${amount}`);
       return <span>Price not available</span>;
     }
 
     const originalPrice = parseFloat(amount);
-    if (!offer) {
+    if (!offer || !isTotalAmount) {
       return <span>₹{originalPrice.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>;
     }
 
@@ -166,15 +166,31 @@ const VenuePage: React.FC = () => {
     <section className="min-h-screen bg-[#fff9f4] px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
       <style>
         {`
-          .offer-badge {
-            background-color: #ef4444;
+          .coupon-badge {
+            background: linear-gradient(135deg, #ff4d4f, #ff7878);
             color: white;
             font-weight: bold;
-            padding: 4px 8px;
-            border-radius: 4px;
+            padding: 8px;
+            border-radius: 50%;
             font-size: 0.75rem;
             line-height: 1rem;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: absolute;
+            bottom: -40px;
+            right: -40px;
+            z-index: 10;
+          }
+          .venue-image-container {
+            position: relative;
+            overflow: visible;
           }
         `}
       </style>
@@ -215,7 +231,7 @@ const VenuePage: React.FC = () => {
       <div className="max-w-7xl mx-auto mt-8 sm:mt-12">
         <div className="flex flex-col md:flex-row gap-4 sm:gap-6 items-stretch">
           {/* Venue Image */}
-          <div className="w-full md:w-1/3 rounded-2xl overflow-hidden shadow-lg relative h-64 sm:h-80 md:h-96">
+          <div className="w-full md:w-1/3 venue-image-container rounded-2xl overflow-visible shadow-lg relative h-64 sm:h-80 md:h-96">
             <img
               src={auditoriums[0].images[currentImageIndex] || "/placeholder.svg?height=400&width=300"}
               alt={auditoriums[0].name}
@@ -237,9 +253,8 @@ const VenuePage: React.FC = () => {
               {auditoriums[0].acType}
             </span>
             {auditoriums[0].offer && (
-              <span className="absolute top-2 sm:top-3 left-16 offer-badge">
-                {auditoriums[0].offer.discountValue}
-                {auditoriums[0].offer.discountType === "percentage" ? "%" : "₹"} OFF
+              <span className="coupon-badge">
+                {auditoriums[0].offer.offerCode}
               </span>
             )}
           </div>
@@ -284,10 +299,10 @@ const VenuePage: React.FC = () => {
                         <td className="py-2 px-3 sm:px-4 text-xs sm:text-sm">{auditorium.acType}</td>
                         <td className="py-2 px-3 sm:px-4 text-xs sm:text-sm">{auditorium.seatingCapacity}</td>
                         <td className="py-2 px-3 sm:px-4 text-xs sm:text-sm">
-                          {getFormattedPrice(auditorium.totalamount, auditorium.offer)}
+                          {getFormattedPrice(auditorium.totalamount, auditorium.offer, true)}
                         </td>
                         <td className="py-2 px-3 sm:px-4 text-xs sm:text-sm">
-                          {getFormattedPrice(auditorium.advAmnt, auditorium.offer)}
+                          {getFormattedPrice(auditorium.advAmnt, undefined)}
                         </td>
                         <td className="py-2 px-3 sm:px-4">
                           <button
@@ -310,4 +325,4 @@ const VenuePage: React.FC = () => {
   );
 };
 
-export default VenuePage
+export default VenuePage;
