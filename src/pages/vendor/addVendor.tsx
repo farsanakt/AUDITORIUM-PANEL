@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import {
   Search,
@@ -50,13 +51,37 @@ interface RootState {
       email: string;
       role: string;
       address?: string;
-    };
+    } | null;
   };
 }
 
-const deleteVendorAPI = async (id: string) => ({ success: true });
+interface UserDataResponse {
+  data: {
+    address?: string;
+  };
+}
 
-const updateVendorAPI = async (formData: FormData, id: string) => ({
+interface VendorsResponse {
+  data: Vendor[];
+}
+
+interface AddVendorResponse {
+  data: {
+    success: boolean;
+    message?: string;
+  };
+}
+
+interface UpdateVendorResponse {
+  data: {
+    success: boolean;
+    message: string;
+  };
+}
+
+const deleteVendorAPI = async (id: string): Promise<{ success: boolean }> => ({ success: true });
+
+const updateVendorAPI = async (formData: FormData, id: string): Promise<UpdateVendorResponse> => ({
   data: { success: true, message: "Vendor updated successfully" },
 });
 
@@ -105,39 +130,53 @@ export default function VendorManagement() {
 
   const { currentUser } = useSelector((state: RootState) => state.auth);
 
-  // Fetch user data and set default address
+  // Fetch user data and set default address and email
   useEffect(() => {
     const fetchUserData = async () => {
+      if (!currentUser?.id) {
+        setNewVendor((prev) => ({
+          ...prev,
+          address: "",
+          email: "",
+        }));
+        return;
+      }
       try {
-        const response = await currentVendorUserData(currentUser?.id);
+        const response = await currentVendorUserData(currentUser.id) as UserDataResponse;
         setNewVendor((prev) => ({
           ...prev,
           address: response.data.address || "",
+          email: currentUser.email || "",
         }));
       } catch (error) {
         console.error("Failed to fetch user data:", error);
         setNewVendor((prev) => ({
           ...prev,
           address: "",
+          email: currentUser?.email || "",
         }));
       }
     };
 
     fetchUserData();
-  }, [currentUser?.id]);
+  }, [currentUser?.id, currentUser?.email]);
 
   // Fetch vendors
   useEffect(() => {
     const fetchVendors = async () => {
+      if (!currentUser?.id) {
+        toast.error("User ID not found. Please log in again.");
+        return;
+      }
       try {
-        const response = await existingAllVendors(currentUser.id);
+        const response = await existingAllVendors(currentUser.id) as VendorsResponse;
         setVendors(response.data);
       } catch (error) {
         toast.error("Failed to load vendors.");
       }
     };
     fetchVendors();
-  }, [currentUser.id]);
+  }, [currentUser?.id]);
 
   // Toggle sidebar for mobile
   const toggleSidebar = () => {
@@ -180,10 +219,10 @@ export default function VendorManagement() {
   const resetAddModal = () => {
     setNewVendor({
       name: "",
-      address: newVendor.address || "",
+      address: currentUser?.address || "",
       phone: "",
       altPhone: "",
-      email: "",
+      email: currentUser?.email || "",
       pincode: "",
       cities: [],
       cancellationPolicy: "",
@@ -199,18 +238,19 @@ export default function VendorManagement() {
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
-    isNewVendor = false
+    isNewVendor: boolean = false
   ) => {
     const { name, value } = e.target;
-    const updateState = (prev: Partial<Vendor>): Partial<Vendor> => ({
-      ...prev,
-      [name]: name === "totalAmount" || name === "advanceAmount" ? Number(value) : value,
-    });
-
     if (isNewVendor) {
-      setNewVendor((prev) => updateState(prev));
+      setNewVendor((prev) => ({
+        ...prev,
+        [name]: name === "totalAmount" || name === "advanceAmount" ? Number(value) : value,
+      }));
     } else if (selectedVendor) {
-      setSelectedVendor((prev) => (prev ? { ...prev, ...updateState(prev) } : null));
+      setSelectedVendor((prev) => ({
+        ...prev!,
+        [name]: name === "totalAmount" || name === "advanceAmount" ? Number(value) : value,
+      }));
     }
   };
 
@@ -226,27 +266,27 @@ export default function VendorManagement() {
   const handleTimeSlotToggle = (timeSlot: TimeSlot) => {
     setNewVendor((prev) => ({
       ...prev,
-      timeSlots: prev.timeSlots!.some((s) => s.id === timeSlot.id)
-        ? prev.timeSlots!.filter((s) => s.id !== timeSlot.id)
-        : [...prev.timeSlots!, { ...timeSlot, startTime: "", endTime: "" }],
+      timeSlots: prev.timeSlots?.some((s) => s.id === timeSlot.id)
+        ? prev.timeSlots.filter((s) => s.id !== timeSlot.id)
+        : [...(prev.timeSlots || []), { ...timeSlot, startTime: "", endTime: "" }],
     }));
   };
 
   const updateAddTimeSlot = (index: number, field: "startTime" | "endTime", value: string) => {
     setNewVendor((prev) => {
-      const newSlots = [...prev.timeSlots!];
+      const newSlots = [...(prev.timeSlots || [])];
       newSlots[index] = { ...newSlots[index], [field]: value };
       return { ...prev, timeSlots: newSlots };
     });
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
+    const files = e.target.files ? Array.from(e.target.files) : [];
     setSelectedImages((prev) => [...prev, ...files].slice(0, 4));
   };
 
   const handleEditImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
+    const files = e.target.files ? Array.from(e.target.files) : [];
     setEditImages((prev) => [...prev, ...files].slice(0, 4 - (selectedVendor?.images.length || 0)));
   };
 
@@ -276,15 +316,15 @@ export default function VendorManagement() {
       formData.append("cities", JSON.stringify(newVendor.cities || []));
       formData.append("timeSlots", JSON.stringify(newVendor.timeSlots || []));
       formData.append("vendorType", newVendor.vendorType || "");
-      formData.append("userId", currentUser.id);
+      formData.append("userId", currentUser?.id || "");
 
       selectedImages.forEach((file) => formData.append("images", file));
 
-      const response = await addVendorAPI(formData);
+      const response = await addVendorAPI(formData) as AddVendorResponse;
       if (response.data.success) {
-        toast.success(response.data.success || "Vendor added successfully!");
+        toast.success(response.data.message || "Vendor added successfully!");
         resetAddModal();
-        const updatedVendors = await existingAllVendors(currentUser.id);
+        const updatedVendors = await existingAllVendors(currentUser?.id || "") as VendorsResponse;
         setVendors(updatedVendors.data);
       } else {
         toast.error("Failed to add vendor.");
@@ -304,14 +344,14 @@ export default function VendorManagement() {
           formData.append(key, typeof value === "object" ? JSON.stringify(value) : String(value));
         }
       });
-      formData.append("userId", currentUser.id);
+      formData.append("userId", currentUser?.id || "");
 
       editImages.forEach((file) => formData.append("images", file));
       selectedVendor.images.forEach((image, index) => {
         formData.append(`existingImages[${index}]`, image);
       });
 
-      const response = await updateVendorAPI(formData, selectedVendor._id);
+      const response = await updateVendorAPI(formData, selectedVendor._id) as UpdateVendorResponse;
       if (response.data.success) {
         toast.success(response.data.message);
         setVendors(
@@ -332,26 +372,56 @@ export default function VendorManagement() {
     }
   };
 
-  const validateForm = (vendor: Partial<Vendor>, images: File[]) => {
-    // Only validate that exactly 4 images are provided
-    if (images.length + (vendor.images?.length || 0) !== 4) {
+  const validateForm = (vendor: Partial<Vendor>, images: File[]): boolean => {
+    // Required field validations
+    if (!vendor.name) {
+      toast.error("Vendor name is required.");
+      return false;
+    }
+    if (!vendor.vendorType) {
+      toast.error("Vendor type is required.");
+      return false;
+    }
+    if (!vendor.phone) {
+      toast.error("Phone number is required.");
+      return false;
+    }
+    if (!vendor.email) {
+      toast.error("Email is required.");
+      return false;
+    }
+    if (!vendor.pincode) {
+      toast.error("Pincode is required.");
+      return false;
+    }
+    if (!vendor.cities || vendor.cities.length === 0) {
+      toast.error("At least one city must be selected.");
+      return false;
+    }
+    if (vendor.totalAmount === undefined || vendor.totalAmount <= 0) {
+      toast.error("Total amount must be greater than zero.");
+      return false;
+    }
+    if (vendor.advanceAmount === undefined || vendor.advanceAmount < 0) {
+      toast.error("Advance amount cannot be negative.");
+      return false;
+    }
+    if ((images.length + (vendor.images?.length || 0)) !== 4) {
       toast.error("Exactly 4 images are required.");
       return false;
     }
-    // Allow time slots to be optional, but if provided, ensure start and end times are valid
     if (vendor.timeSlots && vendor.timeSlots.length > 0) {
       for (const slot of vendor.timeSlots) {
         if ((slot.startTime && !slot.endTime) || (!slot.startTime && slot.endTime)) {
-          toast.error("Both start and end times must be provided for selected time slots.");
+          toast.error(`Both start and end times must be provided for ${slot.label} slot.`);
           return false;
         }
         if (slot.startTime && slot.endTime && slot.startTime >= slot.endTime) {
-          toast.error("Start time must be before end time for all time slots.");
+          toast.error(`Start time must be before end time for ${slot.label} slot.`);
           return false;
         }
       }
     }
-    // Allow all other fields to be optional
     return true;
   };
 
@@ -396,23 +466,23 @@ export default function VendorManagement() {
 
   return (
     <div className="min-h-screen bg-[#FDF8F1] flex flex-col">
-      <style jsx global>{`
-        .scrollbar-custom {
+      <style>{`
+        .vendor-management-scrollbar {
           scrollbar-width: thin;
           scrollbar-color: #d1d5db #f3f4f6;
         }
-        .scrollbar-custom::-webkit-scrollbar {
+        .vendor-management-scrollbar::-webkit-scrollbar {
           width: 6px;
         }
-        .scrollbar-custom::-webkit-scrollbar-track {
+        .vendor-management-scrollbar::-webkit-scrollbar-track {
           background: #f3f4f6;
           border-radius: 3px;
         }
-        .scrollbar-custom::-webkit-scrollbar-thumb {
+        .vendor-management-scrollbar::-webkit-scrollbar-thumb {
           background: #d1d5db;
           border-radius: 3px;
         }
-        .scrollbar-custom::-webkit-scrollbar-thumb:hover {
+        .vendor-management-scrollbar::-webkit-scrollbar-thumb:hover {
           background: #9ca3af;
         }
       `}</style>
@@ -429,7 +499,7 @@ export default function VendorManagement() {
           <div className="bg-white p-6 rounded-lg shadow-sm mb-6 border border-gray-100">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
               <div>
-                <h2 className="text-xl font-semibold text-[#825F4C]">Products({filteredVendors.length})</h2>
+                <h2 className="text-xl font-semibold text-[#825F4C]">Products ({filteredVendors.length})</h2>
               </div>
               <button
                 onClick={() => setIsAddModalOpen(true)}
@@ -524,12 +594,14 @@ export default function VendorManagement() {
                         </div>
                         <div>
                           <p className="text-sm font-medium text-[#825F4C]">Cities</p>
-                          <p className="text-sm text-gray-600">{vendor.cities.join(", ")}</p>
+                          <p className="text-sm text-gray-600">{vendor.cities.join(", ") || "None"}</p>
                         </div>
                         <div>
                           <p className="text-sm font-medium text-[#825F4C]">Time Slots</p>
                           <p className="text-sm text-gray-600">
-                            {vendor.timeSlots.map((s) => `${s.label} (${s.startTime} - ${s.endTime})`).join(", ")}
+                            {vendor.timeSlots.length > 0
+                              ? vendor.timeSlots.map((s) => `${s.label} (${s.startTime || "N/A"} - ${s.endTime || "N/A"})`).join(", ")
+                              : "None"}
                           </p>
                         </div>
                       </div>
@@ -554,7 +626,7 @@ export default function VendorManagement() {
                 </button>
               </div>
             </div>
-            <div className="flex-1 overflow-y-auto scrollbar-custom px-6 py-4">
+            <div className="flex-1 overflow-y-auto vendor-management-scrollbar px-6 py-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-[#825F4C] mb-2">Product Name</label>
@@ -634,7 +706,7 @@ export default function VendorManagement() {
                 </div>
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-semibold text-[#825F4C] mb-2">Cities</label>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-32 overflow-y-auto border border-gray-300 rounded-lg p-3 bg-gray-50 scrollbar-custom">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-32 overflow-y-auto border border-gray-300 rounded-lg p-3 bg-gray-50 vendor-management-scrollbar">
                     {availableCities.map((city) => (
                       <label key={city} className="flex items-center space-x-2 cursor-pointer">
                         <input
@@ -689,7 +761,7 @@ export default function VendorManagement() {
                         type="button"
                         onClick={() => handleTimeSlotToggle(slot)}
                         className={`px-3 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
-                          newVendor.timeSlots!.some((s) => s.id === slot.id)
+                          newVendor.timeSlots?.some((s) => s.id === slot.id)
                             ? "border-[#ED695A] bg-[#ED695A]/10 text-[#ED695A]"
                             : "border-gray-200 hover:border-gray-300 text-[#825F4C]"
                         }`}
@@ -698,10 +770,10 @@ export default function VendorManagement() {
                       </button>
                     ))}
                   </div>
-                  {newVendor.timeSlots!.length > 0 && (
+                  {newVendor.timeSlots && newVendor.timeSlots.length > 0 && (
                     <div className="mt-4">
                       <p className="text-sm font-medium text-[#825F4C] mb-2">Set Times for Selected Slots</p>
-                      {newVendor.timeSlots!.map((slot, index) => (
+                      {newVendor.timeSlots.map((slot, index) => (
                         <div key={slot.id} className="flex flex-wrap items-center gap-2 mb-2">
                           <span className="w-24 text-sm text-[#825F4C]">{slot.label}</span>
                           <input
@@ -800,7 +872,7 @@ export default function VendorManagement() {
                 </button>
               </div>
             </div>
-            <div className="flex-1 overflow-y-auto scrollbar-custom px-6 py-4">
+            <div className="flex-1 overflow-y-auto vendor-management-scrollbar px-6 py-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-[#825F4C] mb-2">Vendor Name</label>
@@ -874,7 +946,7 @@ export default function VendorManagement() {
                 </div>
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-semibold text-[#825F4C] mb-2">Cities</label>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-32 overflow-y-auto border border-gray-300 rounded-lg p-3 bg-gray-50 scrollbar-custom">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-32 overflow-y-auto border border-gray-300 rounded-lg p-3 bg-gray-50 vendor-management-scrollbar">
                     {availableCities.map((city) => (
                       <label key={city} className="flex items-center space-x-2 cursor-pointer">
                         <input
@@ -1037,7 +1109,8 @@ export default function VendorManagement() {
                 </button>
                 <button
                   onClick={handleUpdateVendor}
-                  className="px-4 py-2 bg-[#ED695A] text-white rounded-lg hover:bg-[#D65A4C] text-sm"
+                  disabled={(selectedVendor.images.length + editImages.length) !== 4}
+                  className="px-4 py-2 bg-[#ED695A] text-white rounded-lg hover:bg-[#D65A4C] disabled:bg-gray-300 disabled:cursor-not-allowed text-sm"
                 >
                   Save Changes
                 </button>
