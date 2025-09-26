@@ -80,7 +80,7 @@ const AdminDashboard: React.FC = () => {
   }, []);
 
   const navItems: { path: string; label: string; icon: React.ComponentType<{ size?: number; className?: string }>; count: string | number | undefined }[] = [
-    { path: '/admin/auditoriums', label: 'All Auditoriums', icon: Building, count: stats?.totalAuditoriums },
+    { path: '/admin/allaudilist', label: 'All Auditoriums', icon: Building, count: stats?.totalAuditoriums },
     { path: '/admin/users', label: 'All Users', icon: Users, count: stats?.totalUsers },
     { path: '/admin/vendors', label: 'All Vendors', icon: Users, count: stats?.totalVendors },
     { path: '/admin/enquiries', label: 'All Enquiries', icon: Mail, count: stats?.totalEnquiries },

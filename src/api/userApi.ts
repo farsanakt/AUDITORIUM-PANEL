@@ -210,6 +210,12 @@ export const updateStaff=async(staffid:string,data:any)=>{
 
 }
 
+export const fetchAllUsers=async()=>{
+
+  return await api.get('/allusers')
+
+}
+
 
 
 export const deleteStaff=async(id:string)=>{
