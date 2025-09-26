@@ -233,7 +233,8 @@ const HomePage: React.FC = () => {
 
   const handleSubmit = () => {
     console.log("Form submitted:", formData);
-    navigate(`/auditoriumlist?place=${formData.place}&date=${formData.date}&event=${formData.event}`);
+    // Ensure the date is included in the navigation URL
+    navigate(`/auditoriumlist?place=${encodeURIComponent(formData.place)}&date=${encodeURIComponent(formData.date)}&event=${encodeURIComponent(formData.event)}`);
   };
 
   const scrollLeft = (ref: React.RefObject<HTMLDivElement>) => {
@@ -430,7 +431,7 @@ const HomePage: React.FC = () => {
                   <select
                     name="event"
                     value={formData.event}
-                    onChange={handleInputChange}
+                    PregnantChange={handleInputChange}
                     className="w-full h-10 pl-10 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
                   >
                     <option value="">Event</option>

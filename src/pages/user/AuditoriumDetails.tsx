@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import Header from "../../component/user/Header";
 import Lines from "../../assets/Group 52 (1).png";
 import Bshape from "../../assets/02 2.png";
@@ -47,6 +48,7 @@ interface Auditorium {
 const AuditoriumDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [auditorium, setAuditorium] = useState<Auditorium | null>(null);
   const [offers, setOffers] = useState<Offer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -124,18 +126,19 @@ const AuditoriumDetails: React.FC = () => {
   };
 
   const handleBooking = () => {
-    navigate(`/bookings/${id}`);
+    const date = searchParams.get("date") || "";
+    navigate(`/bookings/${id}?date=${encodeURIComponent(date)}`);
   };
 
-  const getFormattedPrice = (amount: string | undefined, offer?: Offer) => {
-    console.log(`Formatting price:`, { amount, offer });
+  const getFormattedPrice = (amount: string | undefined, offer?: Offer, isTotalAmount: boolean = false) => {
+    console.log(`Formatting price:`, { amount, offer, isTotalAmount });
     if (!amount || isNaN(parseFloat(amount))) {
       console.warn(`Invalid price format: ${amount}`);
       return <span>Price not available</span>;
     }
 
     const originalPrice = parseFloat(amount);
-    if (!offer) {
+    if (!offer || !isTotalAmount) {
       return <span>₹{originalPrice.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>;
     }
 
@@ -406,10 +409,10 @@ const AuditoriumDetails: React.FC = () => {
                   <h4 className="font-semibold text-sm sm:text-base md:text-lg text-[#2A2929] mb-2 text-left">Pricing</h4>
                   <ul className="list-disc list-inside space-y-1 text-left">
                     <li>
-                      Total Amount: {getFormattedPrice(auditorium.totalamount, auditorium.offer)}
+                      Total Amount: {getFormattedPrice(auditorium.totalamount, auditorium.offer, true)}
                     </li>
                     <li>
-                      Advance Amount: {getFormattedPrice(auditorium.advAmnt, auditorium.offer)}
+                      Advance Amount: {getFormattedPrice(auditorium.advAmnt, undefined, false)}
                     </li>
                   </ul>
                 </div>

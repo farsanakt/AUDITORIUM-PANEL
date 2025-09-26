@@ -47,7 +47,8 @@ const VenueSelector: React.FC = () => {
   }, [place, event]);
 
   const handleCardClick = (id: string) => {
-    navigate(`/venuelist/${id}`);
+    const date = searchParams.get("date") || "";
+    navigate(`/venuelist/${id}?date=${encodeURIComponent(date)}`);
   };
 
   const getTagColor = (tag: string): string => {

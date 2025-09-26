@@ -1,5 +1,6 @@
+
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import Header from "../../component/user/Header";
 import bgImg from "../../assets/vector.png";
 import { FetchAuditoriumById, fetchAllExistingOffer } from "../../api/userApi";
@@ -34,6 +35,7 @@ interface Auditorium {
 const VenuePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [auditoriums, setAuditoriums] = useState<Auditorium[]>([]);
   const [offers, setOffers] = useState<Offer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -307,7 +309,7 @@ const VenuePage: React.FC = () => {
                         <td className="py-2 px-3 sm:px-4">
                           <button
                             className="px-5 py-2 bg-gradient-to-r from-[#8B4513] to-[#D2691E] text-white rounded-full shadow-md hover:from-[#A0522D] hover:to-[#FF8C00] hover:shadow-lg transition-all duration-300 ease-in-out text-sm sm:text-base font-semibold tracking-wide whitespace-nowrap"
-                            onClick={() => navigate(`/auditoriumdetails/${auditorium._id}`)}
+                            onClick={() => navigate(`/auditoriumdetails/${auditorium._id}?date=${encodeURIComponent(searchParams.get("date") || "")}`)}
                           >
                             Book Now
                           </button>
@@ -325,4 +327,4 @@ const VenuePage: React.FC = () => {
   );
 };
 
-export default VenuePage;
+export default VenuePage

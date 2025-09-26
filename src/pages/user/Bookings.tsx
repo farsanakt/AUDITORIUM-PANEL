@@ -1,4 +1,4 @@
-"use client"
+
 
 import type React from "react"
 import { useEffect, useState, Component, type ErrorInfo } from "react"
@@ -15,7 +15,7 @@ import {
   Copy,
   Check,
 } from "lucide-react"
-import { useNavigate, useParams } from "react-router-dom"
+import { useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { singleVenueDetails, createBooking, existingBkngs, fetchAllExistingOffer } from "../../api/userApi"
 import { useSelector } from "react-redux"
 import type { RootState } from "../../redux/store"
@@ -112,9 +112,40 @@ interface Booking {
 }
 
 const Bookings: React.FC = () => {
+  // Utility functions moved to the top
+  const formatDateForBackend = (date: Date): string => {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, "0")
+    const day = String(date.getDate()).padStart(2, "0")
+    return `${year}-${month}-${day}`
+  }
+
+  const formatExactTime = (date: Date): string => {
+    return date.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    })
+  }
+
+  const getDaysInMonth = (date: Date) => {
+    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
+  }
+
+  const getFirstDayOfMonth = (date: Date) => {
+    return new Date(date.getFullYear(), date.getMonth(), 1).getDay()
+  }
+
   const { id } = useParams<{ id: string }>()
-  const [currentDate, setCurrentDate] = useState(new Date())
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null)
+  const [searchParams] = useSearchParams()
+  const [currentDate, setCurrentDate] = useState<Date>(() => {
+    const dateParam = searchParams.get("date")
+    return dateParam ? new Date(dateParam) : new Date()
+  })
+  const [selectedDate, setSelectedDate] = useState<Date | null>(() => {
+    const dateParam = searchParams.get("date")
+    return dateParam ? new Date(dateParam) : null
+  })
   const [showModal, setShowModal] = useState(false)
   const [currentPage, setCurrentPage] = useState<"calendar" | "form" | "payment" | "success">("calendar")
   const [acOption, setAcOption] = useState("")
@@ -134,7 +165,7 @@ const Bookings: React.FC = () => {
   const [formData, setFormData] = useState<BookingFormData>({
     userEmail: "",
     venueName: "",
-    bookingDate: "",
+    bookingDate: selectedDate ? formatDateForBackend(selectedDate) : "",
     timeSlot: "",
     totalAmount: "",
     advanceAmount: "",
@@ -168,30 +199,7 @@ const Bookings: React.FC = () => {
     "December",
   ]
 
-  const formatDateForBackend = (date: Date): string => {
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, "0")
-    const day = String(date.getDate()).padStart(2, "0")
-    return `${year}-${month}-${day}`
-  }
-
-  const formatExactTime = (date: Date): string => {
-    return date.toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    })
-  }
-
-  const getDaysInMonth = (date: Date) => {
-    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
-  }
-
-  const getFirstDayOfMonth = (date: Date) => {
-    return new Date(date.getFullYear(), date.getMonth(), 1).getDay()
-  }
-
-  const getFormattedPrice = (amount: string | undefined, showOriginal = false) => {
+  const getFormattedPrice = (amount: string | undefined, isTotalAmount: boolean = false) => {
     if (!amount || isNaN(Number.parseFloat(amount))) {
       return <span>Price not available</span>
     }
@@ -199,11 +207,11 @@ const Bookings: React.FC = () => {
     const price = Number.parseFloat(amount)
     const formattedPrice = `₹${price.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
-    if (!appliedOffer || showOriginal) {
+    if (!appliedOffer || !isTotalAmount) {
       return <span>{formattedPrice}</span>
     }
 
-    const originalPrice = Number.parseFloat(showOriginal ? amount : originalAmounts.total || amount)
+    const originalPrice = Number.parseFloat(originalAmounts.total || amount)
     const originalFormatted = `₹${originalPrice.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
     return (
@@ -283,7 +291,6 @@ const Bookings: React.FC = () => {
     }
 
     const discountedTotal = calculateDiscountedAmount(originalAmounts.total, matchedOffer)
-    const discountedAdvance = calculateDiscountedAmount(originalAmounts.advance, matchedOffer)
 
     setAppliedOffer(matchedOffer)
     setCouponCode(matchedOffer.offerCode)
@@ -291,9 +298,12 @@ const Bookings: React.FC = () => {
       ...prev,
       couponCode: matchedOffer.offerCode,
       totalAmount: discountedTotal.toString(),
-      advanceAmount: discountedAdvance.toString(),
-      paidAmount: prev.paymentType === "full" ? discountedTotal.toString() : discountedAdvance.toString(),
-      balanceAmount: prev.paymentType === "full" ? "0" : (discountedTotal - discountedAdvance).toString(),
+      advanceAmount: originalAmounts.advance, // Keep advance amount unchanged
+      paidAmount: prev.paymentType === "full" ? discountedTotal.toString() : originalAmounts.advance,
+      balanceAmount:
+        prev.paymentType === "full"
+          ? "0"
+          : (discountedTotal - Number.parseFloat(originalAmounts.advance)).toString(),
     }))
     setShowOffers(false)
   }
@@ -376,6 +386,15 @@ const Bookings: React.FC = () => {
       setLoading(false)
     }
   }, [id])
+
+  useEffect(() => {
+    if (selectedDate) {
+      setFormData((prev) => ({
+        ...prev,
+        bookingDate: formatDateForBackend(selectedDate),
+      }))
+    }
+  }, [selectedDate])
 
   const generateCalendarDays = () => {
     const daysInMonth = getDaysInMonth(currentDate)
@@ -566,11 +585,11 @@ const Bookings: React.FC = () => {
   const handlePaymentTypeChange = (type: "full" | "advance") => {
     setFormData((prev) => {
       const total = Number.parseFloat(prev.totalAmount || "0")
-      const advance = Number.parseFloat(prev.advanceAmount || "0")
+      const advance = Number.parseFloat(originalAmounts.advance || "0")
       return {
         ...prev,
         paymentType: type,
-        paidAmount: type === "full" ? prev.totalAmount : prev.advanceAmount,
+        paidAmount: type === "full" ? prev.totalAmount : originalAmounts.advance,
         balanceAmount: type === "full" ? "0" : (total - advance).toString(),
       }
     })
@@ -603,8 +622,8 @@ const Bookings: React.FC = () => {
         venueName: formData.venueName,
         venueId: formData.venueId,
         totalAmount: formData.totalAmount, // This will be the discounted amount if offer applied
-        paidAmount: formData.paidAmount, // This will be the discounted amount if offer applied
-        balanceAmount: formData.balanceAmount, // This will be the discounted balance if offer applied
+        paidAmount: formData.paidAmount, // This will be original advance or discounted total
+        balanceAmount: formData.balanceAmount, // This will be based on original advance or 0 for full payment
         userEmail: formData.userEmail,
         bookedDate: formData.bookingDate,
         timeSlot: formData.timeSlot,
@@ -692,7 +711,7 @@ const Bookings: React.FC = () => {
             {offer.discountType === "percentage" ? "%" : "₹"} off
           </p>
           {offer.description && <p className="text-xs text-gray-600 mb-2">{offer.description}</p>}
-          {offer.minAmount && <p className="text-xs text-gray-600 mb-3">Minimum order: ₹{offer.minAmount}</p>}
+          {offer.minAmount && <p className="text-xs text-gray-600 mb-3">Minimum order: ₹${offer.minAmount}</p>}
           <div className="flex gap-2">
             <button
               onClick={() => applyCouponCode(offer)}
@@ -1082,7 +1101,7 @@ const Bookings: React.FC = () => {
                             <span className="mr-2">💰</span>Total Amount
                           </label>
                           <div className="w-full p-2 sm:p-3 border-2 border-[#b09d94] text-[#3C3A39] rounded-xl bg-[#f5f5f5] text-xs sm:text-sm">
-                            {getFormattedPrice(formData.totalAmount)}
+                            {getFormattedPrice(formData.totalAmount, true)}
                           </div>
                         </div>
                         <div>
@@ -1090,7 +1109,7 @@ const Bookings: React.FC = () => {
                             <span className="mr-2">💸</span>Advance Amount
                           </label>
                           <div className="w-full p-2 sm:p-3 border-2 border-[#b09d94] text-[#3C3A39] rounded-xl bg-[#f5f5f5] text-xs sm:text-sm">
-                            {getFormattedPrice(formData.advanceAmount)}
+                            {getFormattedPrice(formData.advanceAmount, false)}
                           </div>
                         </div>
                         <button
@@ -1125,17 +1144,11 @@ const Bookings: React.FC = () => {
                             {venue?.timeSlots.find((slot) => slot.id === formData.timeSlot)?.label || formData.timeSlot}
                           </p>
                           <p className="text-xs sm:text-sm text-[#78533F] font-medium">
-                            Total Amount: {getFormattedPrice(formData.totalAmount)}
+                            Total Amount: {getFormattedPrice(formData.totalAmount, true)}
                           </p>
                           <p className="text-xs sm:text-sm text-[#78533F] font-medium">
-                            Advance Amount: {getFormattedPrice(formData.advanceAmount)}
+                            Advance Amount: {getFormattedPrice(formData.advanceAmount, false)}
                           </p>
-                          {/* {appliedOffer && (
-                            <p className="text-xs sm:text-sm text-green-600 font-medium">
-                              Discount Applied: {appliedOffer.offerCode} ({appliedOffer.discountValue}
-                              {appliedOffer.discountType === "percentage" ? "%" : "₹"} off)
-                            </p>
-                          )} */}
                         </div>
                         <div>
                           <label className="block text-xs sm:text-sm font-semibold text-[#78533F] flex items-center mb-2">
@@ -1152,7 +1165,7 @@ const Bookings: React.FC = () => {
                                 className="text-[#ED695A] focus:ring-[#ED695A]"
                               />
                               <span className="text-xs sm:text-sm text-[#3C3A39]">
-                                Full Payment ({getFormattedPrice(formData.totalAmount)})
+                                Full Payment ({getFormattedPrice(formData.totalAmount, true)})
                               </span>
                             </label>
                             <label className="flex items-center gap-2 p-3 sm:p-4 rounded-xl border-2 border-[#b09d94] cursor-pointer hover:bg-[#FDF8F1] transition-all transform hover:scale-105">
@@ -1165,7 +1178,7 @@ const Bookings: React.FC = () => {
                                 className="text-[#ED695A] focus:ring-[#ED695A]"
                               />
                               <span className="text-xs sm:text-sm text-[#3C3A39]">
-                                Advance Payment ({getFormattedPrice(formData.advanceAmount)})
+                                Advance Payment ({getFormattedPrice(formData.advanceAmount, false)})
                               </span>
                             </label>
                           </div>
@@ -1243,13 +1256,13 @@ const Bookings: React.FC = () => {
                           <p className="text-xs sm:text-sm text-[#78533F] font-medium">AC Option: {acOption}</p>
                           <p className="text-xs sm:text-sm text-[#78533F] font-medium">Address: {formData.address}</p>
                           <p className="text-xs sm:text-sm text-[#78533F] font-medium">
-                            Total Amount: {getFormattedPrice(formData.totalAmount)}
+                            Total Amount: {getFormattedPrice(formData.totalAmount, true)}
                           </p>
                           <p className="text-xs sm:text-sm text-[#78533F] font-medium">
-                            Paid Amount: {getFormattedPrice(formData.paidAmount)}
+                            Paid Amount: {getFormattedPrice(formData.paidAmount, false)}
                           </p>
                           <p className="text-xs sm:text-sm text-[#78533F] font-medium">
-                            Balance Amount: {getFormattedPrice(formData.balanceAmount)}
+                            Balance Amount: {getFormattedPrice(formData.balanceAmount, false)}
                           </p>
                           <p className="text-xs sm:text-sm text-[#78533F] font-medium">
                             Payment Method: {selectedPaymentMethod}
@@ -1257,11 +1270,6 @@ const Bookings: React.FC = () => {
                           <p className="text-xs sm:text-sm text-[#78533F] font-medium">
                             Reference ID: {Math.random().toString(36).substr(2, 9).toUpperCase()}
                           </p>
-                          {/* {formData.couponCode && (
-                            <p className="text-xs sm:text-sm text-green-600 font-medium">
-                              Coupon Applied: {formData.couponCode}
-                            </p>
-                          )} */}
                         </div>
                         {eventType.toLowerCase() === "wedding" ? (
                           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mt-4 sm:mt-6">
