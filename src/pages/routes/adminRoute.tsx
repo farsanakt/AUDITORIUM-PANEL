@@ -3,8 +3,9 @@ import AdminLogin from "../admin/AdminLogin"
 import AdminDashboard from "../admin/AdminDasboard"
 import AuditoriumManagement from "../admin/AllAuditorium"
 import AuditoriumList from "../admin/AllAudiotriumList"
-import UsersTable from "../admin/AllUsers"
+
 import UsersManagement from "../admin/AllUsers"
+import VendorsManagement from "../admin/AllVendors"
 
 const AdminRoute = () => {
 
@@ -16,6 +17,7 @@ const AdminRoute = () => {
         <Route path="/allauditorium" element={<AuditoriumManagement/>}/>
         <Route path='/allaudilist' element={<AuditoriumList/>}/>
         <Route path='/allusers' element={<UsersManagement/>}/>
+        <Route path='/allvendors' element={<VendorsManagement/>}/>
         </Routes> 
     </div>
   )

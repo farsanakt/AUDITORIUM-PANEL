@@ -170,6 +170,20 @@ export const acceptAuditorium=async(id:string)=>{
 
 }
 
+export const acceptVendor=async(id:string)=>{
+  
+  return await api.post(`/acceptvendor/${id}`)
+
+}
+
+export const rejectVendor=async(id:string)=>{
+
+  return await api.post(`/rejectvendor/${id}`)
+
+}
+
+
+
 export const rejectAuditorium=async(id:string)=>{
  
   return await api.post(`/rejectauditorium/${id}`)
@@ -215,6 +229,14 @@ export const fetchAllUsers=async()=>{
   return await api.get('/allusers')
 
 }
+
+export const fetchAllVendorUsers=async()=>{
+
+  return await api.get('/allvendorusers')
+
+}
+
+
 
 
 
@@ -310,6 +332,10 @@ export const createOffer=async(data:any)=>{
 
 }
 
+export const createVoucher=async(data:any)=>{
+  return await api.post('/createvoucher',data)
+}
+
 export const fetchEnquiries=async(id:string)=>{
 
   return await api.get('/fetchenquiries',{params:{id}})
@@ -320,12 +346,27 @@ export const updateOffer = async (id: string, data: any) => {
   const response = await api.put(`/offers/${id}`, data);
   return response.data;
 };
+
+export const updateVoucher=async(id:string,data:any)=>{
+
+  return await api.put(`/updatevoucher/${id}`,data)
+
+}
+
+export const deleteVoucher=async(id:string)=>{
+  return await api.delete(`/delete/${id}`)
+}
+
 export const deleteOffer = async (id: string) => {
   const response = await api.delete(`/offers/${id}`);
   return response.data;
 };
 export const fetchOffers = async (id: string) => {
   return await api.get(`/fetchoffers/${id}`);
+}
+
+export const fetchVouchers=async(id:string)=>{
+  return await api.get(`/fetchvoucher/${id}`)
 }
 
 export const fetchUserBookingsByEmail=async(email:string)=>{

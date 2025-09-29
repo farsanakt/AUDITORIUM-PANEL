@@ -4,6 +4,7 @@ import Dashboard from "../vendor/dashboard"
 import Signup from "../vendor/signup"
 import VendorManagement from "../vendor/addVendor"
 import VendorEnquiries from "../vendor/vendorEnquires"
+import Voucher from "../vendor/voucher"
 
 
 const VendorRoute = () => {
@@ -16,6 +17,7 @@ const VendorRoute = () => {
         <Route path="/signup" element={<Signup/>}/>
         <Route path='/addvendor' element={<VendorManagement/>}/>
         <Route path='/vendorenquires' element={<VendorEnquiries/>}/>
+        <Route path='/vouchers' element={<Voucher/>}/>
         </Routes> 
     </div>
   )
