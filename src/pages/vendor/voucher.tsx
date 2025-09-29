@@ -52,11 +52,19 @@ const Voucher: React.FC = () => {
     try {
       setIsLoading(true);
       const response = await fetchVouchers(currentUser.id);
-      if (response.data.success) {
-        setVouchers(Array.isArray(response.data.data) ? response.data.data : []);
+      console.log(response.data, 'this is the response');
+
+      // Check if response.data is an array (direct voucher array)
+      if (Array.isArray(response.data)) {
+        setVouchers(response.data);
+        setError(null); // Clear any previous errors
+      } else if (response.data && response.data.success && Array.isArray(response.data.data)) {
+        // Handle case where response has success and data fields
+        setVouchers(response.data.data);
+        setError(null);
       } else {
-        setError(response.data.message || 'Failed to fetch vouchers');
-        toast.error(response.data.message || 'Failed to fetch vouchers');
+        setError(response.data?.message || 'Failed to fetch vouchers');
+        toast.error(response.data?.message || 'Failed to fetch vouchers');
       }
     } catch (error: any) {
       setError('Error fetching vouchers');
@@ -97,20 +105,19 @@ const Voucher: React.FC = () => {
 
     try {
       if (isEditing && selectedVoucher?._id) {
-        const response = await updateVoucher(selectedVoucher._id, voucherData);
-        console.log('updateVoucher response:', response.data);
-        await fetchUserVouchers();
+        await updateVoucher(selectedVoucher._id, voucherData);
         toast.success('Voucher updated successfully');
       } else {
         const response = await createVoucher(voucherData);
         if (response.data.success) {
           toast.success('Voucher created successfully');
-          await fetchUserVouchers();
         } else {
           toast.error(response.data.message || 'Failed to create voucher');
           setError(response.data.message || 'Failed to create voucher');
+          return;
         }
       }
+      await fetchUserVouchers();
       setIsModalOpen(false);
       setFormData({
         voucherCode: '',
@@ -169,8 +176,7 @@ const Voucher: React.FC = () => {
     if (!result.isConfirmed) return;
 
     try {
-      const response = await deleteVoucher(voucherId);
-      console.log('deleteVoucher response:', response.data);
+      await deleteVoucher(voucherId);
       await fetchUserVouchers();
       toast.success('Voucher deleted successfully');
     } catch (error: any) {
@@ -187,6 +193,8 @@ const Voucher: React.FC = () => {
         <p className="text-[#78533F] font-serif text-center">Loading vouchers...</p>
       ) : error ? (
         <p className="text-[#ED695A] font-serif text-center">{error}</p>
+      ) : vouchers.length === 0 ? (
+        <p className="text-center text-gray-600 font-serif">No vouchers found.</p>
       ) : (
         <div className="w-full max-w-4xl bg-white rounded-2xl shadow-2xl border border-[#b09d94] overflow-hidden my-8">
           <div className="bg-white p-4 sm:p-6 border-b border-[#b09d94] flex justify-between items-center">
@@ -212,52 +220,48 @@ const Voucher: React.FC = () => {
             </button>
           </div>
           <div className="p-4 sm:p-6">
-            {vouchers.length === 0 ? (
-              <p className="text-center text-gray-600 font-serif">No vouchers found.</p>
-            ) : (
-              <div className="space-y-4">
-                {vouchers.map((voucher) => (
-                  <div
-                    key={voucher._id}
-                    className="flex flex-col sm:flex-row items-center justify-between p-4 bg-white border border-[#b09d94] rounded-xl hover:bg-[#FDF8F1] transition-colors duration-300"
-                  >
-                    <div className="flex items-center space-x-4 w-full sm:w-auto">
-                      <div className="text-left">
-                        <p className="text-[#78533F] font-semibold font-serif">{voucher.voucherCode}</p>
-                        <p className="text-sm text-gray-600 font-serif">
-                          {voucher.discountType === 'percentage'
-                            ? `${voucher.discountValue}% Off`
-                            : `₹${voucher.discountValue.toLocaleString('en-IN')} Off`}
-                        </p>
-                        <p className="text-sm text-gray-600 font-serif">Limit: {voucher.limit}</p>
-                        <p className="text-sm text-gray-600 font-serif">Audience: {voucher.audiName}</p>
-                        <p className="text-sm text-gray-600 font-serif">
-                          Valid: {new Date(voucher.validFrom).toLocaleDateString()} -{' '}
-                          {new Date(voucher.validTo).toLocaleDateString()}
-                        </p>
-                        <p className="text-sm text-gray-600 font-serif">
-                          Status: {voucher.isActive ? 'Active' : 'Inactive'}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex space-x-2 mt-2 sm:mt-0">
-                      <button
-                        onClick={() => handleEdit(voucher)}
-                        className="bg-[#78533F] text-white font-semibold py-2 px-3 rounded-full shadow-md hover:bg-[#634331] transition-all duration-300"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(voucher._id, voucher.voucherCode)}
-                        className="bg-[#ED695A] text-white font-semibold py-2 px-3 rounded-full shadow-md hover:bg-[#d85c4e] transition-all duration-300"
-                      >
-                        <Trash className="w-4 h-4" />
-                      </button>
+            <div className="space-y-4">
+              {vouchers.map((voucher) => (
+                <div
+                  key={voucher._id}
+                  className="flex flex-col sm:flex-row items-center justify-between p-4 bg-white border border-[#b09d94] rounded-xl hover:bg-[#FDF8F1] transition-colors duration-300"
+                >
+                  <div className="flex items-center space-x-4 w-full sm:w-auto">
+                    <div className="text-left">
+                      <p className="text-[#78533F] font-semibold font-serif">{voucher.voucherCode}</p>
+                      <p className="text-sm text-gray-600 font-serif">
+                        {voucher.discountType === 'percentage'
+                          ? `${voucher.discountValue}% Off`
+                          : `₹${voucher.discountValue.toLocaleString('en-IN')} Off`}
+                      </p>
+                      <p className="text-sm text-gray-600 font-serif">Limit: {voucher.limit}</p>
+                      <p className="text-sm text-gray-600 font-serif">Auditorium Name: {voucher.audiName}</p>
+                      <p className="text-sm text-gray-600 font-serif">
+                        Valid: {new Date(voucher.validFrom).toLocaleDateString()} -{' '}
+                        {new Date(voucher.validTo).toLocaleDateString()}
+                      </p>
+                      <p className="text-sm text-gray-600 font-serif">
+                        Status: {voucher.isActive ? 'Active' : 'Inactive'}
+                      </p>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
+                  <div className="flex space-x-2 mt-2 sm:mt-0">
+                    <button
+                      onClick={() => handleEdit(voucher)}
+                      className="bg-[#78533F] text-white font-semibold py-2 px-3 rounded-full shadow-md hover:bg-[#634331] transition-all duration-300"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(voucher._id, voucher.voucherCode)}
+                      className="bg-[#ED695A] text-white font-semibold py-2 px-3 rounded-full shadow-md hover:bg-[#d85c4e] transition-all duration-300"
+                    >
+                      <Trash className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}
@@ -334,7 +338,7 @@ const Voucher: React.FC = () => {
                     type="number"
                     name="limit"
                     value={formData.limit}
-                    onChange={handleInputChange}
+                    onChange={handleInputChange} // Fixed typo here
                     placeholder="e.g., 100"
                     required
                     min="0"

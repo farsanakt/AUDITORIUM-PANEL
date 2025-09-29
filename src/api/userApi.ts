@@ -366,6 +366,7 @@ export const fetchOffers = async (id: string) => {
 }
 
 export const fetchVouchers=async(id:string)=>{
+  console.log(id,'jopppeee')
   return await api.get(`/fetchvoucher/${id}`)
 }
 
