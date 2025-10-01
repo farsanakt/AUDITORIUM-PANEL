@@ -1,87 +1,98 @@
-import type React from "react";
-import { useState, useEffect, useRef } from "react";
-import {
-  MapPin,
-  Calendar,
-  Flag,
-  Search,
-  ChevronLeft,
-  ChevronRight,
-  Star,
-} from "lucide-react";
-import Header from "../../component/user/Header";
-import bgImg from "../../assets/Rectangle 50.png";
-import pjct from "../../assets/image 16.png";
-import pjct1 from "../../assets/Rectangle 30.png";
-import { useNavigate } from "react-router-dom";
-import { existingVenues, fetchAllExistingOffer, fetchAllVendors } from "../../api/userApi";
+"use client"
+
+import type React from "react"
+import { useState, useEffect, useRef } from "react"
+import { MapPin, Calendar, Flag, Search, ChevronLeft, ChevronRight, Star } from "lucide-react"
+import Header from "../../component/user/Header"
+import bgImg from "../../assets/Rectangle 50.png"
+import pjct from "../../assets/image 16.png"
+import pjct1 from "../../assets/Rectangle 30.png"
+import { useNavigate } from "react-router-dom"
+import { existingVenues, fetchAllExistingOffer, fetchAllExistingVouchers, fetchAllVendors } from "../../api/userApi"
 
 interface Service {
-  id: number;
-  title: string;
-  description: string;
-  image: string;
+  id: number
+  title: string
+  description: string
+  image: string
 }
 
 interface Artist {
-  id: number;
-  name: string;
-  role: string;
-  image: string;
-  rating: number;
-  location: string;
-  review: string;
+  id: number
+  name: string
+  role: string
+  image: string
+  rating: number
+  location: string
+  review: string
 }
 
 interface Offer {
-  _id: string;
-  userId: string;
-  offerCode: string;
-  discountType: "percentage" | "fixed";
-  discountValue: number;
-  validFrom: string;
-  validTo: string;
-  isActive: boolean;
+  _id: string
+  userId: string
+  offerCode: string
+  discountType: "percentage" | "fixed"
+  discountValue: number
+  validFrom: string
+  validTo: string
+  isActive: boolean
+}
+
+interface Voucher {
+  _id: string
+  auditoriumId: string
+  voucherCode: string
+  discountType: "percentage" | "fixed"
+  discountValue: number
+  validFrom: string
+  validTo: string
+  isActive: boolean
+  audiName: string
+  limit: number
 }
 
 interface Venue {
-  id: string;
-  name: string;
-  location: string;
-  images: string[];
-  price: string;
-  rating: number;
-  review: string;
-  audiUserId: string;
-  offer?: Offer;
+  id: string
+  name: string
+  location: string
+  images: string[]
+  price: string
+  rating: number
+  review: string
+  audiUserId: string
+  offer?: Offer
+  voucher?: Voucher
 }
 
 interface Project {
-  id: number;
-  title: string;
-  image: string;
-  category: string;
+  id: number
+  title: string
+  image: string
+  category: string
 }
 
 const HomePage: React.FC = () => {
-  const [isVisible, setIsVisible] = useState<boolean>(false);
+  const [isVisible, setIsVisible] = useState<boolean>(false)
   const [formData, setFormData] = useState({
     place: "",
     date: "",
     event: "",
-  });
-  const [venues, setVenues] = useState<Venue[]>([]);
-  const [makeupArtists, setMakeupArtists] = useState<Artist[]>([]);
-  const [eventManagements, setEventManagements] = useState<Artist[]>([]);
-  const [offers, setOffers] = useState<Offer[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [activeSection, setActiveSection] = useState<string>("all");
-  const navigate = useNavigate();
+  })
+  const [venues, setVenues] = useState<Venue[]>([])
+  const [makeupArtists, setMakeupArtists] = useState<Artist[]>([])
+  const [eventManagements, setEventManagements] = useState<Artist[]>([])
+  const [offers, setOffers] = useState<Offer[]>([])
+  const [vouchers, setVouchers] = useState<Voucher[]>([])
+  const [loading, setLoading] = useState<boolean>(true)
+  const [error, setError] = useState<string | null>(null)
+  const [activeSection, setActiveSection] = useState<string>("all")
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [selectedVoucher, setSelectedVoucher] = useState<Voucher | null>(null)
+  const navigate = useNavigate()
 
-  const venuesRef = useRef<HTMLDivElement>(null);
-  const eventManagementsRef = useRef<HTMLDivElement>(null);
-  const artistsRef = useRef<HTMLDivElement>(null);
+  const venuesRef = useRef<HTMLDivElement>(null)
+  const eventManagementsRef = useRef<HTMLDivElement>(null)
+  const artistsRef = useRef<HTMLDivElement>(null)
 
   const projects: Project[] = [
     {
@@ -102,46 +113,54 @@ const HomePage: React.FC = () => {
       image: pjct,
       category: "Garden Wedding",
     },
-  ];
+  ]
 
   const fetchAllOffers = async () => {
     try {
-      const response = await fetchAllExistingOffer();
-      console.log("Fetched offers:", response.data);
-      setOffers(response.data);
+      const response = await fetchAllExistingOffer()
+      console.log("Fetched offers:", response.data)
+      setOffers(response.data || [])
     } catch (err) {
-      console.error("Error fetching offers:", err);
-      setError("Failed to load offers. Please try again.");
-      setOffers([]);
+      console.error("Error fetching offers:", err)
+      setError("Failed to load offers. Please try again.")
+      setOffers([])
     }
-  };
+  }
+
+  const fetchAllVouchers = async () => {
+    try {
+      const response = await fetchAllExistingVouchers()
+      console.log("Fetched vouchers:", response.data)
+      setVouchers(response.data || [])
+    } catch (err) {
+      console.error("Error fetching vouchers:", err)
+      setError("Failed to load vouchers. Please try again.")
+      setVouchers([])
+    }
+  }
 
   const fetchVenues = async () => {
     try {
-      setLoading(true);
-      setError(null);
-      const response = await existingVenues();
-      console.log("Venues API response:", response.data);
+      setLoading(true)
+      setError(null)
+      const response = await existingVenues()
+      console.log("Venues API response:", response.data)
       const mappedVenues = response.data
         .filter((venue: any) => venue.isVerified === true)
         .map((venue: any) => {
-          const matchingOffer = offers.find(
-            (offer) => {
-              const isMatch = offer.userId === venue.audiUserId && offer.isActive;
-              console.log(
-                `Checking venue ${venue._id}: audiUserId=${venue.audiUserId}, offer.userId=${offer.userId}, isActive=${offer.isActive}, match=${isMatch}`
-              );
-              return isMatch;
-            }
-          );
+          const matchingOffer = offers.find((offer) => offer.userId === venue.audiUserId && offer.isActive)
+          const matchingVoucher = vouchers.find(
+            (voucher) => voucher.auditoriumId === venue.audiUserId && voucher.isActive,
+          )
+          console.log(
+            `Venue ${venue._id}: audiUserId=${venue.audiUserId}, offerMatch=${!!matchingOffer}, voucherMatch=${!!matchingVoucher}, voucherAuditoriumId=${matchingVoucher?.auditoriumId}, venueId=${venue.audiUserId}`,
+          )
           return {
             id: venue._id,
             name: venue.name || venue.venueName || "Unknown Venue",
             location: venue.address || "Unknown Location",
             images:
-              venue.images &&
-              Array.isArray(venue.images) &&
-              venue.images.length > 0
+              venue.images && Array.isArray(venue.images) && venue.images.length > 0
                 ? venue.images
                 : ["/placeholder.svg?height=200&width=300"],
             price: venue.totalamount || venue.tariff?.wedding || "Price not available",
@@ -149,24 +168,25 @@ const HomePage: React.FC = () => {
             review: venue.review || "Great venue with excellent amenities!",
             audiUserId: venue.audiUserId || "",
             offer: matchingOffer,
-          };
-        });
-      console.log("Mapped venues with offers:", mappedVenues);
-      setVenues(mappedVenues);
+            voucher: matchingVoucher,
+          }
+        })
+      console.log("Mapped venues with offers and vouchers:", mappedVenues)
+      setVenues(mappedVenues)
     } catch (err) {
-      console.error("Error fetching venues:", err);
-      setError("Failed to load venues. Please try again.");
-      setVenues([]);
+      console.error("Error fetching venues:", err)
+      setError("Failed to load venues. Please try again.")
+      setVenues([])
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const fetchVendors = async () => {
     try {
-      const response = await fetchAllVendors();
-      console.log("Vendors data:", response.data);
-      const vendors = response.data;
+      const response = await fetchAllVendors()
+      console.log("Vendors data:", response.data)
+      const vendors = response.data
 
       const mappedMakeupArtists = vendors
         .filter((v: any) => v.vendorType === "makeup artist")
@@ -178,7 +198,7 @@ const HomePage: React.FC = () => {
           rating: 4.5,
           location: v.cities[0] || v.address.split(",").pop()?.trim() || "Unknown",
           review: "",
-        }));
+        }))
 
       const mappedEventManagements = vendors
         .filter((v: any) => v.vendorType === "event management")
@@ -190,105 +210,120 @@ const HomePage: React.FC = () => {
           rating: 4.5,
           location: v.cities[0] || v.address.split(",").pop()?.trim() || "Unknown",
           review: "",
-        }));
+        }))
 
-      setMakeupArtists(mappedMakeupArtists);
-      setEventManagements(mappedEventManagements);
+      setMakeupArtists(mappedMakeupArtists)
+      setEventManagements(mappedEventManagements)
     } catch (err) {
-      console.error("Error fetching vendors:", err);
-      setError("Failed to load vendors. Please try again.");
+      console.error("Error fetching vendors:", err)
+      setError("Failed to load vendors. Please try again.")
     }
-  };
+  }
 
   useEffect(() => {
     const loadData = async () => {
-      await fetchAllOffers();
-    };
-    loadData();
-  }, []);
+      await Promise.all([fetchAllOffers(), fetchAllVouchers()])
+    }
+    loadData()
+  }, [])
 
   useEffect(() => {
-    if (offers.length >= 0) {
-      fetchVenues();
-      fetchVendors();
+    if (offers.length >= 0 && vouchers.length >= 0) {
+      fetchVenues()
+      fetchVendors()
     }
-  }, [offers]);
+  }, [offers, vouchers])
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setIsVisible(true);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, []);
+      setIsVisible(true)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [])
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
-    const { name, value } = e.target;
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target
     setFormData((prev) => ({
       ...prev,
       [name]: value,
-    }));
-  };
+    }))
+  }
 
   const handleSubmit = () => {
-    console.log("Form submitted:", formData);
-    // Ensure the date is included in the navigation URL
-    navigate(`/auditoriumlist?place=${encodeURIComponent(formData.place)}&date=${encodeURIComponent(formData.date)}&event=${encodeURIComponent(formData.event)}`);
-  };
+    console.log("Form submitted:", formData)
+    navigate(
+      `/auditoriumlist?place=${encodeURIComponent(formData.place)}&date=${encodeURIComponent(formData.date)}&event=${encodeURIComponent(formData.event)}`,
+    )
+  }
 
   const scrollLeft = (ref: React.RefObject<HTMLDivElement>) => {
     if (ref.current) {
-      ref.current.scrollBy({ left: -300, behavior: "smooth" });
+      ref.current.scrollBy({ left: -300, behavior: "smooth" })
     }
-  };
+  }
 
   const scrollRight = (ref: React.RefObject<HTMLDivElement>) => {
     if (ref.current) {
-      ref.current.scrollBy({ left: 300, behavior: "smooth" });
+      ref.current.scrollBy({ left: 300, behavior: "smooth" })
     }
-  };
+  }
 
   const handleSectionClick = (section: string) => {
-    setActiveSection(section);
-  };
+    setActiveSection(section)
+  }
+
+  const openTermsModal = (voucher: Voucher) => {
+    setSelectedVoucher(voucher)
+    setIsModalOpen(true)
+  }
 
   const getFormattedPrice = (venue: Venue) => {
-    console.log(`Formatting price for venue ${venue.name}:`, { price: venue.price, offer: venue.offer });
-    if (!venue.offer || !venue.price || venue.price === "Price not available") {
-      return <span>{venue.price}</span>;
+    console.log(`Formatting price for venue ${venue.name}:`, {
+      price: venue.price,
+      offer: venue.offer,
+      voucher: venue.voucher,
+    })
+    if (!venue.price || venue.price === "Price not available") {
+      return <span>{venue.price}</span>
     }
 
-    const originalPrice = parseFloat(venue.price);
+    const originalPrice = Number.parseFloat(venue.price)
     if (isNaN(originalPrice)) {
-      return <span>{venue.price}</span>;
+      return <span>{venue.price}</span>
     }
 
-    let discountedPrice: number;
-    if (venue.offer.discountType === "percentage") {
-      discountedPrice = originalPrice * (1 - venue.offer.discountValue / 100);
-    } else {
-      discountedPrice = originalPrice - venue.offer.discountValue;
+    let discountedPrice = originalPrice
+    let discountText = ""
+
+    if (venue.offer) {
+      if (venue.offer.discountType === "percentage") {
+        discountedPrice *= 1 - venue.offer.discountValue / 100
+      } else {
+        discountedPrice -= venue.offer.discountValue
+      }
+      discountText = `${venue.offer.discountValue}${venue.offer.discountType === "percentage" ? "%" : "₹"} off with ${venue.offer.offerCode}`
+    }
+
+    let voucherText = ""
+    if (venue.voucher) {
+      voucherText = `Earn ${venue.voucher.discountValue}${venue.voucher.discountType === "percentage" ? "%" : "₹"} voucher (${venue.voucher.voucherCode}) for vendor bookings`
     }
 
     return (
       <div className="flex flex-col">
-        <div>
-          <span className="line-through text-gray-500 mr-2">
-            ₹{originalPrice.toFixed(2)}
-          </span>
-          <span className="text-green-600">
-            ₹{discountedPrice.toFixed(2)}
-          </span>
-        </div>
-        <span className="text-xs text-green-600">
-          ({venue.offer.discountValue}
-          {venue.offer.discountType === "percentage" ? "%" : "₹"} off with{" "}
-          {venue.offer.offerCode})
-        </span>
+        {venue.offer ? (
+          <div>
+            <span className="line-through text-gray-500 mr-2">₹{originalPrice.toFixed(2)}</span>
+            <span className="text-green-600">₹{discountedPrice.toFixed(2)}</span>
+          </div>
+        ) : (
+          <span className="text-green-600">₹{originalPrice.toFixed(2)}</span>
+        )}
+        {discountText && <span className="text-xs text-green-600">{discountText}</span>}
+        {voucherText && <span className="text-xs text-blue-600 mt-1">{voucherText}</span>}
       </div>
-    );
-  };
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-pink-50 to-transparent overflow-x-hidden">
@@ -317,8 +352,7 @@ const HomePage: React.FC = () => {
           .group:hover .card-content {
             transform: translateY(-5px);
           }
-          .offer-badge {
-            background-color: #ef4444;
+          .offer-badge, .voucher-badge {
             color: white;
             font-weight: bold;
             padding: 4px 8px;
@@ -326,6 +360,106 @@ const HomePage: React.FC = () => {
             font-size: 0.75rem;
             line-height: 1rem;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+          }
+          .offer-badge {
+            background-color: #ef4444;
+          }
+          .voucher-badge {
+            background-color: #10b981;
+          }
+          .voucher-card {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            width: 180px;
+            height: 85px;
+            display: flex;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+            font-family: Arial, sans-serif;
+            z-index: 10;
+            border: 3px dashed #ED695A;
+          }
+          .voucher-left {
+            width: 50px;
+            background: linear-gradient(135deg, #ED695A 0%, #d85545 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+          }
+          .voucher-code-vertical {
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            color: white;
+            font-weight: bold;
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+          }
+          .voucher-right {
+            flex: 1;
+            background: linear-gradient(135deg, #fef9c3 0%, #fef3c7 100%);
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+          }
+          .voucher-title {
+            color: #5B4336;
+            font-size: 0.7rem;
+            font-weight: bold;
+            margin-bottom: 3px;
+            text-align: center;
+          }
+          .voucher-discount {
+            color: #ef4444;
+            font-size: 0.65rem;
+            font-weight: 700;
+            margin-bottom: 3px;
+            text-align: center;
+            line-height: 1.2;
+          }
+          .voucher-vendor {
+            color: #5B4336;
+            font-size: 0.6rem;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            margin-bottom: 3px;
+          }
+          .terms-link {
+            color: #9c7c5d;
+            font-size: 0.5rem;
+            text-decoration: underline;
+            cursor: pointer;
+            text-align: center;
+          }
+          .voucher-card::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: -6px;
+            transform: translateX(-50%);
+            width: 12px;
+            height: 12px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: inset 0 0 0 2px #ED695A;
+          }
+          .voucher-card::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            bottom: -6px;
+            transform: translateX(-50%);
+            width: 12px;
+            height: 12px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: inset 0 0 0 2px #ED695A;
           }
         `}
       </style>
@@ -344,34 +478,25 @@ const HomePage: React.FC = () => {
           <Header />
         </div>
 
-        <div className="absolute top-16 sm:top-20 left-4 sm:left-6 md:left-8 lg:left-12 xl:left-20 text-[#9c7c5d] text-xs sm:text-sm font-medium z-40">
-          {/* <div>EVENT DESIGN</div>
-          <div>COMPANY</div> */}
-        </div>
+        <div className="absolute top-16 sm:top-20 left-4 sm:left-6 md:left-8 lg:left-12 xl:left-20 text-[#9c7c5d] text-xs sm:text-sm font-medium z-40"></div>
 
         <div className="relative z-10 h-full flex flex-col lg:flex-row items-center justify-between px-4 sm:px-6 md:px-8 lg:px-12 xl:px-20 py-8 pt-20 sm:pt-24">
           <div className="w-full lg:w-1/2 flex flex-col justify-center text-left space-y-4 sm:space-y-6 lg:space-y-8 mb-8 lg:mb-0">
             <h1
               className={`text-4xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-light text-amber-900 leading-tight transition-all duration-1000 ${
-                isVisible
-                  ? "opacity-100 translate-x-0"
-                  : "opacity-0 -translate-x-10"
+                isVisible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-10"
               }`}
             >
               <div
                 className={`transition-all duration-1000 delay-300 ${
-                  isVisible
-                    ? "opacity-100 translate-y-0"
-                    : "opacity-0 translate-y-10"
+                  isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
                 }`}
               >
                 Make Every Moment
               </div>
               <div
                 className={`transition-all duration-1000 delay-500 ${
-                  isVisible
-                    ? "opacity-100 translate-y-0"
-                    : "opacity-0 translate-y-10"
+                  isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
                 }`}
               >
                 Unforgettable!
@@ -380,9 +505,7 @@ const HomePage: React.FC = () => {
 
             <div
               className={`text-[#9c7c5d] text-xs sm:text-sm font-medium space-y-1 transition-all duration-1000 delay-700 ${
-                isVisible
-                  ? "opacity-100 translate-y-0"
-                  : "opacity-0 translate-y-10"
+                isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
               }`}
             >
               <div>HURRY UP TO</div>
@@ -392,9 +515,7 @@ const HomePage: React.FC = () => {
 
           <div
             className={`w-full lg:w-1/2 flex flex-col items-center lg:items-end justify-center space-y-4 sm:space-y-6 text-center lg:text-right transition-all duration-1000 delay-400 ${
-              isVisible
-                ? "opacity-100 translate-x-0"
-                : "opacity-0 translate-x-10"
+              isVisible ? "opacity-100 translate-x-0" : "opacity-0 translate-x-10"
             }`}
           >
             <div className="w-full max-w-sm sm:max-w-md space-y-3 sm:space-y-4">
@@ -431,7 +552,7 @@ const HomePage: React.FC = () => {
                   <select
                     name="event"
                     value={formData.event}
-                    PregnantChange={handleInputChange}
+                    onChange={handleInputChange}
                     className="w-full h-10 pl-10 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
                   >
                     <option value="">Event</option>
@@ -507,15 +628,11 @@ const HomePage: React.FC = () => {
 
             <div
               className={`text-[#9c7c5d] text-xs sm:text-sm font-medium space-y-1 transition-all duration-1000 delay-800 cursor-pointer ${
-                isVisible
-                  ? "opacity-100 translate-y-0"
-                  : "opacity-0 translate-y-10"
+                isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
               }`}
             >
               <div onClick={() => handleSectionClick("venues")}>VENUE</div>
-              <div onClick={() => handleSectionClick("eventManagement")}>
-                EVENT-MANAGEMENT
-              </div>
+              <div onClick={() => handleSectionClick("eventManagement")}>EVENT-MANAGEMENT</div>
               <div onClick={() => handleSectionClick("artists")}>MAKEUP-ARTISTS</div>
               <div onClick={() => handleSectionClick("projects")}>DESIGNS</div>
               <div onClick={() => handleSectionClick("all")} className="mt-2">
@@ -532,9 +649,7 @@ const HomePage: React.FC = () => {
             </div>
             <span>Restart</span>
           </div>
-          <div className="text-gray-600 text-xs sm:text-sm font-medium">
-            1/6
-          </div>
+          <div className="text-gray-600 text-xs sm:text-sm font-medium">1/6</div>
         </div>
       </section>
 
@@ -546,9 +661,8 @@ const HomePage: React.FC = () => {
                 Our Services
               </h2>
               <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl">
-                We specialize in creating seamless, unforgettable events tailored
-                to your vision. From corporate gatherings and weddings to private
-                celebrations and brand activations, our expert team ensures every
+                We specialize in creating seamless, unforgettable events tailored to your vision. From corporate
+                gatherings and weddings to private celebrations and brand activations, our expert team ensures every
                 detail is flawlessly executed.
               </p>
             </div>
@@ -564,8 +678,8 @@ const HomePage: React.FC = () => {
                 Perfect Venues
               </h2>
               <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl ml-auto">
-                Choose from our collection of stunning venues that will provide
-                the perfect backdrop for your wedding
+                Choose from our collection of stunning venues that will provide the perfect backdrop for your wedding.
+                Book and earn vouchers for your vendor bookings!
               </p>
             </div>
 
@@ -574,9 +688,7 @@ const HomePage: React.FC = () => {
             ) : error ? (
               <div className="text-center text-red-600">{error}</div>
             ) : venues.length === 0 ? (
-              <div className="text-center text-gray-600">
-                No verified venues available.
-              </div>
+              <div className="text-center text-gray-600">No verified venues available.</div>
             ) : (
               <div className="relative">
                 {venues.length > 4 && (
@@ -591,43 +703,66 @@ const HomePage: React.FC = () => {
                 )}
                 <div
                   ref={venuesRef}
-                  className="scroll-container flex overflow-x-auto space-x-4 sm:space-x-6 pb-4"
+                  className="scroll-container flex overflow-x-auto overflow-y-visible space-x-4 sm:space-x-6 pb-4"
                 >
                   {venues.map((venue, index) => (
                     <div
                       key={venue.id}
-                      className="group rounded-xl overflow-hidden hover:shadow-xl transition duration-300 transform opacity-0 scale-95 flex-shrink-0 w-[240px] sm:w-[280px]"
+                      className={`group rounded-xl overflow-visible hover:shadow-xl transition duration-300 transform opacity-0 scale-95 flex-shrink-0 w-[240px] sm:w-[280px]`}
                       style={{
                         animation: `fadeInScale 0.6s ease ${index * 0.15}s forwards`,
                       }}
                     >
-                      <div
-                        className="relative h-48 sm:h-56 bg-cover bg-center rounded-xl"
-                        style={{ backgroundImage: `url(${venue.images[0]})` }}
-                      >
-                        <div className="absolute inset-0 bg-black opacity-20 group-hover:opacity-30 transition duration-300"></div>
-                        {venue.offer && (
-                          <div className="absolute top-2 left-2 offer-badge">
-                            {venue.offer.discountValue}{venue.offer.discountType === "percentage" ? "%" : "₹"} OFF
-                          </div>
-                        )}
+                      <div className="relative h-48 sm:h-56 overflow-visible">
                         <img
-                          src={venue.images[0]}
+                          src={venue.images[0] || "/placeholder.svg"}
                           alt={venue.name}
                           className="w-full h-full object-cover rounded-xl"
                         />
+                        <div className="absolute inset-0 bg-black opacity-20 group-hover:opacity-30 transition duration-300 rounded-xl"></div>
+                        <div className="absolute top-2 left-2 space-y-1">
+                          {venue.offer && (
+                            <div className="offer-badge">
+                              {venue.offer.discountValue}
+                              {venue.offer.discountType === "percentage" ? "%" : "₹"} OFF
+                            </div>
+                          )}
+                          {venue.voucher && (
+                            <div className="voucher-badge">
+                              EARN {venue.voucher.discountValue}
+                              {venue.voucher.discountType === "percentage" ? "%" : "₹"} VOUCHER
+                            </div>
+                          )}
+                        </div>
+                        {venue.voucher && (
+                          <div className="voucher-card">
+                            <div className="voucher-left">
+                              <div className="voucher-code-vertical">{venue.voucher.voucherCode}</div>
+                            </div>
+                            <div className="voucher-right">
+                              <div className="voucher-title">Book now and grab a</div>
+                              <div className="voucher-discount">
+                                {venue.voucher.discountValue}
+                                {venue.voucher.discountType === "percentage" ? "%" : "₹"} on your purchase
+                              </div>
+                              <div className="voucher-vendor">
+                                <span>🎫</span>
+                                <span>{venue.voucher.audiName}</span>
+                              </div>
+                              <div className="terms-link" onClick={() => openTermsModal(venue.voucher!)}>
+                                click here for terms and conditions
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                      <div className="p-3 text-left card-content transition-transform duration-300">
-                        <h3 className="text-lg sm:text-xl font-medium text-[#5B4336]">
-                          {venue.name}
-                        </h3>
+                      <div className="p-3 text-left card-content transition-transform duration-300 pt-10 sm:pt-12">
+                        <h3 className="text-lg sm:text-xl font-medium text-[#5B4336]">{venue.name}</h3>
                         <p className="text-gray-600 text-sm flex items-center mb-1">
                           <MapPin className="h-4 w-4 text-gray-600 mr-1" />
                           {venue.location}
                         </p>
-                        <div className="text-sm text-gray-600 mb-1">
-                          {getFormattedPrice(venue)}
-                        </div>
+                        <div className="text-sm text-gray-600 mb-1">{getFormattedPrice(venue)}</div>
                         <div className="flex items-center text-sm text-gray-600">
                           <Star className="h-4 w-4 text-yellow-500 mr-1" />
                           <span>{venue.rating.toFixed(1)}</span>
@@ -653,18 +788,14 @@ const HomePage: React.FC = () => {
       )}
 
       {(activeSection === "all" || activeSection === "eventManagement") && (
-        <section
-          id="eventManagement"
-          className="py-12 sm:py-16 lg:py-20 bg-gradient-to-b"
-        >
+        <section id="eventManagement" className="py-12 sm:py-16 lg:py-20 bg-gradient-to-b">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-left mb-12 sm:mb-16">
               <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#5B4336] mb-4">
                 Event Management
               </h2>
               <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl">
-                Our expert event management teams ensure every detail of your
-                special day is perfectly executed.
+                Our expert event management teams ensure every detail of your special day is perfectly executed.
               </p>
             </div>
 
@@ -691,21 +822,16 @@ const HomePage: React.FC = () => {
                       animation: `fadeInScale 0.6s ease ${index * 0.15}s forwards`,
                     }}
                   >
-                    <div
-                      className="relative h-48 sm:h-56 bg-cover bg-center rounded-xl"
-                      style={{ backgroundImage: `url(${artist.image})` }}
-                    >
-                      <div className="absolute inset-0 bg-black opacity-20 group-hover:opacity-30 transition duration-300"></div>
+                    <div className="relative h-48 sm:h-56">
                       <img
-                        src={artist.image}
+                        src={artist.image || "/placeholder.svg"}
                         alt={artist.name}
                         className="w-full h-full object-cover rounded-xl"
                       />
+                      <div className="absolute inset-0 bg-black opacity-20 group-hover:opacity-30 transition duration-300 rounded-xl"></div>
                     </div>
                     <div className="p-3 text-left card-content transition-transform duration-300">
-                      <h3 className="text-lg sm:text-xl font-medium text-[#5B4336]">
-                        {artist.name}
-                      </h3>
+                      <h3 className="text-lg sm:text-xl font-medium text-[#5B4336]">{artist.name}</h3>
                       <p className="text-gray-600 text-sm flex items-center mb-1">
                         <MapPin className="h-4 w-4 text-gray-600 mr-1" />
                         {artist.location}
@@ -749,8 +875,8 @@ const HomePage: React.FC = () => {
                 Our Makeup Artists
               </h2>
               <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl">
-                Whether you love classic, candid, documentary, or artistic
-                photography, we have the perfect match for your vision.
+                Whether you love classic, candid, documentary, or artistic photography, we have the perfect match for
+                your vision.
               </p>
             </div>
 
@@ -765,10 +891,7 @@ const HomePage: React.FC = () => {
                   </button>
                 </div>
               )}
-              <div
-                ref={artistsRef}
-                className="scroll-container flex overflow-x-auto space-x-4 sm:space-x-6 pb-4"
-              >
+              <div ref={artistsRef} className="scroll-container flex overflow-x-auto space-x-4 sm:space-x-6 pb-4">
                 {makeupArtists.map((artist, index) => (
                   <div
                     key={artist.id}
@@ -777,21 +900,16 @@ const HomePage: React.FC = () => {
                       animation: `fadeInScale 0.6s ease ${index * 0.15}s forwards`,
                     }}
                   >
-                    <div
-                      className="relative h-48 sm:h-56 bg-cover bg-center rounded-xl"
-                      style={{ backgroundImage: `url(${artist.image})` }}
-                    >
-                      <div className="absolute inset-0 bg-black opacity-20 group-hover:opacity-30 transition duration-300"></div>
+                    <div className="relative h-48 sm:h-56">
                       <img
-                        src={artist.image}
+                        src={artist.image || "/placeholder.svg"}
                         alt={artist.name}
                         className="w-full h-full object-cover rounded-xl"
                       />
+                      <div className="absolute inset-0 bg-black opacity-20 group-hover:opacity-30 transition duration-300 rounded-xl"></div>
                     </div>
                     <div className="p-3 text-left card-content transition-transform duration-300">
-                      <h3 className="text-lg sm:text-xl font-medium text-[#5B4336]">
-                        {artist.name}
-                      </h3>
+                      <h3 className="text-lg sm:text-xl font-medium text-[#5B4336]">{artist.name}</h3>
                       <p className="text-gray-600 text-sm flex items-center mb-1">
                         <MapPin className="h-4 w-4 text-gray-600 mr-1" />
                         {artist.location}
@@ -835,8 +953,7 @@ const HomePage: React.FC = () => {
                 Our Projects
               </h2>
               <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl">
-                Take a look at some of our recent wedding projects and get
-                inspired for your own special day
+                Take a look at some of our recent wedding projects and get inspired for your own special day
               </p>
             </div>
 
@@ -848,7 +965,7 @@ const HomePage: React.FC = () => {
                 >
                   <div className="relative h-48 sm:h-56 lg:h-64">
                     <img
-                      src={project.image}
+                      src={project.image || "/placeholder.svg"}
                       alt={project.title}
                       className="w-full h-full object-cover"
                     />
@@ -856,12 +973,8 @@ const HomePage: React.FC = () => {
                   </div>
 
                   <div className="p-4 sm:p-6 text-left">
-                    <h3 className="text-lg sm:text-xl font-semibold text-[#5B4336] mb-2">
-                      {project.title}
-                    </h3>
-                    <p className="text-gray-600 text-sm mb-4">
-                      {project.category}
-                    </p>
+                    <h3 className="text-lg sm:text-xl font-semibold text-[#5B4336] mb-2">{project.title}</h3>
+                    <p className="text-gray-600 text-sm mb-4">{project.category}</p>
                     <button className="bg-[#9c7c5d] text-white px-4 sm:px-6 py-2 rounded-full text-xs sm:text-sm hover:bg-[#8b6b4a] transition duration-300">
                       View Gallery
                     </button>
@@ -872,8 +985,44 @@ const HomePage: React.FC = () => {
           </div>
         </section>
       )}
-    </div>
-  );
-};
 
-export default HomePage;
+      {isModalOpen && selectedVoucher && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg max-w-md w-full">
+            <h2 className="text-xl font-bold mb-4 text-[#5B4336]">Terms and Conditions</h2>
+            <p className="mb-2 text-gray-700">
+              <strong>Voucher Code:</strong> {selectedVoucher.voucherCode}
+            </p>
+            <p className="mb-2 text-gray-700">
+              <strong>Discount:</strong> {selectedVoucher.discountValue}
+              {selectedVoucher.discountType === "percentage" ? "%" : "₹"}
+            </p>
+            <p className="mb-2 text-gray-700">
+              <strong>Valid From:</strong> {new Date(selectedVoucher.validFrom).toLocaleDateString()}
+            </p>
+            <p className="mb-2 text-gray-700">
+              <strong>Valid To:</strong> {new Date(selectedVoucher.validTo).toLocaleDateString()}
+            </p>
+            <p className="mb-2 text-gray-700">
+              <strong>Limit:</strong> {selectedVoucher.limit} uses
+            </p>
+            <p className="mb-2 text-gray-700">
+              <strong>Vendor Name:</strong> {selectedVoucher.audiName}
+            </p>
+            <p className="mb-2 text-gray-700">
+              <strong>Status:</strong> {selectedVoucher.isActive ? "Active" : "Inactive"}
+            </p>
+            <button
+              onClick={() => setIsModalOpen(false)}
+              className="mt-4 bg-[#9c7c5d] text-white px-4 py-2 rounded-md font-medium hover:bg-[#8b6b4a] transition duration-300"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default HomePage

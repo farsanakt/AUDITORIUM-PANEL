@@ -216,6 +216,13 @@ export const fetchAllExistingOffer=async()=>{
 
 }
 
+
+export const fetchAllExistingVouchers=async()=>{
+
+  return await api.get('/fetchallvouchers')
+
+}
+
 export const updateStaff=async(staffid:string,data:any)=>{
 
  return await api.put(`/updatestaff/${staffid}`,data)
