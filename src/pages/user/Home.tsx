@@ -1,5 +1,3 @@
-"use client"
-
 import type React from "react"
 import { useState, useEffect, useRef } from "react"
 import { MapPin, Calendar, Flag, Search, ChevronLeft, ChevronRight, Star } from "lucide-react"
@@ -25,6 +23,7 @@ interface Artist {
   rating: number
   location: string
   review: string
+  startingPrice?: string
 }
 
 interface Offer {
@@ -79,20 +78,21 @@ const HomePage: React.FC = () => {
     event: "",
   })
   const [venues, setVenues] = useState<Venue[]>([])
-  const [makeupArtists, setMakeupArtists] = useState<Artist[]>([])
-  const [eventManagements, setEventManagements] = useState<Artist[]>([])
+  const [vendorsByType, setVendorsByType] = useState<Record<string, Artist[]>>({})
+  const [vendorTypes, setVendorTypes] = useState<string[]>([])
   const [offers, setOffers] = useState<Offer[]>([])
   const [vouchers, setVouchers] = useState<Voucher[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
+  const [vendorLoading, setVendorLoading] = useState<boolean>(true)
+  const [vendorError, setVendorError] = useState<string | null>(null)
   const [activeSection, setActiveSection] = useState<string>("all")
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedVoucher, setSelectedVoucher] = useState<Voucher | null>(null)
   const navigate = useNavigate()
 
   const venuesRef = useRef<HTMLDivElement>(null)
-  const eventManagementsRef = useRef<HTMLDivElement>(null)
-  const artistsRef = useRef<HTMLDivElement>(null)
+  const vendorRefs = useRef<Record<string, HTMLDivElement | null>>({})
 
   const projects: Project[] = [
     {
@@ -152,9 +152,6 @@ const HomePage: React.FC = () => {
           const matchingVoucher = vouchers.find(
             (voucher) => voucher.auditoriumId === venue.audiUserId && voucher.isActive,
           )
-          console.log(
-            `Venue ${venue._id}: audiUserId=${venue.audiUserId}, offerMatch=${!!matchingOffer}, voucherMatch=${!!matchingVoucher}, voucherAuditoriumId=${matchingVoucher?.auditoriumId}, venueId=${venue.audiUserId}`,
-          )
           return {
             id: venue._id,
             name: venue.name || venue.venueName || "Unknown Venue",
@@ -171,7 +168,7 @@ const HomePage: React.FC = () => {
             voucher: matchingVoucher,
           }
         })
-      console.log("Mapped venues with offers and vouchers:", mappedVenues)
+      console.log("Mapped venues:", mappedVenues)
       setVenues(mappedVenues)
     } catch (err) {
       console.error("Error fetching venues:", err)
@@ -184,54 +181,91 @@ const HomePage: React.FC = () => {
 
   const fetchVendors = async () => {
     try {
+      setVendorLoading(true)
+      setVendorError(null)
       const response = await fetchAllVendors()
       console.log("Vendors data:", response.data)
       const vendors = response.data
 
-      const mappedMakeupArtists = vendors
-        .filter((v: any) => v.vendorType === "makeup artist")
-        .map((v: any) => ({
+      const groupedVendors: Record<string, Artist[]> = {}
+      vendors.forEach((v: any) => {
+        const type = v.vendorType.toLowerCase()
+        if (!groupedVendors[type]) {
+          groupedVendors[type] = []
+        }
+        groupedVendors[type].push({
           id: v._id,
           name: v.name,
-          role: "Makeup Artist",
-          image: v.images[0],
-          rating: 4.5,
-          location: v.cities[0] || v.address.split(",").pop()?.trim() || "Unknown",
-          review: "",
-        }))
+          role: capitalizeWords(type),
+          image: v.images[0] || "/placeholder.svg",
+          rating: v.rating || 4.5,
+          location:
+            v.cities && v.cities.length > 0
+              ? v.cities[0]
+              : v.address && v.address !== "No address provided"
+                ? v.address
+                : "Unknown",
+          review: v.review || "",
+          startingPrice: v.startingPrice || "N/A",
+        })
+      })
 
-      const mappedEventManagements = vendors
-        .filter((v: any) => v.vendorType === "event management")
-        .map((v: any) => ({
-          id: v._id,
-          name: v.name,
-          role: "Event Management",
-          image: v.images[0],
-          rating: 4.5,
-          location: v.cities[0] || v.address.split(",").pop()?.trim() || "Unknown",
-          review: "",
-        }))
-
-      setMakeupArtists(mappedMakeupArtists)
-      setEventManagements(mappedEventManagements)
+      const types = Object.keys(groupedVendors).sort()
+      setVendorTypes(types)
+      setVendorsByType(groupedVendors)
+      console.log("Grouped Vendors:", groupedVendors)
     } catch (err) {
       console.error("Error fetching vendors:", err)
-      setError("Failed to load vendors. Please try again.")
+      setVendorError("Failed to load vendors. Please try again.")
+    } finally {
+      setVendorLoading(false)
     }
+  }
+
+  // Helper function to capitalize words
+  const capitalizeWords = (str: string) => {
+    return str
+      .split(" ")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ")
+  }
+
+  // Helper to get pluralized section title
+  const getSectionTitle = (type: string) => {
+    const capitalized = capitalizeWords(type)
+    if (capitalized.endsWith("er") || capitalized.endsWith("or")) {
+      return capitalized + "s"
+    } else if (capitalized === "Event Management") {
+      return "Event Management"
+    } else if (capitalized === "Makeup Artist") {
+      return "Makeup Artists"
+    }
+    return capitalized
+  }
+
+  // Helper to get description based on type
+  const getSectionDescription = (type: string) => {
+    if (type === "event management") {
+      return "Our expert event management teams ensure every detail of your special day is perfectly executed."
+    } else if (type === "makeup artist") {
+      return "Transform your look with our skilled makeup artists for your special occasion."
+    } else if (type === "caterer") {
+      return "Our caterers provide delicious and customized menus for your event."
+    } else if (type === "decorator") {
+      return "Our decorators create beautiful and thematic setups for your special occasions."
+    }
+    return `Explore our ${getSectionTitle(type).toLowerCase()} for your event needs.`
   }
 
   useEffect(() => {
     const loadData = async () => {
-      await Promise.all([fetchAllOffers(), fetchAllVouchers()])
+      await Promise.all([fetchAllOffers(), fetchAllVouchers(), fetchVendors()])
     }
     loadData()
   }, [])
 
   useEffect(() => {
-    if (offers.length >= 0 && vouchers.length >= 0) {
-      fetchVenues()
-      fetchVendors()
-    }
+    fetchVenues()
   }, [offers, vouchers])
 
   useEffect(() => {
@@ -251,25 +285,38 @@ const HomePage: React.FC = () => {
 
   const handleSubmit = () => {
     console.log("Form submitted:", formData)
+    const { place, date, event } = formData
+    if (!place || !date || !event) {
+      alert("Please fill in all fields: place, date, and event.")
+      return
+    }
     navigate(
-      `/auditoriumlist?place=${encodeURIComponent(formData.place)}&date=${encodeURIComponent(formData.date)}&event=${encodeURIComponent(formData.event)}`,
+      `/auditoriumlist?place=${encodeURIComponent(place)}&date=${encodeURIComponent(date)}&event=${encodeURIComponent(event)}`,
     )
   }
 
-  const scrollLeft = (ref: React.RefObject<HTMLDivElement>) => {
-    if (ref.current) {
-      ref.current.scrollBy({ left: -300, behavior: "smooth" })
+  const scrollLeft = (type: string) => {
+    if (vendorRefs.current[type]) {
+      vendorRefs.current[type]?.scrollBy({ left: -300, behavior: "smooth" })
+    } else if (type === "venues" && venuesRef.current) {
+      venuesRef.current.scrollBy({ left: -300, behavior: "smooth" })
     }
   }
 
-  const scrollRight = (ref: React.RefObject<HTMLDivElement>) => {
-    if (ref.current) {
-      ref.current.scrollBy({ left: 300, behavior: "smooth" })
+  const scrollRight = (type: string) => {
+    if (vendorRefs.current[type]) {
+      vendorRefs.current[type]?.scrollBy({ left: 300, behavior: "smooth" })
+    } else if (type === "venues" && venuesRef.current) {
+      venuesRef.current.scrollBy({ left: 300, behavior: "smooth" })
     }
   }
 
   const handleSectionClick = (section: string) => {
     setActiveSection(section)
+    const sectionElement = document.getElementById(section)
+    if (sectionElement) {
+      sectionElement.scrollIntoView({ behavior: "smooth" })
+    }
   }
 
   const openTermsModal = (voucher: Voucher) => {
@@ -278,11 +325,6 @@ const HomePage: React.FC = () => {
   }
 
   const getFormattedPrice = (venue: Venue) => {
-    console.log(`Formatting price for venue ${venue.name}:`, {
-      price: venue.price,
-      offer: venue.offer,
-      voucher: venue.voucher,
-    })
     if (!venue.price || venue.price === "Price not available") {
       return <span>{venue.price}</span>
     }
@@ -322,6 +364,102 @@ const HomePage: React.FC = () => {
         {discountText && <span className="text-xs text-green-600">{discountText}</span>}
         {voucherText && <span className="text-xs text-blue-600 mt-1">{voucherText}</span>}
       </div>
+    )
+  }
+
+  const renderVendorSection = (type: string) => {
+    const vendors = vendorsByType[type] || []
+    const sectionId = type.replace(/\s+/g, "")
+
+    if (vendors.length === 0) return null
+
+    return (
+      <section key={type} id={sectionId} className="py-12 sm:py-16 lg:py-20 bg-gradient-to-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-left mb-12 sm:mb-16">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#5B4336] mb-4">
+              {getSectionTitle(type)}
+            </h2>
+            <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl">
+              {getSectionDescription(type)}
+            </p>
+          </div>
+
+          {vendorLoading ? (
+            <div className="text-center text-gray-600">Loading {type} vendors...</div>
+          ) : vendorError ? (
+            <div className="text-center text-red-600">{vendorError}</div>
+          ) : vendors.length === 0 ? (
+            <div className="text-center text-gray-600">No {type} vendors available.</div>
+          ) : (
+            <div className="relative">
+              {vendors.length > 4 && (
+                <div className="absolute top-1/2 -left-4 sm:-left-6 transform -translate-y-1/2 z-10">
+                  <button
+                    onClick={() => scrollLeft(type)}
+                    className="scroll-button bg-[#9c7c5d] text-white rounded-full p-2 sm:p-3 hover:bg-[#8b6b4a] transition duration-300"
+                  >
+                    <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
+                  </button>
+                </div>
+              )}
+              <div
+                ref={(el) => (vendorRefs.current[type] = el)}
+                className="scroll-container flex overflow-x-auto space-x-4 sm:space-x-6 pb-4"
+              >
+                {vendors.map((artist, index) => (
+                  <div
+                    key={artist.id}
+                    className="group rounded-xl overflow-hidden hover:shadow-xl transition duration-300 transform opacity-0 scale-95 flex-shrink-0 w-[240px] sm:w-[280px]"
+                    style={{
+                      animation: `fadeInScale 0.6s ease ${index * 0.15}s forwards`,
+                    }}
+                  >
+                    <div className="relative h-48 sm:h-56">
+                      <img
+                        src={artist.image || "/placeholder.svg"}
+                        alt={artist.name}
+                        className="w-full h-full object-cover rounded-xl"
+                      />
+                      <div className="absolute inset-0 bg-black opacity-20 group-hover:opacity-30 transition duration-300 rounded-xl"></div>
+                    </div>
+                    <div className="p-3 text-left card-content transition-transform duration-300">
+                      <h3 className="text-lg sm:text-xl font-medium text-[#5B4336]">{artist.name}</h3>
+                      <p className="text-gray-600 text-sm flex items-center mb-1">
+                        <MapPin className="h-4 w-4 text-gray-600 mr-1" />
+                        {artist.location}
+                      </p>
+                      <div className="text-sm text-gray-600 mb-1">Starting Price: ₹{artist.startingPrice}</div>
+                      <div className="flex items-center text-sm text-gray-600">
+                        <Star className="h-4 w-4 text-yellow-500 mr-1" />
+                        <span>{artist.rating.toFixed(1)}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {vendors.length > 4 && (
+                <div className="absolute top-1/2 -right-4 sm:-right-6 transform -translate-y-1/2 z-10">
+                  <button
+                    onClick={() => scrollRight(type)}
+                    className="scroll-button bg-[#9c7c5d] text-white rounded-full p-2 sm:p-3 hover:bg-[#8b6b4a] transition duration-300"
+                  >
+                    <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+          <div className="text-right mt-6">
+            <button
+              onClick={() => navigate(`/vendorslist?type=${type}`)}
+              className="px-4 py-2 bg-gray-200 text-[#9c7c5d] rounded-lg hover:bg-gray-300 transition duration-300"
+            >
+              View All
+            </button>
+          </div>
+        </div>
+      </section>
     )
   }
 
@@ -478,8 +616,6 @@ const HomePage: React.FC = () => {
           <Header />
         </div>
 
-        <div className="absolute top-16 sm:top-20 left-4 sm:left-6 md:left-8 lg:left-12 xl:left-20 text-[#9c7c5d] text-xs sm:text-sm font-medium z-40"></div>
-
         <div className="relative z-10 h-full flex flex-col lg:flex-row items-center justify-between px-4 sm:px-6 md:px-8 lg:px-12 xl:px-20 py-8 pt-20 sm:pt-24">
           <div className="w-full lg:w-1/2 flex flex-col justify-center text-left space-y-4 sm:space-y-6 lg:space-y-8 mb-8 lg:mb-0">
             <h1
@@ -528,7 +664,7 @@ const HomePage: React.FC = () => {
                     onChange={handleInputChange}
                     className="w-full h-10 pl-10 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
                   >
-                    <option value="">Place</option>
+                    <option value="">Select Place</option>
                     <option value="Kochi">Kochi</option>
                     <option value="Trivandrum">Trivandrum</option>
                     <option value="Kannur">Kannur</option>
@@ -555,7 +691,7 @@ const HomePage: React.FC = () => {
                     onChange={handleInputChange}
                     className="w-full h-10 pl-10 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
                   >
-                    <option value="">Event</option>
+                    <option value="">Select Event</option>
                     <option value="wedding">Wedding</option>
                     <option value="engagement">Engagement</option>
                     <option value="reception">Reception</option>
@@ -581,7 +717,7 @@ const HomePage: React.FC = () => {
                     onChange={handleInputChange}
                     className="w-full h-10 sm:h-12 pl-10 sm:pl-12 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
                   >
-                    <option value="">Place</option>
+                    <option value="">Select Place</option>
                     <option value="Kochi">Kochi</option>
                     <option value="Trivandrum">Trivandrum</option>
                     <option value="Kannur">Kannur</option>
@@ -608,7 +744,7 @@ const HomePage: React.FC = () => {
                     onChange={handleInputChange}
                     className="w-full h-10 sm:h-12 pl-10 sm:pl-12 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
                   >
-                    <option value="">Event</option>
+                    <option value="">Select Event</option>
                     <option value="wedding">Wedding</option>
                     <option value="engagement">Engagement</option>
                     <option value="reception">Reception</option>
@@ -632,8 +768,14 @@ const HomePage: React.FC = () => {
               }`}
             >
               <div onClick={() => handleSectionClick("venues")}>VENUE</div>
-              <div onClick={() => handleSectionClick("eventManagement")}>EVENT-MANAGEMENT</div>
-              <div onClick={() => handleSectionClick("artists")}>MAKEUP-ARTISTS</div>
+              {vendorTypes.map((type) => (
+                <div
+                  key={type}
+                  onClick={() => handleSectionClick(type.replace(/\s+/g, ""))}
+                >
+                  {getSectionTitle(type).toUpperCase()}
+                </div>
+              ))}
               <div onClick={() => handleSectionClick("projects")}>DESIGNS</div>
               <div onClick={() => handleSectionClick("all")} className="mt-2">
                 SHOW ALL
@@ -694,7 +836,7 @@ const HomePage: React.FC = () => {
                 {venues.length > 4 && (
                   <div className="absolute top-1/2 -left-4 sm:-left-6 transform -translate-y-1/2 z-10">
                     <button
-                      onClick={() => scrollLeft(venuesRef)}
+                      onClick={() => scrollLeft("venues")}
                       className="scroll-button bg-[#9c7c5d] text-white rounded-full p-2 sm:p-3 hover:bg-[#8b6b4a] transition duration-300"
                     >
                       <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -774,7 +916,7 @@ const HomePage: React.FC = () => {
                 {venues.length > 4 && (
                   <div className="absolute top-1/2 -right-4 sm:-right-6 transform -translate-y-1/2 z-10">
                     <button
-                      onClick={() => scrollRight(venuesRef)}
+                      onClick={() => scrollRight("venues")}
                       className="scroll-button bg-[#9c7c5d] text-white rounded-full p-2 sm:p-3 hover:bg-[#8b6b4a] transition duration-300"
                     >
                       <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -787,162 +929,10 @@ const HomePage: React.FC = () => {
         </section>
       )}
 
-      {(activeSection === "all" || activeSection === "eventManagement") && (
-        <section id="eventManagement" className="py-12 sm:py-16 lg:py-20 bg-gradient-to-b">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-left mb-12 sm:mb-16">
-              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#5B4336] mb-4">
-                Event Management
-              </h2>
-              <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl">
-                Our expert event management teams ensure every detail of your special day is perfectly executed.
-              </p>
-            </div>
-
-            <div className="relative">
-              {eventManagements.length > 4 && (
-                <div className="absolute top-1/2 -left-4 sm:-left-6 transform -translate-y-1/2 z-10">
-                  <button
-                    onClick={() => scrollLeft(eventManagementsRef)}
-                    className="scroll-button bg-[#9c7c5d] text-white rounded-full p-2 sm:p-3 hover:bg-[#8b6b4a] transition duration-300"
-                  >
-                    <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
-                  </button>
-                </div>
-              )}
-              <div
-                ref={eventManagementsRef}
-                className="scroll-container flex overflow-x-auto space-x-4 sm:space-x-6 pb-4"
-              >
-                {eventManagements.map((artist, index) => (
-                  <div
-                    key={artist.id}
-                    className="group rounded-xl overflow-hidden hover:shadow-xl transition duration-300 transform opacity-0 scale-95 flex-shrink-0 w-[240px] sm:w-[280px]"
-                    style={{
-                      animation: `fadeInScale 0.6s ease ${index * 0.15}s forwards`,
-                    }}
-                  >
-                    <div className="relative h-48 sm:h-56">
-                      <img
-                        src={artist.image || "/placeholder.svg"}
-                        alt={artist.name}
-                        className="w-full h-full object-cover rounded-xl"
-                      />
-                      <div className="absolute inset-0 bg-black opacity-20 group-hover:opacity-30 transition duration-300 rounded-xl"></div>
-                    </div>
-                    <div className="p-3 text-left card-content transition-transform duration-300">
-                      <h3 className="text-lg sm:text-xl font-medium text-[#5B4336]">{artist.name}</h3>
-                      <p className="text-gray-600 text-sm flex items-center mb-1">
-                        <MapPin className="h-4 w-4 text-gray-600 mr-1" />
-                        {artist.location}
-                      </p>
-                      <div className="flex items-center text-sm text-gray-600">
-                        <Star className="h-4 w-4 text-yellow-500 mr-1" />
-                        <span>{artist.rating.toFixed(1)}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {eventManagements.length > 4 && (
-                <div className="absolute top-1/2 -right-4 sm:-right-6 transform -translate-y-1/2 z-10">
-                  <button
-                    onClick={() => scrollRight(eventManagementsRef)}
-                    className="scroll-button bg-[#9c7c5d] text-white rounded-full p-2 sm:p-3 hover:bg-[#8b6b4a] transition duration-300"
-                  >
-                    <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
-                  </button>
-                </div>
-              )}
-            </div>
-            <div className="text-right mt-6">
-              <button
-                onClick={() => navigate("/vendorslist?type=event management")}
-                className="px-4 py-2 bg-gray-200 text-[#9c7c5d] rounded-lg hover:bg-gray-300 transition duration-300"
-              >
-                View All
-              </button>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {(activeSection === "all" || activeSection === "artists") && (
-        <section id="artists" className="py-12 sm:py-16 lg:py-20">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-left mb-12 sm:mb-16">
-              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#5B4336] mb-4">
-                Our Makeup Artists
-              </h2>
-              <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl">
-                Whether you love classic, candid, documentary, or artistic photography, we have the perfect match for
-                your vision.
-              </p>
-            </div>
-
-            <div className="relative">
-              {makeupArtists.length > 4 && (
-                <div className="absolute top-1/2 -left-4 sm:-left-6 transform -translate-y-1/2 z-10">
-                  <button
-                    onClick={() => scrollLeft(artistsRef)}
-                    className="scroll-button bg-[#9c7c5d] text-white rounded-full p-2 sm:p-3 hover:bg-[#8b6b4a] transition duration-300"
-                  >
-                    <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
-                  </button>
-                </div>
-              )}
-              <div ref={artistsRef} className="scroll-container flex overflow-x-auto space-x-4 sm:space-x-6 pb-4">
-                {makeupArtists.map((artist, index) => (
-                  <div
-                    key={artist.id}
-                    className="group rounded-xl overflow-hidden hover:shadow-xl transition duration-300 transform opacity-0 scale-95 flex-shrink-0 w-[240px] sm:w-[280px]"
-                    style={{
-                      animation: `fadeInScale 0.6s ease ${index * 0.15}s forwards`,
-                    }}
-                  >
-                    <div className="relative h-48 sm:h-56">
-                      <img
-                        src={artist.image || "/placeholder.svg"}
-                        alt={artist.name}
-                        className="w-full h-full object-cover rounded-xl"
-                      />
-                      <div className="absolute inset-0 bg-black opacity-20 group-hover:opacity-30 transition duration-300 rounded-xl"></div>
-                    </div>
-                    <div className="p-3 text-left card-content transition-transform duration-300">
-                      <h3 className="text-lg sm:text-xl font-medium text-[#5B4336]">{artist.name}</h3>
-                      <p className="text-gray-600 text-sm flex items-center mb-1">
-                        <MapPin className="h-4 w-4 text-gray-600 mr-1" />
-                        {artist.location}
-                      </p>
-                      <div className="flex items-center text-sm text-gray-600">
-                        <Star className="h-4 w-4 text-yellow-500 mr-1" />
-                        <span>{artist.rating.toFixed(1)}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {makeupArtists.length > 4 && (
-                <div className="absolute top-1/2 -right-4 sm:-right-6 transform -translate-y-1/2 z-10">
-                  <button
-                    onClick={() => scrollRight(artistsRef)}
-                    className="scroll-button bg-[#9c7c5d] text-white rounded-full p-2 sm:p-3 hover:bg-[#8b6b4a] transition duration-300"
-                  >
-                    <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
-                  </button>
-                </div>
-              )}
-            </div>
-            <div className="text-right mt-6">
-              <button
-                onClick={() => navigate("/vendorslist?type=makeup artist")}
-                className="px-4 py-2 bg-gray-200 text-[#9c7c5d] rounded-lg hover:bg-gray-300 transition duration-300"
-              >
-                View All
-              </button>
-            </div>
-          </div>
-        </section>
+      {(activeSection === "all" || vendorTypes.includes(activeSection)) && (
+        <>
+          {vendorTypes.map((type) => renderVendorSection(type))}
+        </>
       )}
 
       {(activeSection === "all" || activeSection === "projects") && (

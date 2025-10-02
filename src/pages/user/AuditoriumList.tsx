@@ -3,7 +3,20 @@ import { MapPin, Flag } from "lucide-react";
 import Header from "../../component/user/Header";
 import bgImg from '../../assets/vector.png';
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { FindAuidtorium } from "../../api/userApi";
+import { FindAuidtorium, fetchAllExistingVouchers } from "../../api/userApi";
+
+interface Voucher {
+  _id: string;
+  auditoriumId: string;
+  voucherCode: string;
+  discountType: "percentage" | "fixed";
+  discountValue: number;
+  validFrom: string;
+  validTo: string;
+  isActive: boolean;
+  audiName: string;
+  limit: number;
+}
 
 interface Venue {
   id: string;
@@ -12,6 +25,7 @@ interface Venue {
   image: string;
   category: string;
   tag: string;
+  voucher?: Voucher;
 }
 
 const VenueSelector: React.FC = () => {
@@ -21,30 +35,55 @@ const VenueSelector: React.FC = () => {
   const [place, setPlace] = useState(searchParams.get("place") || "");
   const [event, setEvent] = useState(searchParams.get("event") || "");
   const [venues, setVenues] = useState<Venue[]>([]);
+  const [vouchers, setVouchers] = useState<Voucher[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedVoucher, setSelectedVoucher] = useState<Voucher | null>(null);
+
+  const fetchVouchers = async () => {
+    try {
+      const response = await fetchAllExistingVouchers();
+      console.log("Fetched vouchers:", response.data);
+      setVouchers(response.data || []);
+    } catch (err) {
+      console.error("Error fetching vouchers:", err);
+      setVouchers([]);
+    }
+  };
 
   const findAuditorium = async () => {
     try {
       const response = await FindAuidtorium(place, event);
       console.log(response, 'lope');
 
-      const mappedVenues: Venue[] = response.map((item: any, index: number) => ({
-        id: item.auditorium._id,
-        name: item.auditorium.auditoriumName || `Auditorium ${index + 1}`,
-        location: place || "Unknown Location", // Use the selected place from state
-        image: item.images && item.images.length > 0 ? item.images[0] : "https://via.placeholder.com/400x300",
-        category: "Auditorium",
-        tag: item.auditorium.tag || "Indoor",
-      }));
+      const mappedVenues: Venue[] = response.map((item: any, index: number) => {
+        const matchingVoucher = vouchers.find(
+          (voucher) => voucher.auditoriumId === item.auditorium._id && voucher.isActive
+        );
+        return {
+          id: item.auditorium._id,
+          name: item.auditorium.auditoriumName || `Auditorium ${index + 1}`,
+          location: place || "Unknown Location",
+          image: item.images && item.images.length > 0 ? item.images[0] : "https://via.placeholder.com/400x300",
+          category: "Auditorium",
+          tag: item.auditorium.tag || "Indoor",
+          voucher: matchingVoucher,
+        };
+      });
 
       setVenues(mappedVenues);
     } catch (error) {
       console.error("Error fetching auditoriums:", error);
+      setVenues([]);
     }
   };
 
   useEffect(() => {
+    fetchVouchers();
+  }, []);
+
+  useEffect(() => {
     findAuditorium();
-  }, [place, event]);
+  }, [place, event, vouchers]);
 
   const handleCardClick = (id: string) => {
     const date = searchParams.get("date") || "";
@@ -64,8 +103,122 @@ const VenueSelector: React.FC = () => {
     }
   };
 
+  const openTermsModal = (voucher: Voucher) => {
+    setSelectedVoucher(voucher);
+    setIsModalOpen(true);
+  };
+
   return (
     <div className="min-h-screen p-4 sm:p-6 lg:p-8">
+      <style>
+        {`
+          .voucher-badge {
+            color: white;
+            font-weight: bold;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            line-height: 1rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            background-color: #10b981;
+          }
+          .voucher-card {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            width: 180px;
+            height: 85px;
+            display: flex;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+            font-family: Arial, sans-serif;
+            z-index: 10;
+            border: 3px dashed #ED695A;
+          }
+          .voucher-left {
+            width: 50px;
+            background: linear-gradient(135deg, #ED695A 0%, #d85545 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+          }
+          .voucher-code-vertical {
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            color: white;
+            font-weight: bold;
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+          }
+          .voucher-right {
+            flex: 1;
+            background: linear-gradient(135deg, #fef9c3 0%, #fef3c7 100%);
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+          }
+          .voucher-title {
+            color: #5B4336;
+            font-size: 0.7rem;
+            font-weight: bold;
+            margin-bottom: 3px;
+            text-align: center;
+          }
+          .voucher-discount {
+            color: #ef4444;
+            font-size: 0.65rem;
+            font-weight: 700;
+            margin-bottom: 3px;
+            text-align: center;
+            line-height: 1.2;
+          }
+          .voucher-vendor {
+            color: #5B4336;
+            font-size: 0.6rem;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            margin-bottom: 3px;
+          }
+          .terms-link {
+            color: #9c7c5d;
+            font-size: 0.5rem;
+            text-decoration: underline;
+            cursor: pointer;
+            text-align: center;
+          }
+          .voucher-card::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: -6px;
+            transform: translateX(-50%);
+            width: 12px;
+            height: 12px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: inset 0 0 0 2px #ED695A;
+          }
+          .voucher-card::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            bottom: -6px;
+            transform: translateX(-50%);
+            width: 12px;
+            height: 12px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: inset 0 0 0 2px #ED695A;
+          }
+        `}
+      </style>
+
       <div className="max-w-7xl mx-auto">
         <section className="relative min-h-[80vh] flex items-center justify-center overflow-hidden pt-8">
           <div
@@ -195,6 +348,33 @@ const VenueSelector: React.FC = () => {
                   >
                     {venue.tag}
                   </div>
+                  {venue.voucher && (
+                    <div className="absolute top-3 left-3 mt-10 voucher-badge">
+                      EARN {venue.voucher.discountValue}
+                      {venue.voucher.discountType === "percentage" ? "%" : "₹"} VOUCHER
+                    </div>
+                  )}
+                  {venue.voucher && (
+                    <div className="voucher-card">
+                      <div className="voucher-left">
+                        <div className="voucher-code-vertical">{venue.voucher.voucherCode}</div>
+                      </div>
+                      <div className="voucher-right">
+                        <div className="voucher-title">Book now and grab a</div>
+                        <div className="voucher-discount">
+                          {venue.voucher.discountValue}
+                          {venue.voucher.discountType === "percentage" ? "%" : "₹"} on your purchase
+                        </div>
+                        <div className="voucher-vendor">
+                          <span>🎫</span>
+                          <span>{venue.voucher.audiName}</span>
+                        </div>
+                        <div className="terms-link" onClick={() => openTermsModal(venue.voucher!)}>
+                          click here for terms and conditions
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="p-4 sm:p-6">
@@ -231,6 +411,33 @@ const VenueSelector: React.FC = () => {
                   >
                     {venue.tag}
                   </div>
+                  {venue.voucher && (
+                    <div className="absolute top-3 left-3 mt-10 voucher-badge">
+                      EARN {venue.voucher.discountValue}
+                      {venue.voucher.discountType === "percentage" ? "%" : "₹"} VOUCHER
+                    </div>
+                  )}
+                  {venue.voucher && (
+                    <div className="voucher-card">
+                      <div className="voucher-left">
+                        <div className="voucher-code-vertical">{venue.voucher.voucherCode}</div>
+                      </div>
+                      <div className="voucher-right">
+                        <div className="voucher-title">Book now and grab a</div>
+                        <div className="voucher-discount">
+                          {venue.voucher.discountValue}
+                          {venue.voucher.discountType === "percentage" ? "%" : "₹"} on your purchase
+                        </div>
+                        <div className="voucher-vendor">
+                          <span>🎫</span>
+                          <span>{venue.voucher.audiName}</span>
+                        </div>
+                        <div className="terms-link" onClick={() => openTermsModal(venue.voucher!)}>
+                          click here for terms and conditions
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="p-4 sm:p-6">
@@ -246,6 +453,42 @@ const VenueSelector: React.FC = () => {
             ))}
           </div>
         </div>
+
+        {isModalOpen && selectedVoucher && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-lg max-w-md w-full">
+              <h2 className="text-xl font-bold mb-4 text-[#5B4336] font-serif">Terms and Conditions</h2>
+              <p className="mb-2 text-gray-700 font-serif">
+                <strong>Voucher Code:</strong> {selectedVoucher.voucherCode}
+              </p>
+              <p className="mb-2 text-gray-700 font-serif">
+                <strong>Discount:</strong> {selectedVoucher.discountValue}
+                {selectedVoucher.discountType === "percentage" ? "%" : "₹"}
+              </p>
+              <p className="mb-2 text-gray-700 font-serif">
+                <strong>Valid From:</strong> {new Date(selectedVoucher.validFrom).toLocaleDateString()}
+              </p>
+              <p className="mb-2 text-gray-700 font-serif">
+                <strong>Valid To:</strong> {new Date(selectedVoucher.validTo).toLocaleDateString()}
+              </p>
+              <p className="mb-2 text-gray-700 font-serif">
+                <strong>Limit:</strong> {selectedVoucher.limit} uses
+              </p>
+              <p className="mb-2 text-gray-700 font-serif">
+                <strong>Vendor Name:</strong> {selectedVoucher.audiName}
+              </p>
+              <p className="mb-2 text-gray-700 font-serif">
+                <strong>Status:</strong> {selectedVoucher.isActive ? "Active" : "Inactive"}
+              </p>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="mt-4 bg-[#6e3d2b] text-white px-4 py-2 rounded-md font-medium hover:bg-[#5a2f20] font-serif"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
