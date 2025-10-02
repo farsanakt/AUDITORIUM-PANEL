@@ -21,6 +21,7 @@ interface Voucher {
   createdAt: string;
   updatedAt: string;
   __v: number;
+  termsAndConditions?: string[]; // Made optional to handle legacy data
 }
 
 const Voucher: React.FC = () => {
@@ -38,6 +39,7 @@ const Voucher: React.FC = () => {
     validTo: '',
     audiName: '',
     isActive: true,
+    termsAndConditions: '',
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -54,12 +56,10 @@ const Voucher: React.FC = () => {
       const response = await fetchVouchers(currentUser.id);
       console.log(response.data, 'this is the response');
 
-      // Check if response.data is an array (direct voucher array)
       if (Array.isArray(response.data)) {
         setVouchers(response.data);
-        setError(null); // Clear any previous errors
+        setError(null);
       } else if (response.data && response.data.success && Array.isArray(response.data.data)) {
-        // Handle case where response has success and data fields
         setVouchers(response.data.data);
         setError(null);
       } else {
@@ -80,7 +80,7 @@ const Voucher: React.FC = () => {
   }, [currentUser]);
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -98,9 +98,15 @@ const Voucher: React.FC = () => {
       return;
     }
 
+    const termsArray = formData.termsAndConditions
+      .split(',')
+      .map((term) => term.trim())
+      .filter((term) => term.length > 0);
+
     const voucherData: Omit<Voucher, '_id' | 'createdAt' | 'updatedAt' | '__v'> = {
       ...formData,
       userId: currentUser.id,
+      termsAndConditions: termsArray,
     };
 
     try {
@@ -128,6 +134,7 @@ const Voucher: React.FC = () => {
         validTo: '',
         audiName: '',
         isActive: true,
+        termsAndConditions: '',
       });
       setIsEditing(false);
       setSelectedVoucher(null);
@@ -149,6 +156,7 @@ const Voucher: React.FC = () => {
       validTo: new Date(voucher.validTo).toISOString().split('T')[0],
       audiName: voucher.audiName,
       isActive: voucher.isActive,
+      termsAndConditions: voucher.termsAndConditions?.join(', ') || '',
     });
     setIsEditing(true);
     setIsModalOpen(true);
@@ -212,6 +220,7 @@ const Voucher: React.FC = () => {
                   validTo: '',
                   audiName: '',
                   isActive: true,
+                  termsAndConditions: '',
                 });
               }}
               className="bg-[#ED695A] text-white font-semibold py-2 px-4 rounded-full shadow-md hover:bg-[#d85c4e] transition-all duration-300 font-serif"
@@ -243,6 +252,16 @@ const Voucher: React.FC = () => {
                       <p className="text-sm text-gray-600 font-serif">
                         Status: {voucher.isActive ? 'Active' : 'Inactive'}
                       </p>
+                      <p className="text-sm text-gray-600 font-serif">Terms and Conditions:</p>
+                      {voucher.termsAndConditions && voucher.termsAndConditions.length > 0 ? (
+                        <ul className="text-sm text-gray-600 font-serif list-disc pl-5">
+                          {voucher.termsAndConditions.map((term, index) => (
+                            <li key={index}>{term}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-sm text-gray-600 font-serif pl-5">No terms specified</p>
+                      )}
                     </div>
                   </div>
                   <div className="flex space-x-2 mt-2 sm:mt-0">
@@ -338,7 +357,7 @@ const Voucher: React.FC = () => {
                     type="number"
                     name="limit"
                     value={formData.limit}
-                    onChange={handleInputChange} // Fixed typo here
+                    onChange={handleInputChange}
                     placeholder="e.g., 100"
                     required
                     min="0"
@@ -386,6 +405,19 @@ const Voucher: React.FC = () => {
                   placeholder="e.g., New Users"
                   required
                   className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200 font-serif"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-[#78533F] font-medium font-serif">
+                  Terms and Conditions
+                </label>
+                <textarea
+                  name="termsAndConditions"
+                  value={formData.termsAndConditions}
+                  onChange={handleInputChange}
+                  placeholder="Enter terms separated by commas, e.g., Valid on first purchase, Minimum purchase ₹1000"
+                  className="w-full px-3 py-2 border border-[#b09d94] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200 font-serif"
+                  rows={4}
                 />
               </div>
               <div>
