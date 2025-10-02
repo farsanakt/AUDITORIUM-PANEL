@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { FaUserCircle } from "react-icons/fa";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -13,7 +12,6 @@ const Sidebar: React.FC = () => {
   const { currentUser } = useSelector((state: RootState) => state.auth);
   const [activeItem, setActiveItem] = useState<string>("/vendor/dashboard");
 
-
   const getUsernameFromEmail = (email: string | undefined): string => {
     if (!email || !email.includes("@")) {
       return "Guest";
@@ -23,7 +21,13 @@ const Sidebar: React.FC = () => {
   };
 
   useEffect(() => {
-    const validPaths = ["/vendor/dashboard", "/vendor/vendorenquires", "/vendor/addvendor", "#"];
+    const validPaths = [
+      "/vendor/dashboard", 
+      "/vendor/vendorenquires", 
+      "/vendor/addvendor", 
+      "/vendor/vouchers", // ✅ added here
+      "#"
+    ];
     if (validPaths.includes(location.pathname)) {
       setActiveItem(location.pathname);
     } else {
@@ -35,6 +39,7 @@ const Sidebar: React.FC = () => {
     { title: "Dashboard", path: "/vendor/dashboard" },
     { title: "Vendor Bookings", path: "/vendor/vendorenquires" },
     { title: "Vendor", path: "/vendor/addvendor" },
+    { title: "Voucher", path: "/vendor/vouchers" }, // ✅ new Voucher item
     { title: "Settings", path: "#" },
   ];
 
