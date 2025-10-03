@@ -176,6 +176,19 @@ export const acceptVendor=async(id:string)=>{
 
 }
 
+export const activateVoucher=async(id:string)=>{
+  
+  return await api.post(`/acceptvoucher/${id}`)
+
+}
+
+
+export const deactivateVoucher=async(id:string)=>{
+  
+  return await api.post(`/rejectvoucher/${id}`)
+
+}
+
 export const rejectVendor=async(id:string)=>{
 
   return await api.post(`/rejectvendor/${id}`)
