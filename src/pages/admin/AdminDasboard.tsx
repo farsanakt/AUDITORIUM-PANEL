@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { RootState } from '../../redux/store';
 import { toast } from 'react-toastify';
-import { Home, Users, Building, DollarSign, Mail } from 'lucide-react';
+import { Home, Users, Building, DollarSign, Mail, Ticket } from 'lucide-react';
 import Header from '../../component/user/Header';
 import { findCount } from '../../api/userApi';
 
@@ -13,6 +13,7 @@ interface DashboardStats {
   totalUsers: number;
   totalAmount: number;
   totalEnquiries: number;
+  totalVouchers: number;
 }
 
 interface RecentActivity {
@@ -28,47 +29,46 @@ const dummyRecentActivity: RecentActivity[] = [
   { id: '3', type: 'Vendor Updated', name: 'Elite Events', date: '2025-09-12' },
 ];
 
-// Fallback data in case API fails (for debugging)
+// Fallback data in case API fails
 const fallbackStats: DashboardStats = {
   totalVendors: 5,
   totalAuditoriums: 6,
   totalUsers: 1,
   totalAmount: 0,
   totalEnquiries: 0,
+  totalVouchers: 0,
 };
 
 const AdminDashboard: React.FC = () => {
   const { currentUser } = useSelector((state: RootState) => state.auth);
-  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [stats, setStats] = useState<DashboardStats>(fallbackStats); // Initialize with fallback to avoid null
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   
   const navigate = useNavigate();
 
   const fetchDashboardStats = async () => {
-    
-   
     try {
       setIsLoading(true);
       const response = await findCount();
-
-      const backendData = response.data.data || {};
+      console.log('API Response:', response); // Debug the full response
+      const backendData = response.data?.data || {};
       const dashboardStats: DashboardStats = {
-        totalUsers: backendData.totalUsers || 0,
-        totalVendors: backendData.totalVendors || 0,
-        totalAuditoriums: backendData.totalAuditorium || 0, 
-        totalAmount: backendData.totalAmount || 0,
-        totalEnquiries: backendData.totalEnquiries || 0,
+        totalUsers: Number(backendData.totalUsers) || 0,
+        totalVendors: Number(backendData.totalVendors) || 0,
+        totalAuditoriums: Number(backendData.totalAuditorium) || 0,
+        totalAmount: Number(backendData.totalAmount) || 0,
+        totalEnquiries: Number(backendData.totalEnquiries) || 0,
+        totalVouchers: Number(backendData.totalVouchers) || 0,
       };
       console.log('Mapped stats:', dashboardStats);
       setStats(dashboardStats);
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Error fetching dashboard stats';
-      console.error('API error:', error); 
+      console.error('API error:', error);
       setError(errorMessage);
       toast.error(errorMessage);
-     
-      setStats(fallbackStats);
+      setStats(fallbackStats); // Use fallback on error
     } finally {
       setIsLoading(false);
     }
@@ -79,12 +79,13 @@ const AdminDashboard: React.FC = () => {
     fetchDashboardStats();
   }, []);
 
-  const navItems: { path: string; label: string; icon: React.ComponentType<{ size?: number; className?: string }>; count: string | number | undefined }[] = [
-    { path: '/admin/allaudilist', label: 'All Auditoriums', icon: Building, count: stats?.totalAuditoriums },
-    { path: '/admin/allusers', label: 'All Users', icon: Users, count: stats?.totalUsers },
-    { path: '/admin/allvendors', label: 'All Vendors', icon: Users, count: stats?.totalVendors },
-    { path: '/admin/enquiries', label: 'All Enquiries', icon: Mail, count: stats?.totalEnquiries },
-    { path: '/admin/finances', label: 'Total Amount', icon: DollarSign, count: stats?.totalAmount ? `₹${stats.totalAmount.toLocaleString()}` : 0 },
+  const navItems: { path: string; label: string; icon: React.ComponentType<{ size?: number; className?: string }>; count: string | number }[] = [
+    { path: '/admin/allaudilist', label: 'All Auditoriums', icon: Building, count: stats.totalAuditoriums || 0 },
+    { path: '/admin/allusers', label: 'All Users', icon: Users, count: stats.totalUsers || 0 },
+    { path: '/admin/allvendors', label: 'All Vendors', icon: Users, count: stats.totalVendors || 0 },
+    { path: '/admin/enquiries', label: 'All Enquiries', icon: Mail, count: stats.totalEnquiries || 0 },
+    { path: '/admin/finances', label: 'Total Amount', icon: DollarSign, count: stats.totalAmount ? `₹${stats.totalAmount.toLocaleString()}` : '₹0' },
+    { path: '/admin/allvouchers', label: 'All Vouchers', icon: Ticket, count: stats.totalVouchers || 0 },
   ];
 
   return (
@@ -114,7 +115,7 @@ const AdminDashboard: React.FC = () => {
                       <item.icon size={24} className="text-[#ED695A]" />
                       <div>
                         <h3 className="text-sm font-semibold text-[#78533F] font-serif">{item.label}</h3>
-                        <p className="text-xl font-bold text-[#ED695A] mt-1">{item.count || 0}</p>
+                        <p className="text-xl font-bold text-[#ED695A] mt-1">{item.count}</p>
                       </div>
                     </div>
                   </button>
