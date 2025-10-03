@@ -1,5 +1,3 @@
-
-
 import type React from "react"
 import { useEffect, useState, Component, type ErrorInfo } from "react"
 import {
@@ -16,7 +14,7 @@ import {
   Check,
 } from "lucide-react"
 import { useNavigate, useParams, useSearchParams } from "react-router-dom"
-import { singleVenueDetails, createBooking, existingBkngs, fetchAllExistingOffer } from "../../api/userApi"
+import { singleVenueDetails, createBooking, existingBkngs, fetchAllExistingOffer, fetchAllExistingVouchers } from "../../api/userApi"
 import { useSelector } from "react-redux"
 import type { RootState } from "../../redux/store"
 import Header from "../../component/user/Header"
@@ -66,6 +64,20 @@ interface Offer {
   minAmount?: number
 }
 
+interface Voucher {
+  _id: string
+  voucherCode: string
+  discountType: "percentage" | "flat"
+  discountValue: number
+  limit: number
+  validFrom: string
+  validTo: string
+  audiName: string
+  auditoriumId: string
+  isActive: boolean
+  termsAndConditions?: string[]
+}
+
 interface BookingFormData {
   userEmail: string
   venueName: string
@@ -80,6 +92,7 @@ interface BookingFormData {
   balanceAmount: string
   exactBookingTime?: string
   couponCode?: string
+  voucherCode?: string
 }
 
 interface TimeSlot {
@@ -112,7 +125,6 @@ interface Booking {
 }
 
 const Bookings: React.FC = () => {
-  // Utility functions moved to the top
   const formatDateForBackend = (date: Date): string => {
     const year = date.getFullYear()
     const month = String(date.getMonth() + 1).padStart(2, "0")
@@ -153,6 +165,7 @@ const Bookings: React.FC = () => {
   const [eventType, setEventType] = useState("")
   const [venue, setVenue] = useState<Venue | null>(null)
   const [offers, setOffers] = useState<Offer[]>([])
+  const [vouchers, setVouchers] = useState<Voucher[]>([])
   const [couponCode, setCouponCode] = useState("")
   const [couponError, setCouponError] = useState<string | null>(null)
   const [appliedOffer, setAppliedOffer] = useState<Offer | null>(null)
@@ -176,6 +189,7 @@ const Bookings: React.FC = () => {
     balanceAmount: "",
     exactBookingTime: "",
     couponCode: "",
+    voucherCode: "",
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -207,7 +221,7 @@ const Bookings: React.FC = () => {
     const price = Number.parseFloat(amount)
     const formattedPrice = `₹${price.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
-    if (!appliedOffer || !isTotalAmount) {
+    if (!isTotalAmount || !appliedOffer) {
       return <span>{formattedPrice}</span>
     }
 
@@ -228,12 +242,12 @@ const Bookings: React.FC = () => {
     )
   }
 
-  const calculateDiscountedAmount = (originalAmount: string, offer: Offer): number => {
+  const calculateDiscountedAmount = (originalAmount: string, discount: { discountType: string; discountValue: number }): number => {
     const amount = Number.parseFloat(originalAmount)
-    if (offer.discountType === "percentage") {
-      return amount * (1 - offer.discountValue / 100)
+    if (discount.discountType === "percentage") {
+      return amount * (1 - discount.discountValue / 100)
     } else {
-      return Math.max(0, amount - offer.discountValue)
+      return Math.max(0, amount - discount.discountValue)
     }
   }
 
@@ -269,42 +283,42 @@ const Bookings: React.FC = () => {
       return
     }
 
-    const matchedOffer =
-      offerToApply ||
-      offers.find(
+    if (offerToApply) {
+      // Apply offer
+      if (offerToApply.minAmount && Number.parseFloat(originalAmounts.total) < offerToApply.minAmount) {
+        setCouponError(`Minimum order amount should be ₹${offerToApply.minAmount}`)
+        return
+      }
+      const discountedTotal = calculateDiscountedAmount(originalAmounts.total, offerToApply)
+      setAppliedOffer(offerToApply)
+      setCouponCode(offerToApply.offerCode)
+      setFormData((prev) => ({
+        ...prev,
+        couponCode: offerToApply.offerCode,
+        totalAmount: discountedTotal.toString(),
+        advanceAmount: originalAmounts.advance, // Keep advance amount unchanged
+        paidAmount: prev.paymentType === "full" ? discountedTotal.toString() : originalAmounts.advance,
+        balanceAmount:
+          prev.paymentType === "full"
+            ? "0"
+            : (discountedTotal - Number.parseFloat(originalAmounts.advance)).toString(),
+      }))
+    } else {
+      // Manual code entry
+      const matchedOffer = offers.find(
         (offer) =>
           offer.offerCode.toLowerCase() === codeToApply.toLowerCase() &&
           offer.userId === venue?.audiUserId &&
           offer.isActive,
       )
 
-    if (!matchedOffer) {
-      setCouponError("Invalid or inactive coupon code")
-      setAppliedOffer(null)
-      return
+      if (matchedOffer) {
+        applyCouponCode(matchedOffer)
+      } else {
+        setCouponError("Invalid or inactive coupon code")
+        setAppliedOffer(null)
+      }
     }
-
-    // Check minimum amount if specified
-    if (matchedOffer.minAmount && Number.parseFloat(originalAmounts.total) < matchedOffer.minAmount) {
-      setCouponError(`Minimum order amount should be ₹${matchedOffer.minAmount}`)
-      return
-    }
-
-    const discountedTotal = calculateDiscountedAmount(originalAmounts.total, matchedOffer)
-
-    setAppliedOffer(matchedOffer)
-    setCouponCode(matchedOffer.offerCode)
-    setFormData((prev) => ({
-      ...prev,
-      couponCode: matchedOffer.offerCode,
-      totalAmount: discountedTotal.toString(),
-      advanceAmount: originalAmounts.advance, // Keep advance amount unchanged
-      paidAmount: prev.paymentType === "full" ? discountedTotal.toString() : originalAmounts.advance,
-      balanceAmount:
-        prev.paymentType === "full"
-          ? "0"
-          : (discountedTotal - Number.parseFloat(originalAmounts.advance)).toString(),
-    }))
     setShowOffers(false)
   }
 
@@ -312,13 +326,16 @@ const Bookings: React.FC = () => {
     try {
       setLoading(true)
       setError(null)
-      const [venueResponse, offerResponse] = await Promise.all([singleVenueDetails(id!), fetchAllExistingOffer()])
+      const [venueResponse, offerResponse, voucherResponse] = await Promise.all([
+        singleVenueDetails(id!),
+        fetchAllExistingOffer(),
+        fetchAllExistingVouchers(),
+      ])
 
       if (venueResponse.data) {
         const venueData = venueResponse.data
         const eventTypes = Object.keys(venueData.tariff || {}).filter((key) => venueData.tariff[key] === "t")
 
-        // Store original amounts
         const originalTotal = venueData.totalamount || ""
         const originalAdvance = venueData.advAmnt || venueData.advamnt || ""
 
@@ -332,11 +349,15 @@ const Bookings: React.FC = () => {
           eventTypes,
         })
 
-        // Filter offers for this venue
         const venueOffers = offerResponse.data.filter(
           (offer: Offer) => offer.userId === venueData.audiUserId && offer.isActive,
         )
         setOffers(venueOffers)
+
+        const venueVouchers = voucherResponse.data.filter(
+          (voucher: Voucher) => voucher.auditoriumId === venueData.audiUserId && voucher.isActive && voucher.limit > 0,
+        )
+        setVouchers(venueVouchers)
 
         setFormData((prev) => ({
           ...prev,
@@ -618,12 +639,20 @@ const Bookings: React.FC = () => {
       return
     }
     try {
+      const matchingVoucher = vouchers[0] // Assuming the first matching voucher; adjust if multiple
+      const voucherCode = matchingVoucher ? matchingVoucher.voucherCode : ""
+
+      setFormData((prev) => ({
+        ...prev,
+        voucherCode: voucherCode,
+      }))
+
       const bookingData = {
         venueName: formData.venueName,
         venueId: formData.venueId,
-        totalAmount: formData.totalAmount, // This will be the discounted amount if offer applied
-        paidAmount: formData.paidAmount, // This will be original advance or discounted total
-        balanceAmount: formData.balanceAmount, // This will be based on original advance or 0 for full payment
+        totalAmount: formData.totalAmount,
+        paidAmount: formData.paidAmount,
+        balanceAmount: formData.balanceAmount,
         userEmail: formData.userEmail,
         bookedDate: formData.bookingDate,
         timeSlot: formData.timeSlot,
@@ -631,7 +660,8 @@ const Bookings: React.FC = () => {
         exactBookingTime: formData.exactBookingTime,
         eventType: eventType,
         couponCode: formData.couponCode,
-        originalTotalAmount: originalAmounts.total, // Send original amounts for reference
+        voucherCode: voucherCode,
+        originalTotalAmount: originalAmounts.total,
         originalAdvanceAmount: originalAmounts.advance,
         discountApplied: appliedOffer
           ? {
@@ -662,7 +692,6 @@ const Bookings: React.FC = () => {
     setCouponError(null)
     setAppliedOffer(null)
     setShowOffers(false)
-    // Reset to original amounts
     setFormData((prev) => ({
       ...prev,
       couponCode: "",
@@ -711,7 +740,7 @@ const Bookings: React.FC = () => {
             {offer.discountType === "percentage" ? "%" : "₹"} off
           </p>
           {offer.description && <p className="text-xs text-gray-600 mb-2">{offer.description}</p>}
-          {offer.minAmount && <p className="text-xs text-gray-600 mb-3">Minimum order: ₹${offer.minAmount}</p>}
+          {offer.minAmount && <p className="text-xs text-gray-600 mb-3">Minimum order: ₹{offer.minAmount}</p>}
           <div className="flex gap-2">
             <button
               onClick={() => applyCouponCode(offer)}
@@ -1019,8 +1048,6 @@ const Bookings: React.FC = () => {
                             className="w-full p-2 sm:p-3 border-2 border-[#b09d94] text-[#3C3A39] rounded-xl bg-[#f5f5f5] text-xs sm:text-sm"
                           />
                         </div>
-
-                        {/* Enhanced Coupon Section */}
                         <div>
                           <label className="block text-xs sm:text-sm font-semibold text-[#78533F] flex items-center mb-2">
                             <span className="mr-2">🎟️</span>Coupon Code
@@ -1060,8 +1087,6 @@ const Bookings: React.FC = () => {
                             )}
                           </div>
                         </div>
-
-                        {/* Available Offers Section */}
                         {offers.length > 0 && (
                           <div className="mb-6 bg-white rounded-2xl shadow-lg p-4 sm:p-6 border-2 border-[#b09d94]">
                             <div className="flex items-center justify-between mb-4">
@@ -1095,7 +1120,6 @@ const Bookings: React.FC = () => {
                             )}
                           </div>
                         )}
-
                         <div>
                           <label className="block text-xs sm:text-sm font-semibold text-[#78533F] flex items-center mb-2">
                             <span className="mr-2">💰</span>Total Amount
@@ -1140,8 +1164,7 @@ const Bookings: React.FC = () => {
                           <p className="text-xs sm:text-sm text-[#78533F] font-medium">Venue: {formData.venueName}</p>
                           <p className="text-xs sm:text-sm text-[#78533F] font-medium">Date: {formData.bookingDate}</p>
                           <p className="text-xs sm:text-sm text-[#78533F] font-medium">
-                            Time:{" "}
-                            {venue?.timeSlots.find((slot) => slot.id === formData.timeSlot)?.label || formData.timeSlot}
+                            Time: {venue?.timeSlots.find((slot) => slot.id === formData.timeSlot)?.label || formData.timeSlot}
                           </p>
                           <p className="text-xs sm:text-sm text-[#78533F] font-medium">
                             Total Amount: {getFormattedPrice(formData.totalAmount, true)}
@@ -1149,6 +1172,11 @@ const Bookings: React.FC = () => {
                           <p className="text-xs sm:text-sm text-[#78533F] font-medium">
                             Advance Amount: {getFormattedPrice(formData.advanceAmount, false)}
                           </p>
+                          {appliedOffer && (
+                            <p className="text-xs sm:text-sm text-[#78533F] font-medium">
+                              Coupon Applied: {appliedOffer.offerCode}
+                            </p>
+                          )}
                         </div>
                         <div>
                           <label className="block text-xs sm:text-sm font-semibold text-[#78533F] flex items-center mb-2">
@@ -1240,9 +1268,31 @@ const Bookings: React.FC = () => {
                         </button>
                       </div>
                       <div className="space-y-4 sm:space-y-6 text-center">
-                        <div className="flex justify-center">
-                          {/* <CheckCircle className="w-12 h-12 sm:w-16 sm:h-16 text-green-500" /> */}
-                        </div>
+                        {vouchers.length > 0 && (
+                          <div className="bg-blue-50 p-3 sm:p-4 rounded-xl border-2 border-blue-200">
+                            <p className="text-sm sm:text-base text-blue-600 font-semibold flex items-center justify-center gap-2">
+                              <Gift className="w-5 h-5" />
+                              You got a voucher!
+                            </p>
+                            <p className="text-xs sm:text-sm text-[#78533F] font-medium">
+                              Voucher Code: {vouchers[0].voucherCode}
+                            </p>
+                            <p className="text-xs sm:text-sm text-[#78533F] font-medium">
+                              Discount: {vouchers[0].discountValue}
+                              {vouchers[0].discountType === "percentage" ? "%" : "₹"} off
+                            </p>
+                            {vouchers[0].termsAndConditions && vouchers[0].termsAndConditions.length > 0 && (
+                              <div className="text-xs text-[#78533F] mt-2">
+                                <p>Terms and Conditions:</p>
+                                <ul className="list-disc pl-4 text-left">
+                                  {vouchers[0].termsAndConditions.map((term, index) => (
+                                    <li key={index}>{term}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        )}
                         <div className="bg-white p-3 sm:p-4 rounded-xl border-2 border-[#b09d94]">
                           <p className="text-xs sm:text-sm text-[#78533F] font-medium">Venue: {formData.venueName}</p>
                           <p className="text-xs sm:text-sm text-[#78533F] font-medium">Date: {formData.bookingDate}</p>
@@ -1267,6 +1317,11 @@ const Bookings: React.FC = () => {
                           <p className="text-xs sm:text-sm text-[#78533F] font-medium">
                             Payment Method: {selectedPaymentMethod}
                           </p>
+                          {appliedOffer && (
+                            <p className="text-xs sm:text-sm text-[#78533F] font-medium">
+                              Coupon Applied: {appliedOffer.offerCode}
+                            </p>
+                          )}
                           <p className="text-xs sm:text-sm text-[#78533F] font-medium">
                             Reference ID: {Math.random().toString(36).substr(2, 9).toUpperCase()}
                           </p>
