@@ -343,52 +343,71 @@ export default function VenueManagement() {
     }
   }
 
-  const handleUpdateVenue = async (): Promise<void> => {
-    if (!selectedVenue) return
+ const handleUpdateVenue = async (): Promise<void> => {
+  if (!selectedVenue) return;
 
-    try {
-      const formData = new FormData()
-      Object.entries(selectedVenue).forEach(([key, value]) => {
-        if (key === "tariff" || key === "cities" || key === "amenities" || key === "timeSlots" || key === "events") {
-          formData.append(key, JSON.stringify(value))
-        } else if (key !== "_id" && value !== null && value !== undefined) {
-          formData.append(key, String(value))
-        }
-      })
-      formData.append("audiUserId", currentUser.id)
+  try {
+    const formData = new FormData();
 
-      editImages.forEach((file) => {
-        if (file) formData.append("images", file)
-      })
-
-      selectedVenue.images.forEach((image, index) => {
-        formData.append(`existingImages[${index}]`, image)
-      })
-
-      const response = await updateVenues(formData, selectedVenue._id)
-      if (response.data.success) {
-        toast.success(response.data.message)
-        setVenues(
-          venues.map((venue) =>
-            venue._id === selectedVenue._id
-              ? {
-                  ...selectedVenue,
-                  images: [...selectedVenue.images, ...editImages.map((file) => URL.createObjectURL(file))],
-                }
-              : venue,
-          ),
-        )
-        setIsEditModalOpen(false)
-        setSelectedVenue(null)
-        setEditImages([])
-      } else {
-        toast.error(response.data.message || "Failed to update venue")
+    // Append venue fields
+    Object.entries(selectedVenue).forEach(([key, value]) => {
+      if (["tariff", "cities", "amenities", "timeSlots", "events"].includes(key)) {
+        formData.append(key, JSON.stringify(value));
+      } else if (key !== "_id" && value !== null && value !== undefined) {
+        formData.append(key, String(value));
       }
-    } catch (error) {
-      console.error("Error updating venue:", error)
-      toast.error("Something went wrong while updating venue")
+    });
+
+    // Only append audiUserId once
+    if (currentUser?.id) {
+      formData.append("audiUserId", currentUser.id);
     }
+
+    // Append newly uploaded images
+    editImages.forEach((file) => {
+      if (file) formData.append("images", file);
+    });
+
+    // Append existing images (for backend to preserve them)
+    if (selectedVenue.images && Array.isArray(selectedVenue.images)) {
+      selectedVenue.images.forEach((image, index) => {
+        formData.append(`existingImages[${index}]`, image);
+      });
+    }
+
+    // Call the update API
+    const response = await updateVenues(formData, selectedVenue._id);
+
+    if (response.data.success) {
+      toast.success(response.data.message);
+
+      // Update UI with new images
+      setVenues(
+        venues.map((venue) =>
+          venue._id === selectedVenue._id
+            ? {
+                ...selectedVenue,
+                images: [
+                  ...selectedVenue.images,
+                  ...editImages.map((file) => URL.createObjectURL(file)),
+                ],
+              }
+            : venue
+        )
+      );
+
+      setIsEditModalOpen(false);
+      setSelectedVenue(null);
+      setEditImages([]);
+    } else {
+      toast.error(response.data.message || "Failed to update venue");
+    }
+  } catch (error) {
+    console.error("Error updating venue:", error);
+    toast.error("Something went wrong while updating venue");
   }
+};
+
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,

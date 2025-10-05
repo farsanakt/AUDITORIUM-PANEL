@@ -115,13 +115,15 @@ export const verifyPswrd=async(id:string,password:string)=>{
 
 }
 
-export const updateVenues=async(id:any,data:any)=>{
+export const updateVenues = async (formData: any, id: string) => {
+  const response = await api.put(`/updatevenues/${id}`, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  return response;
+};
 
-  const response=await api.put('/updatevenues ',{id,data})
-
-  return response
-
-}
 
 export const FindAuidtorium = async (event: string, place: string) => {
   const response = await api.get('/findauditorium', {
