@@ -21,7 +21,7 @@ const AdminRoute = () => {
         <Route path='/allusers' element={<UsersManagement/>}/>
         <Route path='/allvendors' element={<VendorsManagement/>}/>
         <Route path='/allvouchers' element={<VoucherList/>}/>
-        
+        <Route path='/adminstaff' element={<AddAdminStaff/>}/>
         </Routes> 
     </div>
   )
