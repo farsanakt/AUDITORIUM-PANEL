@@ -86,6 +86,8 @@ const AdminDashboard: React.FC = () => {
     { path: '/admin/enquiries', label: 'All Enquiries', icon: Mail, count: stats.totalEnquiries || 0 },
     { path: '/admin/finances', label: 'Total Amount', icon: DollarSign, count: stats.totalAmount ? `₹${stats.totalAmount.toLocaleString()}` : '₹0' },
     { path: '/admin/allvouchers', label: 'All Vouchers', icon: Ticket, count: stats.totalVouchers || 0 },
+    { path: '/admin/adminstaff', label: 'Staff', icon: Users, count: 0 },
+    { path: '/admin/others', label: 'Others', icon: Home, count: 0 },
   ];
 
   return (
