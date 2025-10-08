@@ -1,6 +1,7 @@
 import React, { useState, useEffect, FormEvent } from 'react';
 import { X } from 'lucide-react';
 import Header from '../../component/user/Header';
+import { addAdminStaff, fetchAllAdminStaff } from '../../api/userApi';
 
 interface AdminStaff {
   id: string;
@@ -40,9 +41,8 @@ const StaffList: React.FC = () => {
 
   const fetchStaff = async () => {
     try {
-      const response = await fetch('/api/staff');
-      const data = await response.json();
-      setStaff(data);
+      const response = await fetchAllAdminStaff();
+      setStaff(response.data);
     } catch (error) {
       console.error('Error fetching staff:', error);
     }
@@ -118,11 +118,7 @@ const StaffList: React.FC = () => {
   const handleAddStaff = async (e: FormEvent) => {
     e.preventDefault();
     try {
-      await fetch('/api/staff', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
+      const response=await addAdminStaff(formData)
       setFormData({ id: '', name: '', email: '', password: '', role: 'admin', isActive: true });
       setIsModalOpen(false);
       fetchStaff();

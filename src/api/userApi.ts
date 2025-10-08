@@ -494,3 +494,19 @@ export const updateAuditoriumProfile=async(data:any)=>{
 export const verifyPasswordAndChangeEmail=async(pass:string,email:string)=>{
 
 }
+
+
+//################# Admin ############
+
+export const addAdminStaff=async(formdata:any)=>{
+
+  return await api.post('/addadminstaff',formdata)
+
+}
+
+
+export const fetchAllAdminStaff=async()=>{
+
+  return await api.get('/fetchadminstaff')
+
+}
