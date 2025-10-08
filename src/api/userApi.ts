@@ -510,3 +510,17 @@ export const fetchAllAdminStaff=async()=>{
   return await api.get('/fetchadminstaff')
 
 }
+
+export const updateAdminStaff=async(id:string,data:any)=>{
+
+  console.log(id,'ideeeeeeeeeeeeee')
+
+  return await api.put(`/updateadminstaff/${id}`,data)
+
+}
+
+export const deleteAdminStaff=async(id:string)=>{
+
+  return await api.delete(`/deleteadminstaff/${id}`)
+
+}

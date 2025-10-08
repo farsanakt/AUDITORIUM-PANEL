@@ -1,10 +1,13 @@
 import React, { useState, useEffect, FormEvent } from 'react';
 import { X } from 'lucide-react';
+import { toast, ToastContainer } from 'react-toastify';
+import Swal from 'sweetalert2';
 import Header from '../../component/user/Header';
-import { addAdminStaff, fetchAllAdminStaff } from '../../api/userApi';
+import { addAdminStaff, deleteAdminStaff, fetchAllAdminStaff, updateAdminStaff } from '../../api/userApi';
+import 'react-toastify/dist/ReactToastify.css';
 
 interface AdminStaff {
-  id: string;
+  staffid: string;
   name: string;
   email: string;
   role: string;
@@ -12,7 +15,7 @@ interface AdminStaff {
 }
 
 interface StaffForm {
-  id: string;
+  staffid: string;
   name: string;
   email: string;
   password: string;
@@ -27,7 +30,7 @@ const StaffList: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
   const [formData, setFormData] = useState<StaffForm>({
-    id: '',
+    staffid: '',
     name: '',
     email: '',
     password: '',
@@ -42,43 +45,74 @@ const StaffList: React.FC = () => {
   const fetchStaff = async () => {
     try {
       const response = await fetchAllAdminStaff();
-      setStaff(response.data);
+      if (response) {
+        setStaff(response.data);
+      } else {
+        toast.error(  'Failed to fetch staff');
+      }
     } catch (error) {
+      toast.error('Error fetching staff');
       console.error('Error fetching staff:', error);
     }
   };
 
   const handleEdit = (staffMember: AdminStaff) => {
-    setEditingId(staffMember.id);
+    setEditingId(staffMember.staffid);
     setEditForm({ ...staffMember });
   };
 
-  const handleUpdate = async (e: FormEvent) => {
-    e.preventDefault();
-    if (editForm) {
-      try {
-        await fetch(`/api/staff/${editForm.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(editForm),
-        });
-        setEditingId(null);
-        setEditForm(null);
-        fetchStaff();
-      } catch (error) {
-        console.error('Error updating staff:', error);
-      }
-    }
-  };
+ const handleUpdate = async (e: FormEvent) => {
+  e.preventDefault();
 
-  const handleDelete = async (id: string) => {
-    try {
-      await fetch(`/api/staff/${id}`, {
-        method: 'DELETE',
-      });
-      fetchStaff();
-    } catch (error) {
-      console.error('Error deleting staff:', error);
+  if (!editForm || !editForm.staffid) {
+    toast.error("Invalid staff data");
+    return;
+  }
+
+  try {
+   
+    const response = await updateAdminStaff(editForm.staffid, editForm);
+
+    
+    if (response.data.success) {
+      toast.success(response.data.message || "Staff updated successfully");
+      setEditingId(null);
+      setEditForm(null);
+      fetchStaff()
+    } else {
+      toast.error(response.data.xmessage || "Failed to update staff");
+    }
+  } catch (error: any) {
+    console.error("Error updating staff:", error);
+    toast.error("Something went wrong while updating staff");
+  }
+};
+
+  const handleDelete = async (staffid: string) => {
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: 'Do you want to delete this staff member?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#78533F',
+      cancelButtonColor: '#ED695A',
+      confirmButtonText: 'Yes, delete it!',
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const response=await deleteAdminStaff(staffid)
+        const result = await response.data;
+        if (result.success) {
+          toast.success('Staff deleted successfully');
+          fetchStaff();
+        } else {
+          toast.error(result.message || 'Failed to delete staff');
+        }
+      } catch (error) {
+        toast.error('Error deleting staff');
+        console.error('Error deleting staff:', error);
+      }
     }
   };
 
@@ -98,34 +132,55 @@ const StaffList: React.FC = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleToggleActive = async (id: string) => {
-    const member = staff.find((item) => item.id === id);
+  const handleToggleActive = async (staffid: string) => {
+    const member = staff.find((item) => item.staffid === staffid);
     if (member) {
       const updated = { ...member, isActive: !member.isActive };
       try {
-        await fetch(`/api/staff/${id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(updated),
-        });
-        fetchStaff();
+        const response = await updateAdminStaff(staffid, updated);
+        if (response.data.success) {
+          toast.success('Staff status updated successfully');
+          fetchStaff();
+        } else {
+          toast.error(response.data.message || 'Failed to update staff status');
+        }
       } catch (error) {
+        toast.error('Error toggling active status');
         console.error('Error toggling active status:', error);
       }
     }
   };
 
   const handleAddStaff = async (e: FormEvent) => {
-    e.preventDefault();
-    try {
-      const response=await addAdminStaff(formData)
-      setFormData({ id: '', name: '', email: '', password: '', role: 'admin', isActive: true });
+  e.preventDefault();
+  try {
+    const response = await addAdminStaff(formData);
+
+    // Axios automatically wraps response inside .data
+    const result = response.data;
+
+    if (result.success) {
+      toast.success(result.message || 'Staff added successfully');
+      setFormData({
+        staffid: '',
+        name: '',
+        email: '',
+        password: '',
+        role: 'admin',
+        isActive: true,
+      });
       setIsModalOpen(false);
-      fetchStaff();
-    } catch (error) {
-      console.error('Error adding staff:', error);
+      fetchStaff(); // Refresh the staff list
+    } else {
+      toast.error(result.message || 'Failed to add staff');
     }
-  };
+  } catch (error: any) {
+    toast.error(
+      error.response?.data?.message || 'Error adding staff'
+    );
+    console.error('Error adding staff:', error);
+  }
+};
 
   const openModal = () => {
     setIsModalOpen(true);
@@ -133,12 +188,13 @@ const StaffList: React.FC = () => {
 
   const closeModal = () => {
     setIsModalOpen(false);
-    setFormData({ id: '', name: '', email: '', password: '', role: 'admin', isActive: true });
+    setFormData({ staffid: '', name: '', email: '', password: '', role: 'admin', isActive: true });
   };
 
   return (
     <div className="max-w-4xl mx-auto p-6 bg-white rounded-xl shadow-lg">
       <Header />
+      <ToastContainer position="top-right" autoClose={3000} />
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-[#78533F]">Staff List</h2>
         <button
@@ -162,14 +218,14 @@ const StaffList: React.FC = () => {
             <h2 className="text-2xl font-bold text-[#78533F] mb-4 text-center">Add Admin Staff</h2>
             <form onSubmit={handleAddStaff} className="space-y-4">
               <div>
-                <label htmlFor="id" className="block text-sm font-medium text-[#78533F]">
+                <label htmlFor="staffid" className="block text-sm font-medium text-[#78533F]">
                   Staff ID
                 </label>
                 <input
                   type="text"
-                  id="id"
-                  name="id"
-                  value={formData.id}
+                  id="staffid"
+                  name="staffid"
+                  value={formData.staffid}
                   onChange={handleAddInputChange}
                   className="mt-1 block w-full px-3 py-2 border border-[#b09d94] rounded-full text-sm focus:ring-2 focus:ring-[#ED695A]"
                   required
@@ -229,8 +285,8 @@ const StaffList: React.FC = () => {
                   className="mt-1 block w-full px-3 py-2 border border-[#b09d94] rounded-full text-sm focus:ring-2 focus:ring-[#ED695A]"
                 >
                   <option value="admin">Admin</option>
-                  <option value="editor">Editor</option>
-                  <option value="viewer">Viewer</option>
+                  <option value="staff">Staff</option>
+                  <option value="superadmin">Superadmin</option>
                 </select>
               </div>
               <button
@@ -254,8 +310,8 @@ const StaffList: React.FC = () => {
           <div className="text-[#78533F] font-semibold">Actions</div>
         </div>
         {staff.map((staffMember) => (
-          <div key={staffMember.id} className="p-3 bg-white rounded-lg shadow-sm">
-            {editingId === staffMember.id ? (
+          <div key={staffMember.staffid} className="p-3 bg-white rounded-lg shadow-sm">
+            {editingId === staffMember.staffid ? (
               <form onSubmit={handleUpdate} className="grid grid-cols-5 gap-4">
                 <div>
                   <input
@@ -283,8 +339,8 @@ const StaffList: React.FC = () => {
                     className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-sm focus:ring-2 focus:ring-[#ED695A]"
                   >
                     <option value="admin">Admin</option>
-                    <option value="editor">Editor</option>
-                    <option value="viewer">Viewer</option>
+                    <option value="staff">Staff</option>
+                    <option value="superadmin">Superadmin</option>
                   </select>
                 </div>
                 <div>
@@ -326,7 +382,7 @@ const StaffList: React.FC = () => {
                 <div className="text-[#78533F] py-2">{staffMember.role}</div>
                 <div>
                   <button
-                    onClick={() => handleToggleActive(staffMember.id)}
+                    onClick={() => handleToggleActive(staffMember.staffid)}
                     className={`px-4 py-2 rounded-full font-semibold ${
                       staffMember.isActive
                         ? 'bg-[#78533F] text-white hover:bg-[#634331]'
@@ -344,7 +400,7 @@ const StaffList: React.FC = () => {
                     Edit
                   </button>
                   <button
-                    onClick={() => handleDelete(staffMember.id)}
+                    onClick={() => handleDelete(staffMember.staffid)}
                     className="bg-[#ED695A] text-white px-4 py-2 rounded-full font-semibold hover:bg-[#d45a4e] transition"
                   >
                     Delete
