@@ -235,7 +235,7 @@ const UserRegistrationPage: React.FC = () => {
                 type="submit"
                 className="w-full bg-[#ED695A] text-white font-semibold py-2 rounded-full shadow hover:bg-[#d85c4e] transition-all duration-300 font-serif"
               >
-                Register Auditorium
+                Create Account
               </button>
             </form>
 
