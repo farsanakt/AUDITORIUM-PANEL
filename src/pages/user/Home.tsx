@@ -669,6 +669,7 @@ const HomePage: React.FC = () => {
                     <option value="Trivandrum">Trivandrum</option>
                     <option value="Kannur">Kannur</option>
                     <option value="Calicut">Calicut</option>
+                    <option value="Others">Others</option>
                   </select>
                 </div>
 
@@ -722,6 +723,7 @@ const HomePage: React.FC = () => {
                     <option value="Trivandrum">Trivandrum</option>
                     <option value="Kannur">Kannur</option>
                     <option value="Calicut">Calicut</option>
+                    <option value="others">others</option>
                   </select>
                 </div>
 
