@@ -70,9 +70,19 @@ interface Project {
   category: string
 }
 
+// District to locations mapping
+const districtLocations: Record<string, string[]> = {
+  "Ernakulam": ["Kochi", "Aluva", "Perumbavoor", "Fort Kochi"],
+  "Thiruvananthapuram": ["Trivandrum", "Neyyattinkara", "Kovalam", "Varkala"],
+  "Kannur": ["Kannur", "Thalassery", "Payyanur", "Taliparamba"],
+  "Kozhikode": ["Calicut", "Vatakara", "Koyilandy", "Feroke"],
+  "Others": ["Other Locations"],
+};
+
 const HomePage: React.FC = () => {
   const [isVisible, setIsVisible] = useState<boolean>(false)
   const [formData, setFormData] = useState({
+    district: "",
     place: "",
     date: "",
     event: "",
@@ -153,7 +163,7 @@ const HomePage: React.FC = () => {
             (voucher) => voucher.auditoriumId === venue.audiUserId && voucher.isActive,
           )
           return {
-            id: venue._id,
+            id: venue._id || venue.id || "unknown-" + Math.random().toString(36).substring(2),
             name: venue.name || venue.venueName || "Unknown Venue",
             location: venue.address || "Unknown Location",
             images:
@@ -184,7 +194,7 @@ const HomePage: React.FC = () => {
       setVendorLoading(true)
       setVendorError(null)
       const response = await fetchAllVendors()
-      console.log("Vendors data:", response.data)
+      console.log("Vendors API response:", response.data)
       const vendors = response.data
 
       const groupedVendors: Record<string, Artist[]> = {}
@@ -194,7 +204,7 @@ const HomePage: React.FC = () => {
           groupedVendors[type] = []
         }
         groupedVendors[type].push({
-          id: v._id,
+          id: v._id || v.id || "unknown-" + Math.random().toString(36).substring(2),
           name: v.name,
           role: capitalizeWords(type),
           image: v.images[0] || "/placeholder.svg",
@@ -280,18 +290,20 @@ const HomePage: React.FC = () => {
     setFormData((prev) => ({
       ...prev,
       [name]: value,
+      // Reset place when district changes
+      ...(name === "district" ? { place: "" } : {}),
     }))
   }
 
   const handleSubmit = () => {
     console.log("Form submitted:", formData)
-    const { place, date, event } = formData
-    if (!place || !date || !event) {
-      alert("Please fill in all fields: place, date, and event.")
+    const { district, place, date, event } = formData
+    if (!district || !place || !date || !event) {
+      alert("Please fill in all fields: district, place, date, and event.")
       return
     }
     navigate(
-      `/auditoriumlist?place=${encodeURIComponent(place)}&date=${encodeURIComponent(date)}&event=${encodeURIComponent(event)}`,
+      `/auditoriumlist?district=${encodeURIComponent(district)}&place=${encodeURIComponent(place)}&date=${encodeURIComponent(date)}&event=${encodeURIComponent(event)}`,
     )
   }
 
@@ -419,9 +431,24 @@ const HomePage: React.FC = () => {
                       <img
                         src={artist.image || "/placeholder.svg"}
                         alt={artist.name}
-                        className="w-full h-full object-cover rounded-xl"
+                        className="w-full h-full object-cover rounded-xl cursor-pointer z-20"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          console.log(`Navigating to vendor details with ID: ${artist.id}`)
+                          if (artist.id) {
+                            try {
+                              navigate(`/vendordetails/${artist.id}`)
+                            } catch (err) {
+                              console.error("Navigation error:", err)
+                              alert("Failed to navigate to vendor details. Please try again.")
+                            }
+                          } else {
+                            console.error("Vendor ID is undefined")
+                            alert("Vendor ID is missing.")
+                          }
+                        }}
                       />
-                      <div className="absolute inset-0 bg-black opacity-20 group-hover:opacity-30 transition duration-300 rounded-xl"></div>
+                      <div className="absolute inset-0 bg-black opacity-20 group-hover:opacity-30 transition duration-300 rounded-xl pointer-events-none"></div>
                     </div>
                     <div className="p-3 text-left card-content transition-transform duration-300">
                       <h3 className="text-lg sm:text-xl font-medium text-[#5B4336]">{artist.name}</h3>
@@ -498,6 +525,7 @@ const HomePage: React.FC = () => {
             font-size: 0.75rem;
             line-height: 1rem;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            pointer-events: none;
           }
           .offer-badge {
             background-color: #ef4444;
@@ -518,6 +546,7 @@ const HomePage: React.FC = () => {
             font-family: Arial, sans-serif;
             z-index: 10;
             border: 3px dashed #ED695A;
+            pointer-events: none;
           }
           .voucher-left {
             width: 50px;
@@ -574,6 +603,7 @@ const HomePage: React.FC = () => {
             text-decoration: underline;
             cursor: pointer;
             text-align: center;
+            pointer-events: auto;
           }
           .voucher-card::before {
             content: '';
@@ -610,7 +640,7 @@ const HomePage: React.FC = () => {
           }}
         ></div>
 
-        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/20 w-full h-full"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/20 w-full h-full pointer-events-none"></div>
 
         <div className="absolute top-0 left-0 right-0 z-50">
           <Header />
@@ -659,20 +689,32 @@ const HomePage: React.FC = () => {
                 <div className="relative">
                   <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
                   <select
+                    name="district"
+                    value={formData.district}
+                    onChange={handleInputChange}
+                    className="w-full h-10 pl-10 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+                  >
+                    <option value="">Select District</option>
+                    {Object.keys(districtLocations).map((district) => (
+                      <option key={district} value={district}>{district}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
+                  <select
                     name="place"
                     value={formData.place}
                     onChange={handleInputChange}
                     className="w-full h-10 pl-10 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+                    disabled={!formData.district}
                   >
                     <option value="">Select Place</option>
-                    <option value="Kochi">Kochi</option>
-                    <option value="Trivandrum">Trivandrum</option>
-                    <option value="Kannur">Kannur</option>
-                    <option value="Calicut">Calicut</option>
-                    <option value="Others">Others</option>
+                    {formData.district && districtLocations[formData.district]?.map((place) => (
+                      <option key={place} value={place}>{place}</option>
+                    ))}
                   </select>
                 </div>
-
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
                   <input
@@ -683,7 +725,6 @@ const HomePage: React.FC = () => {
                     className="w-full h-10 pl-10 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
                   />
                 </div>
-
                 <div className="relative">
                   <Flag className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
                   <select
@@ -699,7 +740,6 @@ const HomePage: React.FC = () => {
                     <option value="anniversary">Anniversary</option>
                   </select>
                 </div>
-
                 <button
                   onClick={handleSubmit}
                   className="h-10 px-4 w-full bg-[#9c7c5d] text-white rounded-md font-medium hover:bg-[#8b6b4a] transition duration-300 flex items-center justify-center gap-2 text-sm"
@@ -713,20 +753,32 @@ const HomePage: React.FC = () => {
                 <div className="relative">
                   <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4 sm:w-5 sm:h-5" />
                   <select
+                    name="district"
+                    value={formData.district}
+                    onChange={handleInputChange}
+                    className="w-full h-10 sm:h-12 pl-10 sm:pl-12 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+                  >
+                    <option value="">Select District</option>
+                    {Object.keys(districtLocations).map((district) => (
+                      <option key={district} value={district}>{district}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4 sm:w-5 sm:h-5" />
+                  <select
                     name="place"
                     value={formData.place}
                     onChange={handleInputChange}
                     className="w-full h-10 sm:h-12 pl-10 sm:pl-12 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+                    disabled={!formData.district}
                   >
                     <option value="">Select Place</option>
-                    <option value="Kochi">Kochi</option>
-                    <option value="Trivandrum">Trivandrum</option>
-                    <option value="Kannur">Kannur</option>
-                    <option value="Calicut">Calicut</option>
-                    <option value="others">others</option>
+                    {formData.district && districtLocations[formData.district]?.map((place) => (
+                      <option key={place} value={place}>{place}</option>
+                    ))}
                   </select>
                 </div>
-
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4 sm:w-5 sm:h-5" />
                   <input
@@ -737,7 +789,6 @@ const HomePage: React.FC = () => {
                     className="w-full h-10 sm:h-12 pl-10 sm:pl-12 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
                   />
                 </div>
-
                 <div className="relative">
                   <Flag className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4 sm:w-5 sm:h-5" />
                   <select
@@ -753,10 +804,9 @@ const HomePage: React.FC = () => {
                     <option value="anniversary">Anniversary</option>
                   </select>
                 </div>
-
                 <button
                   onClick={handleSubmit}
-                  className="h-10 sm:h-12 px-4 w-full bg-[#9c7c5d] text-white rounded-md font-medium hover:bg-[#8b6b4a] transition duration-300 flex items-center justify-center gap-2 text-sm"
+                  className="h-10 sm:h-12 px-4 w-full col-span-2 bg-[#9c7c5d] text-white rounded-md font-medium hover:bg-[#8b6b4a] transition duration-300 flex items-center justify-center gap-2 text-sm"
                 >
                   <span>Find Venues</span>
                   <Search className="w-4 h-4" />
@@ -861,10 +911,25 @@ const HomePage: React.FC = () => {
                         <img
                           src={venue.images[0] || "/placeholder.svg"}
                           alt={venue.name}
-                          className="w-full h-full object-cover rounded-xl"
+                          className="w-full h-full object-cover rounded-xl cursor-pointer z-20"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            console.log(`Navigating to venue details with ID: ${venue.id}`)
+                            if (venue.id) {
+                              try {
+                                navigate(`/venuelist/${venue.id}`)
+                              } catch (err) {
+                                console.error("Navigation error:", err)
+                                alert("Failed to navigate to venue details. Please try again.")
+                              }
+                            } else {
+                              console.error("Venue ID is undefined")
+                              alert("Venue ID is missing.")
+                            }
+                          }}
                         />
-                        <div className="absolute inset-0 bg-black opacity-20 group-hover:opacity-30 transition duration-300 rounded-xl"></div>
-                        <div className="absolute top-2 left-2 space-y-1">
+                        <div className="absolute inset-0 bg-black opacity-20 group-hover:opacity-30 transition duration-300 rounded-xl pointer-events-none"></div>
+                        <div className="absolute top-2 left-2 space-y-1 z-10">
                           {venue.offer && (
                             <div className="offer-badge">
                               {venue.offer.discountValue}
