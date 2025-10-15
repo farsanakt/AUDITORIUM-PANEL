@@ -738,6 +738,7 @@ const HomePage: React.FC = () => {
                     <option value="engagement">Engagement</option>
                     <option value="reception">Reception</option>
                     <option value="anniversary">Anniversary</option>
+                    <option value="others">others</option>
                   </select>
                 </div>
                 <button
@@ -802,6 +803,7 @@ const HomePage: React.FC = () => {
                     <option value="engagement">Engagement</option>
                     <option value="reception">Reception</option>
                     <option value="anniversary">Anniversary</option>
+                    <option value="others">others</option>
                   </select>
                 </div>
                 <button

@@ -1328,6 +1328,15 @@ const Bookings: React.FC = () => {
                         </div>
                         {eventType.toLowerCase() === "wedding" ? (
                           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mt-4 sm:mt-6">
+                             <button
+                              onClick={() => {
+                                closeModal()
+                                navigate(`/details/${currentUser?.email}`)
+                              }}
+                              className="w-full sm:w-auto bg-[#ED695A] hover:bg-[#d85c4e] text-white py-2 sm:py-3 px-4 sm:px-6 rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl transform hover:scale-105 text-xs sm:text-sm"
+                            >
+                              Apply Marriage Certificate 
+                            </button>
                             <button
                               onClick={() => {
                                 closeModal()
@@ -1337,15 +1346,7 @@ const Bookings: React.FC = () => {
                             >
                               Later
                             </button>
-                            <button
-                              onClick={() => {
-                                closeModal()
-                                navigate(`/details/${currentUser?.email}`)
-                              }}
-                              className="w-full sm:w-auto bg-[#ED695A] hover:bg-[#d85c4e] text-white py-2 sm:py-3 px-4 sm:px-6 rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl transform hover:scale-105 text-xs sm:text-sm"
-                            >
-                              Marriage Certificate Details
-                            </button>
+                           
                           </div>
                         ) : (
                           <button

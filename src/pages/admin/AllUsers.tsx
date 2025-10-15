@@ -21,8 +21,6 @@ interface User {
   updatedAt: string;
 }
 
-
-
 const toggleBlockUserAPI = async (id: string, isBlocked: boolean): Promise<{ success: boolean; message: string }> => ({
   success: true,
   message: `User ${isBlocked ? 'blocked' : 'unblocked'} successfully`,
@@ -32,13 +30,21 @@ const UsersManagement: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const usersPerPage = 5;
+
   const { currentUser } = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {
     const fetchUsers = async () => {
       try {
         const response = await fetchAllUsers();
-        setUsers(Array.isArray(response.data) ? response.data : []);
+        const sortedUsers = Array.isArray(response.data)
+          ? response.data.sort((a: User, b: User) => 
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            )
+          : [];
+        setUsers(sortedUsers);
       } catch (error: unknown) {
         toast.error('Failed to load users.');
       }
@@ -88,6 +94,17 @@ const UsersManagement: React.FC = () => {
       user.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Pagination logic
+  const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
+  const indexOfLastUser = currentPage * usersPerPage;
+  const indexOfFirstUser = indexOfLastUser - usersPerPage;
+  const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
+
+  const handlePageChange = (pageNumber: number) => {
+    setCurrentPage(pageNumber);
+    setExpandedUser(null); // Collapse any expanded user when changing pages
+  };
+
   return (
     <div className="min-h-screen bg-[#FDF8F1] flex flex-col">
       <Header />
@@ -109,12 +126,12 @@ const UsersManagement: React.FC = () => {
         </div>
 
         <div className="bg-white rounded-lg shadow-sm border border-[#b09d94]">
-          {filteredUsers.length === 0 ? (
+          {currentUsers.length === 0 ? (
             <div className="py-12 text-center">
               <p className="text-gray-600 font-serif text-lg">No users found</p>
             </div>
           ) : (
-            filteredUsers.map((user) => (
+            currentUsers.map((user) => (
               <div key={user._id} className="p-4 hover:bg-[#FDF8F1] transition-colors">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div
@@ -136,6 +153,9 @@ const UsersManagement: React.FC = () => {
                     </div>
                   </div>
                   <div className="flex items-center space-x-3 flex-shrink-0">
+                    <div className="text-sm text-gray-600">
+                      Joined: {new Date(user.createdAt).toLocaleDateString()}
+                    </div>
                     <button
                       onClick={() => toggleBlockUser(user._id, !user.isBlocked, `${user.firstName} ${user.lastName}`)}
                       className={`p-2 rounded-lg ${user.isBlocked ? 'hover:bg-green-50 text-green-600' : 'hover:bg-red-50 text-red-600'}`}
@@ -178,6 +198,38 @@ const UsersManagement: React.FC = () => {
             ))
           )}
         </div>
+
+        {totalPages > 1 && (
+          <div className="mt-6 flex justify-center space-x-2">
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="px-4 py-2 border border-[#b09d94] rounded-lg text-sm font-medium text-[#78533F] disabled:opacity-50 hover:bg-[#FDF8F1]"
+            >
+              Previous
+            </button>
+            {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
+              <button
+                key={page}
+                onClick={() => handlePageChange(page)}
+                className={`px-4 py-2 border border-[#b09d94] rounded-lg text-sm font-medium ${
+                  currentPage === page
+                    ? 'bg-[#78533F] text-white'
+                    : 'text-[#78533F] hover:bg-[#FDF8F1]'
+                }`}
+              >
+                {page}
+              </button>
+            ))}
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="px-4 py-2 border border-[#b09d94] rounded-lg text-sm font-medium text-[#78533F] disabled:opacity-50 hover:bg-[#FDF8F1]"
+            >
+              Next
+            </button>
+          </div>
+        )}
       </main>
     </div>
   );
