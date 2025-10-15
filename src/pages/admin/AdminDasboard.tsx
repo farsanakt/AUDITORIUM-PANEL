@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { RootState } from '../../redux/store';
 import { toast } from 'react-toastify';
-import { Home, Users, Building, DollarSign, Mail, Ticket } from 'lucide-react';
+import { Home, Users, Building, DollarSign, Mail, Ticket, Calendar } from 'lucide-react';
 import Header from '../../component/user/Header';
 import { findCount } from '../../api/userApi';
 
@@ -14,6 +14,7 @@ interface DashboardStats {
   totalAmount: number;
   totalEnquiries: number;
   totalVouchers: number;
+  totalBookings: number;
 }
 
 interface RecentActivity {
@@ -37,11 +38,12 @@ const fallbackStats: DashboardStats = {
   totalAmount: 0,
   totalEnquiries: 0,
   totalVouchers: 0,
+  totalBookings: 0,
 };
 
 const AdminDashboard: React.FC = () => {
   const { currentUser } = useSelector((state: RootState) => state.auth);
-  const [stats, setStats] = useState<DashboardStats>(fallbackStats); // Initialize with fallback to avoid null
+  const [stats, setStats] = useState<DashboardStats>(fallbackStats);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   
@@ -51,7 +53,7 @@ const AdminDashboard: React.FC = () => {
     try {
       setIsLoading(true);
       const response = await findCount();
-      console.log('API Response:', response); // Debug the full response
+      console.log('API Response:', response);
       const backendData = response.data?.data || {};
       const dashboardStats: DashboardStats = {
         totalUsers: Number(backendData.totalUsers) || 0,
@@ -60,6 +62,7 @@ const AdminDashboard: React.FC = () => {
         totalAmount: Number(backendData.totalAmount) || 0,
         totalEnquiries: Number(backendData.totalEnquiries) || 0,
         totalVouchers: Number(backendData.totalVouchers) || 0,
+        totalBookings: Number(backendData.totalBookings) || 0,
       };
       console.log('Mapped stats:', dashboardStats);
       setStats(dashboardStats);
@@ -68,7 +71,7 @@ const AdminDashboard: React.FC = () => {
       console.error('API error:', error);
       setError(errorMessage);
       toast.error(errorMessage);
-      setStats(fallbackStats); // Use fallback on error
+      setStats(fallbackStats);
     } finally {
       setIsLoading(false);
     }
@@ -83,6 +86,7 @@ const AdminDashboard: React.FC = () => {
     { path: '/admin/allaudilist', label: 'All Auditoriums', icon: Building, count: stats.totalAuditoriums || 0 },
     { path: '/admin/allusers', label: 'All Users', icon: Users, count: stats.totalUsers || 0 },
     { path: '/admin/allvendors', label: 'All Vendors', icon: Users, count: stats.totalVendors || 0 },
+    { path: '/admin/allauditoriumbookings', label: 'All Auditorium Bookings', icon: Calendar, count: stats.totalBookings || 0 },
     { path: '/admin/enquiries', label: 'All Enquiries', icon: Mail, count: stats.totalEnquiries || 0 },
     { path: '/admin/finances', label: 'Total Amount', icon: DollarSign, count: stats.totalAmount ? `₹${stats.totalAmount.toLocaleString()}` : '₹0' },
     { path: '/admin/allvouchers', label: 'All Vouchers', icon: Ticket, count: stats.totalVouchers || 0 },
