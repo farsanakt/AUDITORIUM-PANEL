@@ -287,6 +287,7 @@ const StaffList: React.FC = () => {
                   <option value="admin">Admin</option>
                   <option value="staff">Staff</option>
                   <option value="superadmin">Superadmin</option>
+                  <option value="accounts">Accounts</option>
                 </select>
               </div>
               <button

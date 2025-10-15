@@ -8,6 +8,7 @@ import UsersManagement from "../admin/AllUsers"
 import VendorsManagement from "../admin/AllVendors"
 import VoucherList from "../admin/VoucherList"
 import AddAdminStaff from "../admin/AdminStaff"
+import BookingsManagement from "../admin/AllAuditoriumBookings"
 
 const AdminRoute = () => {
 
@@ -22,6 +23,7 @@ const AdminRoute = () => {
         <Route path='/allvendors' element={<VendorsManagement/>}/>
         <Route path='/allvouchers' element={<VoucherList/>}/>
         <Route path='/adminstaff' element={<AddAdminStaff/>}/>
+        <Route path='/allauditoriumbookings' element={<BookingsManagement/>}/>
         </Routes> 
     </div>
   )

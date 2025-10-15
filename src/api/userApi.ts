@@ -524,3 +524,10 @@ export const deleteAdminStaff=async(id:string)=>{
   return await api.delete(`/deleteadminstaff/${id}`)
 
 }
+
+
+export const allAuditoriumBookings=async()=>{
+
+  return await api.get('/allauditoriumbokkings')
+
+}
