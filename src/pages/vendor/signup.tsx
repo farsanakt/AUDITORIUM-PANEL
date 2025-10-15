@@ -20,7 +20,16 @@ const VendorRegistration: React.FC = () => {
     confirmPassword: "",
   })
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const vendorTypes = [
+    "Caterer",
+    "Photographer",
+    "Decorator",
+    "Event Planner",
+    "Venue Provider",
+    "Entertainer"
+  ]
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     setFormData({
       ...formData,
@@ -84,16 +93,19 @@ const VendorRegistration: React.FC = () => {
                   <label htmlFor="vendortype" className="block text-[#78533F] font-medium text-sm">
                     Vendor Type
                   </label>
-                  <input
-                    type="text"
+                  <select
                     id="vendortype"
                     name="vendortype"
                     className="w-full px-3 py-2 border border-[#b09d94] rounded-full focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200 text-sm"
                     value={formData.vendortype}
                     onChange={handleChange}
-                    placeholder="Enter vendor type"
                     required
-                  />
+                  >
+                    <option value="" disabled>Select vendor type</option>
+                    {vendorTypes.map((type) => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
+                  </select>
                 </div>
                 <div className="space-y-1">
                   <label htmlFor="email" className="block text-[#78533F] font-medium text-sm">
