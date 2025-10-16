@@ -2,8 +2,9 @@ import React, { useState, useEffect } from "react";
 import { FaUserCircle } from "react-icons/fa";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import type { RootState } from "../../redux/store"
-import { logout } from "../../redux/slices/authSlice"
+import type { RootState } from "../../redux/store";
+import { logout } from "../../redux/slices/authSlice";
+import { currentVendorUserData } from "../../api/userApi";
 
 const Sidebar: React.FC = () => {
   const location = useLocation();
@@ -11,22 +12,35 @@ const Sidebar: React.FC = () => {
   const dispatch = useDispatch();
   const { currentUser } = useSelector((state: RootState) => state.auth);
   const [activeItem, setActiveItem] = useState<string>("/vendor/dashboard");
+  const [vendorData, setVendorData] = useState<any>(null);
 
   const getUsernameFromEmail = (email: string | undefined): string => {
     if (!email || !email.includes("@")) {
       return "Guest";
     }
     const username = email.split("@")[0];
-    return username || "Guest"
+    return username || "Guest";
+  };
+
+  const currentVendor = async () => {
+    try {
+      const response = await currentVendorUserData(currentUser?.id as string);
+      setVendorData(response.data);
+    } catch (error) {
+      console.error("Error fetching vendor data:", error);
+    }
   };
 
   useEffect(() => {
+    currentVendor();
+
     const validPaths = [
-      "/vendor/dashboard", 
-      "/vendor/vendorenquires", 
-      "/vendor/addvendor", 
-      "/vendor/vouchers", // ✅ added here
-      "#"
+      "/vendor/dashboard",
+      "/vendor/vendorenquires",
+      "/vendor/addvendor",
+      "/vendor/vouchers",
+      "/vendor/subscription",
+      "#",
     ];
     if (validPaths.includes(location.pathname)) {
       setActiveItem(location.pathname);
@@ -35,17 +49,27 @@ const Sidebar: React.FC = () => {
     }
   }, [location.pathname]);
 
-  const menuItems = [
+  // Base menu items
+  const baseMenuItems = [
     { title: "Dashboard", path: "/vendor/dashboard" },
     { title: "Vendor Enquires", path: "/vendor/vendorenquires" },
     { title: "Vendor", path: "/vendor/addvendor" },
-    { title: "Voucher", path: "/vendor/vouchers" }, // ✅ new Voucher item
+    { title: "Voucher", path: "/vendor/vouchers" },
     { title: "Settings", path: "#" },
   ];
 
+  // ✅ Add "Subscription" option only if vendor is verified
+  const menuItems = vendorData?.isVerified
+    ? [
+        ...baseMenuItems.slice(0, 4),
+        { title: "Subscription", path: "/vendor/subscription" },
+        ...baseMenuItems.slice(4),
+      ]
+    : baseMenuItems;
+
   const handleLogout = () => {
-    dispatch(logout())
-    navigate("/login")
+    dispatch(logout());
+    navigate("/login");
   };
 
   return (

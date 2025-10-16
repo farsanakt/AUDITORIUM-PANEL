@@ -41,7 +41,7 @@ const Sidebar: React.FC = () => {
   };
 
   useEffect(() => {
-    console.log("Fetching user data...");
+    console.log("Fetching user data...",currentUser);
     currentAuditoriumUser();
   }, []);
 

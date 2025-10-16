@@ -459,8 +459,10 @@ export const fetchAllVendors=async()=>{
 }
 
 export const singleVendorDetails=async(id:string)=>{
-
+  
   const response=await api.get(`/singlevendor/${id}`)
+  
+    console.log('koooooo',response)
 
   return response
 
