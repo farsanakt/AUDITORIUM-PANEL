@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import Header from "../../component/user/Header";
 import { useSelector } from "react-redux";
 import type { RootState } from "../../redux/store";
-import { existingAllVenues, upComingEvents } from "../../api/userApi";
+import { existingAllVenues, fetchAuditoriumUserdetails, upComingEvents } from "../../api/userApi";
 import { X } from "lucide-react";
 
 const formatDate = (dateString: string) => {
@@ -22,7 +22,6 @@ const formatDate = (dateString: string) => {
 };
 
 const isTodayOrFuture = (dateString: string) => {
-  console.log("hiiii");
   if (!dateString) return false;
   try {
     const eventDate = new Date(dateString);
@@ -45,15 +44,19 @@ const DashboardOverview = () => {
   const [showAllEvents, setShowAllEvents] = useState<boolean>(false);
   const [showModal, setShowModal] = useState<boolean>(false);
   const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
+  const [isVerified, setIsVerified] = useState<boolean>(false);
   const { currentUser } = useSelector((state: RootState) => state.auth);
 
   const fetchAllVenues = async () => {
     try {
       if (currentUser) {
         const response = await existingAllVenues(currentUser.id);
-        console.log("Venues response:", response.data);
         if (response.data) {
           setVenues(response.data);
+          // Set default venue to the only venue if exactly one exists
+          if (response.data.length === 1) {
+            setSelectedVenue(response.data[0]._id);
+          }
         }
       }
     } catch (error) {
@@ -61,14 +64,24 @@ const DashboardOverview = () => {
     }
   };
 
+  const fetchUserData = async (): Promise<void> => {
+    try {
+      const response = await fetchAuditoriumUserdetails(currentUser?.id);
+      if (response.data) {
+        setAuditoriumName(response.data.auditoriumName || "");
+        setIsVerified(response.data.isVerified || false);
+      }
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+    }
+  };
+
   const fetchAllUpcomingEvents = async () => {
     try {
       if (currentUser) {
         const response = await upComingEvents(currentUser.id);
-        console.log("Upcoming events response:", response.data);
         if (response.data && Array.isArray(response.data.events)) {
           setUpcomingEvents(response.data.events);
-          setAuditoriumName(response.data.auditoriumName || "");
         } else {
           console.warn("No valid events array in response:", response.data);
           setUpcomingEvents([]);
@@ -81,30 +94,20 @@ const DashboardOverview = () => {
   };
 
   useEffect(() => {
+    fetchUserData();
     fetchAllVenues();
     fetchAllUpcomingEvents();
   }, [currentUser]);
 
-  useEffect(() => {
-    console.log("Current upcomingEvents state:", upcomingEvents);
-  }, [upcomingEvents]);
+  useEffect(() => {}, [upcomingEvents]);
 
   useEffect(() => {
     if (upcomingEvents.length > 0) {
-      console.log("Sample event structure:", upcomingEvents[0]);
-      console.log("Available date fields:", {
-        bookeddate: upcomingEvents[0]?.bookeddate,
-        bookedDate: upcomingEvents[0]?.bookedDate,
-        eventDate: upcomingEvents[0]?.eventDate,
-        date: upcomingEvents[0]?.date,
-        createdAt: upcomingEvents[0]?.createdAt,
-        updatedAt: upcomingEvents[0]?.updatedAt,
-      });
     }
   }, [upcomingEvents]);
 
   const allVenues = [
-    { id: "All Venues", name: "All-Venues" },
+    ...(venues.length > 1 ? [{ id: "All Venues", name: "All-Venues" }] : []),
     ...venues.map((venue) => ({ id: venue._id, name: venue.name })),
   ];
 
@@ -136,18 +139,15 @@ const DashboardOverview = () => {
           const dateB = new Date(b.rawDate || 0);
           return dateA.getTime() - dateB.getTime();
         });
-
       return allEvents;
     } else {
       const filteredEvents = upcomingEvents
         .filter((event) => {
           const eventVenueId = event.venueId || event.venue_id;
           const eventDate = event.bookeddate || event.eventDate || event.date;
-          console.log("Event venue ID:", eventVenueId, "Selected venue:", selectedVenue);
           return eventVenueId === selectedVenue && isTodayOrFuture(eventDate);
         })
         .map((event, index) => {
-          console.log("Processing filtered event:", event);
           return {
             id: event._id || `fallback-${index}`,
             name: event.eventName || event.name || event.venueName || `Event ${index + 1}`,
@@ -168,8 +168,6 @@ const DashboardOverview = () => {
           const dateB = new Date(b.rawDate || 0);
           return dateA.getTime() - dateB.getTime();
         });
-
-      console.log("Processed filtered events:", filteredEvents);
       return filteredEvents;
     }
   };
@@ -194,10 +192,6 @@ const DashboardOverview = () => {
 
   const hasMoreEvents = currentVenueData.upcomingEvents.length > 4;
 
-  console.log("Current venue data:", currentVenueData);
-  console.log("Selected venue:", selectedVenue);
-  console.log("Filtered events:", currentVenueData.upcomingEvents);
-
   const handleEventClick = (event: any) => {
     setSelectedEvent(event);
     setShowModal(true);
@@ -212,22 +206,23 @@ const DashboardOverview = () => {
     <div className="flex flex-col min-h-screen">
       <Header />
       <div className="flex flex-1">
-        {/* Main content area, adjusts with sidebar */}
         <main className="flex-1 p-4 py-6 w-full max-w-7xl mx-auto sm:px-6 lg:px-8">
           <div className="mb-6">
             <h2 className="text-2xl font-bold text-[#78533F] sm:text-3xl">
               Welcome to the Auditorium{" "}
-              <br/>
-              <br/>
+              <br />
+              <br />
               <span className="text-3xl bg-[#ED695A] text-white px-1 rounded">{auditoriumName.toUpperCase() || "N/A"}</span>
             </h2>
-            <br/>
+            <p className={`text-sm font-medium mt-2 ${isVerified ? 'text-green-600' : 'text-red-600'}`}>
+              {isVerified ? 'Verified Successfully' : 'Not Verified - Please verify your auditorium'}
+            </p>
+            <br />
             <p className="text-gray-600 text-sm sm:text-base mt-1">
               Hello! Here's what's happening with your venues today.
             </p>
           </div>
 
-          {/* Venue Selection */}
           <div className="mb-6">
             <label htmlFor="venue-select" className="block text-sm font-medium text-gray-700 mb-2">
               Select Venue
@@ -237,7 +232,6 @@ const DashboardOverview = () => {
                 id="venue-select"
                 value={selectedVenue}
                 onChange={(e) => {
-                  console.log("Venue selection changed to:", e.target.value);
                   setSelectedVenue(e.target.value);
                 }}
                 className="block w-full max-w-xs px-4 py-3 pr-10 text-base border border-gray-300 rounded-lg bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-[#ED695A] focus:border-[#ED695A] transition-colors duration-200"
@@ -268,7 +262,6 @@ const DashboardOverview = () => {
             </p>
           </div>
 
-          {/* Stats Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
             <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm">
               <div className="flex items-center justify-between mb-4">
@@ -417,7 +410,6 @@ const DashboardOverview = () => {
             </div>
           </div>
 
-          {/* Toggle for Upcoming Events */}
           <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-8">
             <div className="border-b border-gray-200">
               <div className="flex">
@@ -435,7 +427,6 @@ const DashboardOverview = () => {
               </div>
             </div>
 
-            {/* Upcoming Events Content */}
             {activeSection === "upcoming" && (
               <div className="p-4 sm:p-6">
                 {eventsToDisplay.length > 0 ? (
@@ -491,7 +482,6 @@ const DashboardOverview = () => {
                       </div>
                     ))}
 
-                    {/* Show More/Show Less Button */}
                     {hasMoreEvents && (
                       <div className="pt-4 border-t border-gray-100">
                         <button
@@ -555,7 +545,6 @@ const DashboardOverview = () => {
             )}
           </div>
 
-          {/* Event Details Modal */}
           {showModal && selectedEvent && (
             <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
               <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -593,7 +582,7 @@ const DashboardOverview = () => {
                       <p className="text-gray-700">
                         <strong>Status:</strong>{" "}
                         <span
-                          className={`inline-block px-2 py-1 text-xs rounded-full ml-2 ${
+                          className={`inline-block px-2 py-1 text-xs rounded-full ${
                             selectedEvent.status.toLowerCase() === "pending"
                               ? "bg-amber-100 text-amber-800"
                               : selectedEvent.status.toLowerCase() === "approved"
