@@ -919,7 +919,7 @@ const HomePage: React.FC = () => {
                             console.log(`Navigating to venue details with ID: ${venue.id}`)
                             if (venue.id) {
                               try {
-                                navigate(`/venuelist/${venue.id}`)
+                                navigate(`/auditoriumdetails/${venue.id}`)
                               } catch (err) {
                                 console.error("Navigation error:", err)
                                 alert("Failed to navigate to venue details. Please try again.")
