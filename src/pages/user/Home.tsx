@@ -8,6 +8,22 @@ import pjct1 from "../../assets/Rectangle 30.png"
 import { useNavigate } from "react-router-dom"
 import { existingVenues, fetchAllExistingOffer, fetchAllExistingVouchers, fetchAllVendors } from "../../api/userApi"
 
+// Toast component from Sera UI
+const Toast = ({ message, type = "error", onClose }: { message: string; type?: string; onClose: () => void }) => {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onClose();
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  return (
+    <div className={`fixed bottom-4 right-4 z-50 p-4 rounded-lg shadow-lg text-white ${type === "error" ? "bg-red-600" : "bg-green-600"}`}>
+      {message}
+    </div>
+  );
+};
+
 interface Service {
   id: number
   title: string
@@ -99,6 +115,7 @@ const HomePage: React.FC = () => {
   const [activeSection, setActiveSection] = useState<string>("all")
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedVoucher, setSelectedVoucher] = useState<Voucher | null>(null)
+  const [toast, setToast] = useState<{ message: string; type: string } | null>(null)
   const navigate = useNavigate()
 
   const venuesRef = useRef<HTMLDivElement>(null)
@@ -290,7 +307,6 @@ const HomePage: React.FC = () => {
     setFormData((prev) => ({
       ...prev,
       [name]: value,
-      // Reset place when district changes
       ...(name === "district" ? { place: "" } : {}),
     }))
   }
@@ -299,7 +315,7 @@ const HomePage: React.FC = () => {
     console.log("Form submitted:", formData)
     const { district, place, date, event } = formData
     if (!district || !place || !date || !event) {
-      alert("Please fill in all fields: district, place, date, and event.")
+      setToast({ message: "Please fill in all fields: district, place, date, and event.", type: "error" })
       return
     }
     navigate(
@@ -722,6 +738,7 @@ const HomePage: React.FC = () => {
                     name="date"
                     value={formData.date}
                     onChange={handleInputChange}
+                    min={new Date().toISOString().split("T")[0]}
                     className="w-full h-10 pl-10 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
                   />
                 </div>
@@ -787,6 +804,7 @@ const HomePage: React.FC = () => {
                     name="date"
                     value={formData.date}
                     onChange={handleInputChange}
+                    min={new Date().toISOString().split("T")[0]}
                     className="w-full h-10 sm:h-12 pl-10 sm:pl-12 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
                   />
                 </div>
@@ -1079,6 +1097,14 @@ const HomePage: React.FC = () => {
             </button>
           </div>
         </div>
+      )}
+
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
       )}
     </div>
   )
