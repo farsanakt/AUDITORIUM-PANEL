@@ -43,6 +43,7 @@ interface Venue {
   phone: string
   altPhone?: string
   pincode: string
+  district:string
   email: string
   panchayat: string
   cities: string[]
@@ -62,6 +63,8 @@ interface Venue {
   images: string[]
   timeSlots: TimeSlot[]
   events: string[]
+  youtubeLink?: string
+  guestRooms?: number
 }
 
 interface RootState {
@@ -81,6 +84,7 @@ interface UserData {
   corporation: string
   phone?: string
   email?: string
+  district:string
 }
 
 const fixedTimeSlots: TimeSlot[] = [
@@ -164,6 +168,9 @@ export default function VenueManagement() {
     totalamount: "",
     advAmnt: "",
     events: [],
+    youtubeLink: "",
+    guestRooms: 0,
+    district:''
   })
   const [customTimeSlot, setCustomTimeSlot] = useState({
     label: "",
@@ -172,6 +179,7 @@ export default function VenueManagement() {
   })
   const [userData, setUserData] = useState<UserData | null>(null)
   const [locationLabel, setLocationLabel] = useState("Panchayat")
+  const [errors, setErrors] = useState<{ [key: string]: string }>({})
 
   const { currentUser } = useSelector((state: RootState) => state.auth)
 
@@ -195,6 +203,7 @@ export default function VenueManagement() {
         corporation: response.data.corporation,
         phone: response.data.phone,
         email: currentUser.email || "example@example.com",
+        district:response.data.district,
       }
       setUserData(data)
 
@@ -216,6 +225,7 @@ export default function VenueManagement() {
         ...prev,
         address: data.address,
         panchayat: defaultLocation,
+        district:data.district,
         phone: data.phone || "",
         email: data.email || "",
       }))
@@ -243,7 +253,13 @@ export default function VenueManagement() {
       label = "Corporation"
     }
     setLocationLabel(label)
-    setSelectedVenue(venue)
+    setSelectedVenue({
+      ...venue,
+      address: userData?.address || venue.address,
+      phone: userData?.phone || venue.phone,
+      email: userData?.email || venue.email,
+      panchayat: userData?.panchayat || userData?.municipality || userData?.corporation || venue.panchayat,
+    })
     setEditImages([])
     setIsEditModalOpen(true)
   }
@@ -307,13 +323,37 @@ export default function VenueManagement() {
       totalamount: "",
       advAmnt: "",
       events: [],
+      youtubeLink: "",
+      guestRooms: 0,
     })
     setCustomTimeSlot({ label: "", startTime: "", endTime: "" })
     setSelectedImages([])
+    setErrors({})
     setIsAddModalOpen(false)
   }
 
+  const validateAdd = () => {
+    let tempErrors: { [key: string]: string } = {}
+    if (!newVenue.name) tempErrors.name = "Required"
+    if (!newVenue.address) tempErrors.address = "Required"
+    if (!newVenue.phone) tempErrors.phone = "Required"
+    if (!newVenue.email) tempErrors.email = "Required"
+    if (!newVenue.panchayat) tempErrors.panchayat = "Required"
+    if (!newVenue.cities?.length) tempErrors.cities = "Select at least one city"
+    if (!newVenue.seatingCapacity || newVenue.seatingCapacity <= 0) tempErrors.seatingCapacity = "Must be a positive number"
+    if (!newVenue.diningCapacity || newVenue.diningCapacity <= 0) tempErrors.diningCapacity = "Must be a positive number"
+    if (!newVenue.totalamount || Number(newVenue.totalamount) <= 0) tempErrors.totalamount = "Must be a positive number"
+    if (!newVenue.advAmnt || Number(newVenue.advAmnt) <= 0) tempErrors.advAmnt = "Must be a positive number"
+    if (!newVenue.events?.length) tempErrors.events = "Select at least one event"
+    if (selectedImages.length < 4) tempErrors.images = "At least 4 images required"
+
+    setErrors(tempErrors)
+    return Object.keys(tempErrors).length === 0
+  }
+
   const handleAddVenue = async (): Promise<void> => {
+    if (!validateAdd()) return
+
     try {
       const formData = new FormData()
       Object.entries(newVenue).forEach(([key, value]) => {
@@ -343,8 +383,28 @@ export default function VenueManagement() {
     }
   }
 
+  const validateEdit = () => {
+    if (!selectedVenue) return false
+    let tempErrors: { [key: string]: string } = {}
+    if (!selectedVenue.name) tempErrors.name = "Required"
+    if (!selectedVenue.address) tempErrors.address = "Required"
+    if (!selectedVenue.phone) tempErrors.phone = "Required"
+    if (!selectedVenue.email) tempErrors.email = "Required"
+    if (!selectedVenue.panchayat) tempErrors.panchayat = "Required"
+    if (!selectedVenue.cities?.length) tempErrors.cities = "Select at least one city"
+    if (!selectedVenue.seatingCapacity || selectedVenue.seatingCapacity <= 0) tempErrors.seatingCapacity = "Must be a positive number"
+    if (!selectedVenue.diningCapacity || selectedVenue.diningCapacity <= 0) tempErrors.diningCapacity = "Must be a positive number"
+    if (!selectedVenue.totalamount || Number(selectedVenue.totalamount) <= 0) tempErrors.totalamount = "Must be a positive number"
+    if (!selectedVenue.advAmnt || Number(selectedVenue.advAmnt) <= 0) tempErrors.advAmnt = "Must be a positive number"
+    if (!selectedVenue.events?.length) tempErrors.events = "Select at least one event"
+    if (selectedVenue.images.length + editImages.length < 4) tempErrors.images = "At least 4 images required"
+
+    setErrors(tempErrors)
+    return Object.keys(tempErrors).length === 0
+  }
+
  const handleUpdateVenue = async (): Promise<void> => {
-  if (!selectedVenue) return;
+  if (!selectedVenue || !validateEdit()) return;
 
   try {
     const formData = new FormData();
@@ -399,6 +459,7 @@ export default function VenueManagement() {
       setIsEditModalOpen(false);
       setSelectedVenue(null);
       setEditImages([]);
+      setErrors({});
     } else {
       toast.error(response.data.message || "Failed to update venue");
     }
@@ -433,7 +494,8 @@ export default function VenueManagement() {
           name === "parkingSlots" ||
           name === "changingRooms" ||
           name === "totalamount" ||
-          name === "advAmnt"
+          name === "advAmnt" ||
+          name === "guestRooms"
             ? Number(value)
             : value,
       }
@@ -912,6 +974,7 @@ export default function VenueManagement() {
                       placeholder="Enter venue name"
                       required
                     />
+                    {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Venue Type *</label>
@@ -938,6 +1001,7 @@ export default function VenueManagement() {
                       required
                       disabled
                     />
+                    {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address}</p>}
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Phone Number *</label>
@@ -950,6 +1014,7 @@ export default function VenueManagement() {
                       required
                       disabled
                     />
+                    {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Alternative Phone</label>
@@ -972,6 +1037,7 @@ export default function VenueManagement() {
                       placeholder="Enter email address"
                       required
                     />
+                    {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Pincode</label>
@@ -1002,7 +1068,20 @@ export default function VenueManagement() {
                         </option>
                       ))}
                     </select>
+                    {errors.panchayat && <p className="text-red-500 text-xs mt-1">{errors.panchayat}</p>}
                   </div>
+                 <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">District</label>
+                <input
+                  name="district"
+                  value={newVenue.district || ""}  // 👈 default value
+                  onChange={(e) => handleInputChange(e, true)}
+                  className="w-full px-4 py-2 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553] text-sm bg-gray-100 cursor-not-allowed"
+                  placeholder="Enter district"
+                  readOnly    // 👈 makes it non-editable
+                />
+              </div>
+
                   <div className="sm:col-span-2">
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Cities *</label>
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 max-h-32 overflow-y-auto border border-[#b09d94] rounded-lg p-3 bg-gray-50 scrollbar-custom">
@@ -1018,6 +1097,7 @@ export default function VenueManagement() {
                         </label>
                       ))}
                     </div>
+                    {errors.cities && <p className="text-red-500 text-xs mt-1">{errors.cities}</p>}
                   </div>
                   <div className="sm:col-span-2">
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Events *</label>
@@ -1034,6 +1114,7 @@ export default function VenueManagement() {
                         </label>
                       ))}
                     </div>
+                    {errors.events && <p className="text-red-500 text-xs mt-1">{errors.events}</p>}
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Seating Capacity *</label>
@@ -1046,6 +1127,7 @@ export default function VenueManagement() {
                       placeholder="Enter seating capacity"
                       required
                     />
+                    {errors.seatingCapacity && <p className="text-red-500 text-xs mt-1">{errors.seatingCapacity}</p>}
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Dining Capacity *</label>
@@ -1058,6 +1140,7 @@ export default function VenueManagement() {
                       placeholder="Enter dining capacity"
                       required
                     />
+                    {errors.diningCapacity && <p className="text-red-500 text-xs mt-1">{errors.diningCapacity}</p>}
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Parking Slots</label>
@@ -1082,6 +1165,27 @@ export default function VenueManagement() {
                     />
                   </div>
                   <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Guest Rooms</label>
+                    <input
+                      name="guestRooms"
+                      type="number"
+                      value={newVenue.guestRooms || 0}
+                      onChange={(e) => handleInputChange(e, true)}
+                      className="w-full px-4 py-2 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553] text-sm"
+                      placeholder="Enter guest rooms"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">YouTube Link</label>
+                    <input
+                      name="youtubeLink"
+                      value={newVenue.youtubeLink || ""}
+                      onChange={(e) => handleInputChange(e, true)}
+                      className="w-full px-4 py-2 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553] text-sm"
+                      placeholder="Enter YouTube link"
+                    />
+                  </div>
+                  <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Total Amount *</label>
                     <input
                       name="totalamount"
@@ -1092,6 +1196,7 @@ export default function VenueManagement() {
                       placeholder="Enter total amount"
                       required
                     />
+                    {errors.totalamount && <p className="text-red-500 text-xs mt-1">{errors.totalamount}</p>}
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Advance Amount *</label>
@@ -1104,6 +1209,7 @@ export default function VenueManagement() {
                       placeholder="Enter advance amount"
                       required
                     />
+                    {errors.advAmnt && <p className="text-red-500 text-xs mt-1">{errors.advAmnt}</p>}
                   </div>
                   <div className="sm:col-span-2">
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Stage Size</label>
@@ -1200,9 +1306,7 @@ export default function VenueManagement() {
                         <p className="text-xs text-gray-500 mt-1">PNG, JPG up to 10MB each (max 10 images)</p>
                       </label>
                     </div>
-                    {selectedImages.length < 4 && (
-                      <p className="text-sm text-red-500 mt-2">Please select at least 4 images.</p>
-                    )}
+                    {errors.images && <p className="text-red-500 text-xs mt-1">{errors.images}</p>}
                     {selectedImages.length > 0 && (
                       <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3 mt-3">
                         {selectedImages.map((file, index) => (
@@ -1322,20 +1426,6 @@ export default function VenueManagement() {
                 </button>
                 <button
                   onClick={handleAddVenue}
-                  disabled={
-                    !newVenue.name ||
-                    !newVenue.address ||
-                    !newVenue.phone ||
-                    !newVenue.email ||
-                    !newVenue.panchayat ||
-                    !newVenue.cities?.length ||
-                    newVenue.seatingCapacity === 0 ||
-                    newVenue.diningCapacity === 0 ||
-                    !newVenue.totalamount ||
-                    !newVenue.advAmnt ||
-                    !newVenue.events?.length ||
-                    selectedImages.length < 4
-                  }
                   className="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg hover:from-orange-600 hover:to-red-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all text-sm"
                 >
                   Add Venue
@@ -1355,7 +1445,7 @@ export default function VenueManagement() {
                 <h2 className="text-lg sm:text-xl font-bold text-gray-800 truncate">
                   Edit Venue: {selectedVenue.name}
                 </h2>
-                <button onClick={() => setIsEditModalOpen(false)} className="text-gray-500 hover:text-gray-700 p-1">
+                <button onClick={() => {setIsEditModalOpen(false); setErrors({})}} className="text-gray-500 hover:text-gray-700 p-1">
                   <X size={20} />
                 </button>
               </div>
@@ -1372,6 +1462,7 @@ export default function VenueManagement() {
                       onChange={handleInputChange}
                       className="w-full px-4 py-2 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553] text-sm"
                     />
+                    {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Venue Type</label>
@@ -1393,8 +1484,10 @@ export default function VenueManagement() {
                       value={selectedVenue.address}
                       onChange={handleInputChange}
                       rows={3}
-                      className="w-full px-4 py-2 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553] text-sm resize-none"
+                      className="w-full px-4 py-2 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553] text-sm resize-none bg-gray-100"
+                      disabled
                     />
+                    {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address}</p>}
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Phone Number</label>
@@ -1402,8 +1495,10 @@ export default function VenueManagement() {
                       name="phone"
                       value={selectedVenue.phone}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553] text-sm"
+                      className="w-full px-4 py-2 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553] text-sm bg-gray-100"
+                      disabled
                     />
+                    {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Alternative Phone</label>
@@ -1423,6 +1518,7 @@ export default function VenueManagement() {
                       onChange={handleInputChange}
                       className="w-full px-4 py-2 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553] text-sm"
                     />
+                    {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Pincode</label>
@@ -1451,6 +1547,7 @@ export default function VenueManagement() {
                         </option>
                       ))}
                     </select>
+                    {errors.panchayat && <p className="text-red-500 text-xs mt-1">{errors.panchayat}</p>}
                   </div>
                   <div className="sm:col-span-2">
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Cities</label>
@@ -1467,6 +1564,7 @@ export default function VenueManagement() {
                         </label>
                       ))}
                     </div>
+                    {errors.cities && <p className="text-red-500 text-xs mt-1">{errors.cities}</p>}
                   </div>
                   <div className="sm:col-span-2">
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Events</label>
@@ -1483,6 +1581,7 @@ export default function VenueManagement() {
                         </label>
                       ))}
                     </div>
+                    {errors.events && <p className="text-red-500 text-xs mt-1">{errors.events}</p>}
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Seating Capacity</label>
@@ -1493,6 +1592,7 @@ export default function VenueManagement() {
                       onChange={handleInputChange}
                       className="w-full px-4 py-2 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553] text-sm"
                     />
+                    {errors.seatingCapacity && <p className="text-red-500 text-xs mt-1">{errors.seatingCapacity}</p>}
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Dining Capacity</label>
@@ -1503,6 +1603,7 @@ export default function VenueManagement() {
                       onChange={handleInputChange}
                       className="w-full px-4 py-2 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553] text-sm"
                     />
+                    {errors.diningCapacity && <p className="text-red-500 text-xs mt-1">{errors.diningCapacity}</p>}
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Parking Slots</label>
@@ -1525,6 +1626,27 @@ export default function VenueManagement() {
                     />
                   </div>
                   <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Guest Rooms</label>
+                    <input
+                      name="guestRooms"
+                      type="number"
+                      value={selectedVenue.guestRooms || 0}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-2 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553] text-sm"
+                      placeholder="Enter guest rooms"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">YouTube Link</label>
+                    <input
+                      name="youtubeLink"
+                      value={selectedVenue.youtubeLink || ""}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-2 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553] text-sm"
+                      placeholder="Enter YouTube link"
+                    />
+                  </div>
+                  <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Total Amount</label>
                     <input
                       name="totalamount"
@@ -1533,6 +1655,7 @@ export default function VenueManagement() {
                       onChange={handleInputChange}
                       className="w-full px-4 py-2 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553] text-sm"
                     />
+                    {errors.totalamount && <p className="text-red-500 text-xs mt-1">{errors.totalamount}</p>}
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Advance Amount</label>
@@ -1543,6 +1666,7 @@ export default function VenueManagement() {
                       onChange={handleInputChange}
                       className="w-full px-4 py-2 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#876553] text-sm"
                     />
+                    {errors.advAmnt && <p className="text-red-500 text-xs mt-1">{errors.advAmnt}</p>}
                   </div>
                   <div className="sm:col-span-2">
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Stage Size</label>
@@ -1673,6 +1797,7 @@ export default function VenueManagement() {
                         <p className="text-gray-600 text-sm">Add more images</p>
                       </label>
                     </div>
+                    {errors.images && <p className="text-red-500 text-xs mt-1">{errors.images}</p>}
                     {editImages.length > 0 && (
                       <div className="mt-3">
                         <p className="text-sm text-gray-600 mb-2">New Images to Add:</p>
@@ -1706,7 +1831,7 @@ export default function VenueManagement() {
             <div className="flex-shrink-0 border-t border-gray-200 px-4 sm:px-6 py-4 rounded-b-xl bg-gray-50">
               <div className="flex justify-end space-x-3">
                 <button
-                  onClick={() => setIsEditModalOpen(false)}
+                  onClick={() => {setIsEditModalOpen(false); setErrors({})}}
                   className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm"
                 >
                   Cancel

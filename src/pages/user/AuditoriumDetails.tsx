@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import Header from "../../component/user/Header";
@@ -41,8 +40,9 @@ interface Auditorium {
   tariff: { wedding: string; reception: string };
   totalamount: string;
   advAmnt?: string;
-  advamnt?: string; // Handle potential typo
+  advamnt?: string;
   offer?: Offer;
+  youtubeLink?: string;
 }
 
 const AuditoriumDetails: React.FC = () => {
@@ -196,6 +196,18 @@ const AuditoriumDetails: React.FC = () => {
             line-height: 1rem;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
           }
+          .location-card {
+            min-height: 300px; /* Ensures a consistent minimum height */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+          }
+          .location-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+          }
         `}
       </style>
       <img
@@ -260,7 +272,7 @@ const AuditoriumDetails: React.FC = () => {
                   </button>
                   <button
                     onClick={nextSlide}
-                    className="absolute top-1/2 right-2 sm:right-3 transform -translate-y-1/2 bg-gray-800 bg-opacity-50 hover:bg-opacity-70 text-white p-2 sm:p-3 rounded-full z-10 w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center"
+                    className="absolute top-1/2 right-2 sm:right-3 transform -translate-y-1/2 bg-gray-800 bg-opacity-50 hover:bg-opacity-70 text-white p-2 sm:p-3 rounded-lg z-10 w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center"
                     aria-label="Next image"
                   >
                     <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -424,13 +436,35 @@ const AuditoriumDetails: React.FC = () => {
               <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-left text-[#5B4336] mt-6 sm:mt-8 md:mt-10 mb-3 sm:mb-4">
                 Location
               </h2>
-              <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4 md:p-6">
+              <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4 md:p-6 location-card">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 md:gap-8">
-                  <div>
+                  <div className="order-1">
+                    <h3 className="text-sm sm:text-base md:text-lg font-semibold text-[#9c7c5d] mb-3 sm:mb-4 text-left">
+                      Venue Video
+                    </h3>
+                    <div className="relative w-full h-88 location-content">
+                      {auditorium.youtubeLink ? (
+                        <iframe
+                          className="w-full h-full rounded-lg"
+                          src={auditorium.youtubeLink.replace("watch?v=", "embed/").split("&")[0]}
+                          title="Venue Video"
+                          frameBorder="0"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        ></iframe>
+                      ) : (
+                        <div className="bg-gray-200 rounded-lg h-full flex items-center justify-center">
+                          <p className="text-gray-500 font-medium text-xs sm:text-sm md:text-base">No video available</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="order-2">
                     <h3 className="text-sm sm:text-base md:text-lg font-semibold text-[#9c7c5d] mb-3 sm:mb-4 text-left">
                       Address Details
                     </h3>
-                    <div className="space-y-2 sm:space-y-3">
+                    <div className="space-y-2 sm:space-y-3 location-content">
                       <div className="flex items-start space-x-2 sm:space-x-3">
                         <svg
                           className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500 mt-0.5"
@@ -472,25 +506,23 @@ const AuditoriumDetails: React.FC = () => {
                         </svg>
                         <p className="text-gray-600 text-xs sm:text-sm md:text-base">Easily accessible by public transport</p>
                       </div>
-                    </div>
-                  </div>
-
-                  {/* Map placeholder */}
-                  <div className="bg-gray-200 rounded-lg h-40 sm:h-48 md:h-64 flex items-center justify-center cursor-pointer hover:bg-gray-300 transition-colors">
-                    <div className="text-center">
-                      <svg
-                        className="w-6 h-6 sm:w-8 sm:h-8 md:w-12 md:h-12 text-gray-400 mx-auto mb-2"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                      <p className="text-gray-500 font-medium text-xs sm:text-sm md:text-base">View on Map</p>
-                      <p className="text-xs sm:text-sm text-gray-400">Click to open location</p>
+                      <div className="bg-gray-200 rounded-lg h-40 sm:h-48 md:h-64 flex items-center justify-center cursor-pointer hover:bg-gray-300 transition-colors">
+                        <div className="text-center">
+                          <svg
+                            className="w-6 h-6 sm:w-8 sm:h-8 md:w-12 md:h-12 text-gray-400 mx-auto mb-2"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                          <p className="text-gray-500 font-medium text-xs sm:text-sm md:text-base">View on Map</p>
+                          <p className="text-xs sm:text-sm text-gray-400">Click to open location</p>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
