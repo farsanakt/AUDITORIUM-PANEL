@@ -294,6 +294,7 @@ const AuditoriumRegistrationPage: React.FC = () => {
   }
 
   const handleSignup = async () => {
+    console.log('hi')
     if (formData.events.length === 0 || formData.locations.length === 0) {
       toast.error('Select at least one event and location.')
       return

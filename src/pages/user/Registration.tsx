@@ -1,4 +1,3 @@
-
 import type React from "react"
 import { useState } from "react"
 import { Eye, EyeOff } from "lucide-react"
@@ -15,6 +14,11 @@ const UserRegistrationPage: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   const [formData, setFormData] = useState({
+    district: "",
+    administrative: "",
+    panchayath: "",
+    location: "",
+    address: "",
     firstName: "",
     lastName: "",
     email: "",
@@ -33,7 +37,7 @@ const UserRegistrationPage: React.FC = () => {
 
   const handleOtpModal = async () => {
     setShowOtpModal(false)
-    navigate('/login')
+    navigate('/login', { state: { email: formData.email } })
   }
 
   const handleSignup = async () => {
@@ -51,7 +55,7 @@ const UserRegistrationPage: React.FC = () => {
   }
 
   const handleLogin = () => {
-    navigate('/login')
+    navigate('/login', { state: { email: formData.email } })
   }
 
   return (
@@ -106,6 +110,81 @@ const UserRegistrationPage: React.FC = () => {
             <form onSubmit={handleSubmit} className="space-y-3">
               <div className="bg-gray-50 p-3 rounded-xl">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label htmlFor="district" className="text-left block text-[#78533F] font-medium text-sm font-serif">
+                      District
+                    </label>
+                    <input
+                      type="text"
+                      id="district"
+                      name="district"
+                      className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200"
+                      value={formData.district}
+                      onChange={handleChange}
+                      placeholder="Enter district"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label htmlFor="administrative" className="text-left block text-[#78533F] font-medium text-sm font-serif">
+                      Administrative
+                    </label>
+                    <input
+                      type="text"
+                      id="administrative"
+                      name="administrative"
+                      className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200"
+                      value={formData.administrative}
+                      onChange={handleChange}
+                      placeholder="Enter administrative"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label htmlFor="panchayath" className="text-left block text-[#78533F] font-medium text-sm font-serif">
+                      Panchayath
+                    </label>
+                    <input
+                      type="text"
+                      id="panchayath"
+                      name="panchayath"
+                      className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200"
+                      value={formData.panchayath}
+                      onChange={handleChange}
+                      placeholder="Enter panchayath"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label htmlFor="location" className="text-left block text-[#78533F] font-medium text-sm font-serif">
+                      Location
+                    </label>
+                    <input
+                      type="text"
+                      id="location"
+                      name="location"
+                      className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200"
+                      value={formData.location}
+                      onChange={handleChange}
+                      placeholder="Enter location"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label htmlFor="address" className="text-left block text-[#78533F] font-medium text-sm font-serif">
+                      Address
+                    </label>
+                    <input
+                      type="text"
+                      id="address"
+                      name="address"
+                      className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200"
+                      value={formData.address}
+                      onChange={handleChange}
+                      placeholder="Enter address"
+                      required
+                    />
+                  </div>
                   <div className="space-y-1">
                     <label htmlFor="firstName" className="text-left block text-[#78533F] font-medium text-sm font-serif">
                       First Name
