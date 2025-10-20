@@ -497,6 +497,32 @@ export const verifyPasswordAndChangeEmail=async(pass:string,email:string)=>{
 
 }
 
+//################# Forget password in Auditorium side ############
+
+export const forgotPassword=async(email:string)=>{
+
+  console.log('nknnneneee')
+
+  return await api.post('/pass',{email})
+
+}
+
+
+
+export const  verifyOTP=async(email:string,otp:string)=>{
+
+  return await api.post('/verifyforgetpassotp',{email,otp})
+
+
+
+}
+
+
+export const resetPassword=async(pass:string,email:string)=>{
+
+  return await api.post('/resetpass',{pass,email})
+
+}
 
 //################# Admin ############
 

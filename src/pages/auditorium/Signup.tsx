@@ -1,23 +1,28 @@
+"use client"
+
 import type React from "react"
 import { useState } from "react"
 import { Eye, EyeOff } from "lucide-react"
 import tk from "../../assets/Rectangle 50.png"
 import { useNavigate } from "react-router-dom"
 import Header from "../../component/user/Header"
-import { singUpRequest } from "../../api/userApi"
+import {  singUpRequest, verifyOTP } from "../../api/userApi" 
 import { toast } from 'react-toastify'
 
 const AuditoriumRegistrationPage: React.FC = () => {
   const navigate = useNavigate()
   const [showOtpModal, setShowOtpModal] = useState(false)
+  const [otp, setOtp] = useState("")
   const [showEventsDropdown, setShowEventsDropdown] = useState(false)
   const [showLocationsDropdown, setShowLocationsDropdown] = useState(false)
   const [showDistrictDropdown, setShowDistrictDropdown] = useState(false)
+  const [showAdminTypeDropdown, setShowAdminTypeDropdown] = useState(false)
   const [showPanchayatDropdown, setShowPanchayatDropdown] = useState(false)
   const [showMunicipalityDropdown, setShowMunicipalityDropdown] = useState(false)
   const [showCorporationDropdown, setShowCorporationDropdown] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [currentStep, setCurrentStep] = useState(1)
 
   const [formData, setFormData] = useState({
     auditoriumName: "",
@@ -30,7 +35,7 @@ const AuditoriumRegistrationPage: React.FC = () => {
     locations: [] as string[],
     address: "",
     district: "",
-    adminType: "", // Added for Municipality, Corporation, or Panchayat
+    adminType: "",
     panchayat: "",
     municipality: "",
     corporation: ""
@@ -74,7 +79,6 @@ const AuditoriumRegistrationPage: React.FC = () => {
     { value: "Corporation", label: "Corporation" }
   ]
 
-  // Sample administrative data (expand with full lists from sources)
   const adminData: { [key: string]: { [key: string]: { value: string; label: string }[] } } = {
     "Thiruvananthapuram": {
       Panchayat: [
@@ -268,6 +272,7 @@ const AuditoriumRegistrationPage: React.FC = () => {
 
   const handleAdminTypeSelect = (value: string) => {
     setFormData(prev => ({ ...prev, adminType: value, panchayat: "", municipality: "", corporation: "" }))
+    setShowAdminTypeDropdown(false)
     setShowPanchayatDropdown(false)
     setShowMunicipalityDropdown(false)
     setShowCorporationDropdown(false)
@@ -288,13 +293,57 @@ const AuditoriumRegistrationPage: React.FC = () => {
     setShowCorporationDropdown(false)
   }
 
-  const handleOtpModal = () => {
-    setShowOtpModal(false)
-    navigate('/auditorium/login')
+  const handleVerifyOtp = async () => {
+    if (!otp || otp.length !== 6) {
+      toast.error("Please enter a valid 6-digit OTP")
+      return
+    }
+    try {
+      console.log("Verifying OTP for email:", formData.email, "OTP:", otp)
+      await verifyOTP(formData.email, otp)
+      toast.success("OTP verified successfully")
+      setShowOtpModal(false)
+      setOtp("")
+      navigate('/auditorium/login', { state: { email: formData.email } })
+    } catch (error: any) {
+      console.error("OTP verification error:", error)
+      toast.error(error.response?.data?.message || "Invalid OTP")
+    }
+  }
+
+  const isStep1Valid = () => {
+    return formData.auditoriumName && formData.ownerName && formData.email && formData.phone
+  }
+
+  const isStep2Valid = () => {
+    if (!formData.district || !formData.adminType || formData.locations.length === 0) return false
+    if (formData.adminType === "Panchayat" && !formData.panchayat) return false
+    if (formData.adminType === "Municipality" && !formData.municipality) return false
+    if (formData.adminType === "Corporation" && !formData.corporation) return false
+    return true
+  }
+
+  const handleNext = () => {
+    if (currentStep === 1) {
+      if (!isStep1Valid()) {
+        toast.error('Please fill all required fields in Step 1.')
+        return
+      }
+    } else if (currentStep === 2) {
+      if (!isStep2Valid()) {
+        toast.error('Please fill all required fields in Step 2.')
+        return
+      }
+    }
+    setCurrentStep(prev => prev + 1)
+  }
+
+  const handleBack = () => {
+    setCurrentStep(prev => prev - 1)
   }
 
   const handleSignup = async () => {
-    console.log('hi')
+    console.log("handleSignup called with formData:", formData)
     if (formData.events.length === 0 || formData.locations.length === 0) {
       toast.error('Select at least one event and location.')
       return
@@ -311,26 +360,415 @@ const AuditoriumRegistrationPage: React.FC = () => {
       toast.error('Select a valid administrative area.')
       return
     }
-    const response = await singUpRequest(formData)
-    if (response.data.success === false) {
-      toast.error(response.data.message || 'Signup failed!')
-    } else {
-      setShowOtpModal(true)
+    if (formData.password !== formData.confirmPassword) {
+      toast.error('Passwords do not match.')
+      return
+    }
+    if (!formData.address) {
+      toast.error('Please enter address.')
+      return
+    }
+    try {
+      console.log("Sending signUpRequest with formData:", formData)
+      const response = await singUpRequest(formData)
+      console.log("signUpRequest response:", response)
+      if (response.data.success === false) {
+        toast.error(response.data.message || 'Signup failed!')
+      } else {
+        toast.success("OTP sent to your email")
+        setShowOtpModal(true)
+      }
+    } catch (error: any) {
+      console.error("Signup error:", error)
+      toast.error(error.response?.data?.message || "Error during signup")
     }
   }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    console.log("Form submitted")
     handleSignup()
   }
 
   const handleLogin = () => {
-    navigate('/auditorium/login')
+    console.log("Navigating to login with email:", formData.email)
+    navigate('/auditorium/login', { state: { email: formData.email } })
   }
 
   const selectedPanchayatOptions = formData.district ? adminData[formData.district]?.Panchayat || [] : []
   const selectedMunicipalityOptions = formData.district ? adminData[formData.district]?.Municipality || [] : []
   const selectedCorporationOptions = formData.district ? adminData[formData.district]?.Corporation || [] : []
+
+  const renderStepIndicator = () => (
+    <div className="flex justify-center items-center space-x-2 mb-6">
+      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${currentStep >= 1 ? (currentStep === 1 ? 'bg-[#ED695A] text-white' : 'bg-[#78533F] text-white') : 'bg-gray-200 text-gray-600'}`}>
+        1
+      </div>
+      <div className={`h-1 w-10 ${currentStep > 1 ? 'bg-[#78533F]' : 'bg-gray-200'}`}></div>
+      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${currentStep >= 2 ? (currentStep === 2 ? 'bg-[#ED695A] text-white' : 'bg-[#78533F] text-white') : 'bg-gray-200 text-gray-600'}`}>
+        2
+      </div>
+      <div className={`h-1 w-10 ${currentStep > 2 ? 'bg-[#78533F]' : 'bg-gray-200'}`}></div>
+      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${currentStep >= 3 ? (currentStep === 3 ? 'bg-[#ED695A] text-white' : 'bg-[#78533F] text-white') : 'bg-gray-200 text-gray-600'}`}>
+        3
+      </div>
+    </div>
+  )
+
+  const renderStepContent = () => {
+    switch (currentStep) {
+      case 1:
+        return (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label htmlFor="auditoriumName" className="block text-[#78533F] font-medium text-xs sm:text-sm font-serif">Auditorium Name</label>
+              <input
+                type="text"
+                id="auditoriumName"
+                name="auditoriumName"
+                className="w-full px-3 py-2 border border-[#b09d94] rounded-full focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200 text-xs sm:text-sm"
+                value={formData.auditoriumName}
+                onChange={handleChange}
+                placeholder="Enter auditorium name"
+                required
+              />
+            </div>
+            <div className="space-y-1">
+              <label htmlFor="ownerName" className="block text-[#78533F] font-medium text-xs sm:text-sm font-serif">Owner Name</label>
+              <input
+                type="text"
+                id="ownerName"
+                name="ownerName"
+                className="w-full px-3 py-2 border border-[#b09d94] rounded-full focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200 text-xs sm:text-sm"
+                value={formData.ownerName}
+                onChange={handleChange}
+                placeholder="Enter owner name"
+                required
+              />
+            </div>
+            <div className="space-y-1">
+              <label htmlFor="email" className="block text-[#78533F] font-medium text-xs sm:text-sm font-serif">Email Address</label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                className="w-full px-3 py-2 border border-[#b09d94] rounded-full focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200 text-xs sm:text-sm"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="Enter email address"
+                required
+              />
+            </div>
+            <div className="space-y-1">
+              <label htmlFor="phone" className="block text-[#78533F] font-medium text-xs sm:text-sm font-serif">Phone Number</label>
+              <input
+                type="tel"
+                id="phone"
+                name="phone"
+                className="w-full px-3 py-2 border border-[#b09d94] rounded-full focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200 text-xs sm:text-sm"
+                value={formData.phone}
+                onChange={handleChange}
+                placeholder="Enter phone number"
+                required
+              />
+            </div>
+          </div>
+        )
+      case 2:
+        return (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="block text-[#78533F] font-medium text-xs sm:text-sm font-serif">District</label>
+              <div className="relative">
+                <div
+                  className="w-full px-3 py-2 border border-[#b09d94] rounded-full bg-white text-xs sm:text-sm cursor-pointer flex items-center justify-between"
+                  onClick={() => setShowDistrictDropdown(!showDistrictDropdown)}
+                >
+                  <span className={formData.district ? "text-[#3C3A39]" : "text-[#b09d94]"}>
+                    {formData.district || "Select district"}
+                  </span>
+                  <span className="text-[#78533F]">&#9662;</span>
+                </div>
+                {showDistrictDropdown && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-[#b09d94] rounded-md shadow-lg max-h-28 overflow-y-auto">
+                    {districtOptions.map(option => (
+                      <div
+                        key={option.value}
+                        className="p-1.5 hover:bg-[#FDF8F1] cursor-pointer text-[#3C3A39] text-xs sm:text-sm font-serif"
+                        onClick={() => handleDistrictSelect(option.value)}
+                      >
+                        {option.label}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="space-y-1">
+              <label className="block text-[#78533F] font-medium text-xs sm:text-sm font-serif">Administrative Type</label>
+              <div className="relative">
+                <div
+                  className="w-full px-3 py-2 border border-[#b09d94] rounded-full bg-white text-xs sm:text-sm cursor-pointer flex items-center justify-between"
+                  onClick={() => formData.district && setShowAdminTypeDropdown(!showAdminTypeDropdown)}
+                >
+                  <span className={formData.adminType ? "text-[#3C3A39]" : "text-[#b09d94]"}>
+                    {formData.adminType || (formData.district ? "Select administrative type" : "Select district first")}
+                  </span>
+                  <span className="text-[#78533F]">&#9662;</span>
+                </div>
+                {showAdminTypeDropdown && formData.district && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-[#b09d94] rounded-md shadow-lg max-h-28 overflow-y-auto">
+                    {adminTypeOptions.map(option => (
+                      <div
+                        key={option.value}
+                        className="p-1.5 hover:bg-[#FDF8F1] cursor-pointer text-[#3C3A39] text-xs sm:text-sm font-serif"
+                        onClick={() => handleAdminTypeSelect(option.value)}
+                      >
+                        {option.label}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+            {formData.adminType === "Panchayat" && (
+              <div className="space-y-1">
+                <label className="block text-[#78533F] font-medium text-xs sm:text-sm font-serif">Panchayat</label>
+                <div className="relative">
+                  <div
+                    className="w-full px-3 py-2 border border-[#b09d94] rounded-full bg-white text-xs sm:text-sm cursor-pointer flex items-center justify-between"
+                    onClick={() => formData.district && setShowPanchayatDropdown(!showPanchayatDropdown)}
+                  >
+                    <span className={formData.panchayat ? "text-[#3C3A39]" : "text-[#b09d94]"}>
+                      {formData.panchayat || "Select panchayat"}
+                    </span>
+                    <span className="text-[#78533F]">&#9662;</span>
+                  </div>
+                  {showPanchayatDropdown && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-[#b09d94] rounded-md shadow-lg max-h-28 overflow-y-auto">
+                      {selectedPanchayatOptions.map(option => (
+                        <div
+                          key={option.value}
+                          className="p-1.5 hover:bg-[#FDF8F1] cursor-pointer text-[#3C3A39] text-xs sm:text-sm font-serif"
+                          onClick={() => handlePanchayatSelect(option.value)}
+                        >
+                          {option.label}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            {formData.adminType === "Municipality" && (
+              <div className="space-y-1">
+                <label className="block text-[#78533F] font-medium text-xs sm:text-sm font-serif">Municipality</label>
+                <div className="relative">
+                  <div
+                    className="w-full px-3 py-2 border border-[#b09d94] rounded-full bg-white text-xs sm:text-sm cursor-pointer flex items-center justify-between"
+                    onClick={() => formData.district && setShowMunicipalityDropdown(!showMunicipalityDropdown)}
+                  >
+                    <span className={formData.municipality ? "text-[#3C3A39]" : "text-[#b09d94]"}>
+                      {formData.municipality || "Select municipality"}
+                    </span>
+                    <span className="text-[#78533F]">&#9662;</span>
+                  </div>
+                  {showMunicipalityDropdown && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-[#b09d94] rounded-md shadow-lg max-h-28 overflow-y-auto">
+                      {selectedMunicipalityOptions.map(option => (
+                        <div
+                          key={option.value}
+                          className="p-1.5 hover:bg-[#FDF8F1] cursor-pointer text-[#3C3A39] text-xs sm:text-sm font-serif"
+                          onClick={() => handleMunicipalitySelect(option.value)}
+                        >
+                          {option.label}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            {formData.adminType === "Corporation" && (
+              <div className="space-y-1">
+                <label className="block text-[#78533F] font-medium text-xs sm:text-sm font-serif">Corporation</label>
+                <div className="relative">
+                  <div
+                    className="w-full px-3 py-2 border border-[#b09d94] rounded-full bg-white text-xs sm:text-sm cursor-pointer flex items-center justify-between"
+                    onClick={() => formData.district && setShowCorporationDropdown(!showCorporationDropdown)}
+                  >
+                    <span className={formData.corporation ? "text-[#3C3A39]" : "text-[#b09d94]"}>
+                      {formData.corporation || "Select corporation"}
+                    </span>
+                    <span className="text-[#78533F]">&#9662;</span>
+                  </div>
+                  {showCorporationDropdown && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-[#b09d94] rounded-md shadow-lg max-h-28 overflow-y-auto">
+                      {selectedCorporationOptions.map(option => (
+                        <div
+                          key={option.value}
+                          className="p-1.5 hover:bg-[#FDF8F1] cursor-pointer text-[#3C3A39] text-xs sm:text-sm font-serif"
+                          onClick={() => handleCorporationSelect(option.value)}
+                        >
+                          {option.label}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            <div className="space-y-1">
+              <label className="block text-[#78533F] font-medium text-xs sm:text-sm font-serif">Locations</label>
+              <div className="relative">
+                <div
+                  className="w-full px-3 py-2 border border-[#b09d94] rounded-full bg-white text-xs sm:text-sm cursor-pointer flex items-center justify-between"
+                  onClick={() => setShowLocationsDropdown(!showLocationsDropdown)}
+                >
+                  <span className={formData.locations.length > 0 ? "text-[#3C3A39]" : "text-[#b09d94]"}>
+                    {formData.locations.length > 0 ? formData.locations.join(", ") : "Select locations"}
+                  </span>
+                  <span className="text-[#78533F]">&#9662;</span>
+                </div>
+                {showLocationsDropdown && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-[#b09d94] rounded-md shadow-lg max-h-28 overflow-y-auto">
+                    {locationOptions.map(option => (
+                      <label
+                        key={option.value}
+                        className="flex items-center space-x-2 p-1.5 hover:bg-[#FDF8F1] cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          name="locations"
+                          value={option.value}
+                          checked={formData.locations.includes(option.value)}
+                          onChange={handleChange}
+                          className="h-3.5 w-3.5 text-[#ED695A] border-[#b09d94] rounded focus:ring-2 focus:ring-[#ED695A]"
+                        />
+                        <span className="text-[#3C3A39] text-xs sm:text-sm font-serif">{option.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )
+      case 3:
+        return (
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="block text-[#78533F] font-medium text-xs sm:text-sm font-serif">Events</label>
+                <div className="relative">
+                  <div
+                    className="w-full px-3 py-2 border border-[#b09d94] rounded-full bg-white text-xs sm:text-sm cursor-pointer flex items-center justify-between"
+                    onClick={() => setShowEventsDropdown(!showEventsDropdown)}
+                  >
+                    <span className={formData.events.length > 0 ? "text-[#3C3A39]" : "text-[#b09d94]"}>
+                      {formData.events.length > 0 ? formData.events.join(", ") : "Select events"}
+                    </span>
+                    <span className="text-[#78533F]">&#9662;</span>
+                  </div>
+                  {showEventsDropdown && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-[#b09d94] rounded-md shadow-lg max-h-28 overflow-y-auto">
+                      {eventOptions.map(option => (
+                        <label
+                          key={option.value}
+                          className="flex items-center space-x-2 p-1.5 hover:bg-[#FDF8F1] cursor-pointer"
+                        >
+                          <input
+                            type="checkbox"
+                            name="events"
+                            value={option.value}
+                            checked={formData.events.includes(option.value)}
+                            onChange={handleChange}
+                            className="h-3.5 w-3.5 text-[#ED695A] border-[#b09d94] rounded focus:ring-2 focus:ring-[#ED695A]"
+                          />
+                          <span className="text-[#3C3A39] text-xs sm:text-sm font-serif">{option.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="space-y-1">
+                <label htmlFor="address" className="block text-[#78533F] font-medium text-xs sm:text-sm font-serif">Address</label>
+                <input
+                  type="text"
+                  id="address"
+                  name="address"
+                  className="w-full px-3 py-2 border border-[#b09d94] rounded-full focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200 text-xs sm:text-sm"
+                  value={formData.address}
+                  onChange={handleChange}
+                  placeholder="Enter full address"
+                  required
+                />
+              </div>
+              <div className="space-y-1">
+                <label htmlFor="password" className="block text-[#78533F] font-medium text-xs sm:text-sm font-serif">Password</label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    id="password"
+                    name="password"
+                    className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-sm pr-10 focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200"
+                    value={formData.password}
+                    onChange={handleChange}
+                    placeholder="Create a password"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <label htmlFor="confirmPassword" className="block text-[#78533F] font-medium text-xs sm:text-sm font-serif">Confirm Password</label>
+                <div className="relative">
+                  <input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-sm pr-10 focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    placeholder="Confirm password"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center">
+              <input
+                id="terms"
+                name="terms"
+                type="checkbox"
+                className="h-3.5 w-3.5 text-[#ED695A] border-[#b09d94] rounded focus:ring-2 focus:ring-[#ED695A]"
+                required
+              />
+              <label htmlFor="terms" className="ml-2 block text-xs sm:text-sm text-gray-600 font-serif">
+                I agree to the <span className="text-[#ED695A] hover:underline cursor-pointer">Terms of Service</span>{" "}
+                and <span className="text-[#ED695A] hover:underline cursor-pointer">Privacy Policy</span>
+              </label>
+            </div>
+          </div>
+        )
+      default:
+        return null
+    }
+  }
 
   return (
     <div className="min-h-screen bg-[#FDF8F1] flex flex-col items-center justify-center px-4 py-6 box-border">
@@ -380,346 +818,36 @@ const AuditoriumRegistrationPage: React.FC = () => {
               <h2 className="text-lg md:text-2xl font-bold text-[#78533F] font-serif">Auditorium Registration</h2>
               <p className="text-gray-600 text-sm mt-1 font-serif">Sign up to manage your auditorium</p>
             </div>
+            {renderStepIndicator()}
             <form onSubmit={handleSubmit} className="space-y-3">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label htmlFor="auditoriumName" className="block text-[#78533F] font-medium text-xs sm:text-sm font-serif">Auditorium Name</label>
-                  <input
-                    type="text"
-                    id="auditoriumName"
-                    name="auditoriumName"
-                    className="w-full px-3 py-2 border border-[#b09d94] rounded-full focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200 text-xs sm:text-sm"
-                    value={formData.auditoriumName}
-                    onChange={handleChange}
-                    placeholder="Enter auditorium name"
-                    required
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label htmlFor="ownerName" className="block text-[#78533F] font-medium text-xs sm:text-sm font-serif">Owner Name</label>
-                  <input
-                    type="text"
-                    id="ownerName"
-                    name="ownerName"
-                    className="w-full px-3 py-2 border border-[#b09d94] rounded-full focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200 text-xs sm:text-sm"
-                    value={formData.ownerName}
-                    onChange={handleChange}
-                    placeholder="Enter owner name"
-                    required
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label htmlFor="email" className="block text-[#78533F] font-medium text-xs sm:text-sm font-serif">Email Address</label>
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    className="w-full px-3 py-2 border border-[#b09d94] rounded-full focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200 text-xs sm:text-sm"
-                    value={formData.email}
-                    onChange={handleChange}
-                    placeholder="Enter email address"
-                    required
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label htmlFor="phone" className="block text-[#78533F] font-medium text-xs sm:text-sm font-serif">Phone Number</label>
-                  <input
-                    type="tel"
-                    id="phone"
-                    name="phone"
-                    className="w-full px-3 py-2 border border-[#b09d94] rounded-full focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200 text-xs sm:text-sm"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    placeholder="Enter phone number"
-                    required
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="block text-[#78533F] font-medium text-xs sm:text-sm font-serif">Events</label>
-                  <div className="relative">
-                    <div
-                      className="w-full px-3 py-2 border border-[#b09d94] rounded-full bg-white text-xs sm:text-sm cursor-pointer flex items-center justify-between"
-                      onClick={() => setShowEventsDropdown(!showEventsDropdown)}
-                    >
-                      <span className={formData.events.length > 0 ? "text-[#3C3A39]" : "text-[#b09d94]"}>
-                        {formData.events.length > 0 ? formData.events.join(", ") : "Select events"}
-                      </span>
-                      <span className="text-[#78533F]">&#9662;</span>
-                    </div>
-                    {showEventsDropdown && (
-                      <div className="absolute z-10 w-full mt-1 bg-white border border-[#b09d94] rounded-md shadow-lg max-h-28 overflow-y-auto">
-                        {eventOptions.map(option => (
-                          <label
-                            key={option.value}
-                            className="flex items-center space-x-2 p-1.5 hover:bg-[#FDF8F1] cursor-pointer"
-                          >
-                            <input
-                              type="checkbox"
-                              name="events"
-                              value={option.value}
-                              checked={formData.events.includes(option.value)}
-                              onChange={handleChange}
-                              className="h-3.5 w-3.5 text-[#ED695A] border-[#b09d94] rounded focus:ring-2 focus:ring-[#ED695A]"
-                            />
-                            <span className="text-[#3C3A39] text-xs sm:text-sm font-serif">{option.label}</span>
-                          </label>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <label className="block text-[#78533F] font-medium text-xs sm:text-sm font-serif">Locations</label>
-                  <div className="relative">
-                    <div
-                      className="w-full px-3 py-2 border border-[#b09d94] rounded-full bg-white text-xs sm:text-sm cursor-pointer flex items-center justify-between"
-                      onClick={() => setShowLocationsDropdown(!showLocationsDropdown)}
-                    >
-                      <span className={formData.locations.length > 0 ? "text-[#3C3A39]" : "text-[#b09d94]"}>
-                        {formData.locations.length > 0 ? formData.locations.join(", ") : "Select locations"}
-                      </span>
-                      <span className="text-[#78533F]">&#9662;</span>
-                    </div>
-                    {showLocationsDropdown && (
-                      <div className="absolute z-10 w-full mt-1 bg-white border border-[#b09d94] rounded-md shadow-lg max-h-28 overflow-y-auto">
-                        {locationOptions.map(option => (
-                          <label
-                            key={option.value}
-                            className="flex items-center space-x-2 p-1.5 hover:bg-[#FDF8F1] cursor-pointer"
-                          >
-                            <input
-                              type="checkbox"
-                              name="locations"
-                              value={option.value}
-                              checked={formData.locations.includes(option.value)}
-                              onChange={handleChange}
-                              className="h-3.5 w-3.5 text-[#ED695A] border-[#b09d94] rounded focus:ring-2 focus:ring-[#ED695A]"
-                            />
-                            <span className="text-[#3C3A39] text-xs sm:text-sm font-serif">{option.label}</span>
-                          </label>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <label htmlFor="address" className="block text-[#78533F] font-medium text-xs sm:text-sm font-serif">Address</label>
-                  <input
-                    type="text"
-                    id="address"
-                    name="address"
-                    className="w-full px-3 py-2 border border-[#b09d94] rounded-full focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200 text-xs sm:text-sm"
-                    value={formData.address}
-                    onChange={handleChange}
-                    placeholder="Enter full address"
-                    required
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="block text-[#78533F] font-medium text-xs sm:text-sm font-serif">District</label>
-                  <div className="relative">
-                    <div
-                      className="w-full px-3 py-2 border border-[#b09d94] rounded-full bg-white text-xs sm:text-sm cursor-pointer flex items-center justify-between"
-                      onClick={() => setShowDistrictDropdown(!showDistrictDropdown)}
-                    >
-                      <span className={formData.district ? "text-[#3C3A39]" : "text-[#b09d94]"}>
-                        {formData.district || "Select district"}
-                      </span>
-                      <span className="text-[#78533F]">&#9662;</span>
-                    </div>
-                    {showDistrictDropdown && (
-                      <div className="absolute z-10 w-full mt-1 bg-white border border-[#b09d94] rounded-md shadow-lg max-h-28 overflow-y-auto">
-                        {districtOptions.map(option => (
-                          <div
-                            key={option.value}
-                            className="p-1.5 hover:bg-[#FDF8F1] cursor-pointer text-[#3C3A39] text-xs sm:text-sm font-serif"
-                            onClick={() => handleDistrictSelect(option.value)}
-                          >
-                            {option.label}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <label className="block text-[#78533F] font-medium text-xs sm:text-sm font-serif">Administrative Type</label>
-                  <div className="relative">
-                    <div
-                      className="w-full px-3 py-2 border border-[#b09d94] rounded-full bg-white text-xs sm:text-sm cursor-pointer flex items-center justify-between"
-                      onClick={() => formData.district && setShowPanchayatDropdown(!showPanchayatDropdown)}
-                    >
-                      <span className={formData.adminType ? "text-[#3C3A39]" : "text-[#b09d94]"}>
-                        {formData.adminType || (formData.district ? "Select administrative type" : "Select district first")}
-                      </span>
-                      <span className="text-[#78533F]">&#9662;</span>
-                    </div>
-                    {showPanchayatDropdown && formData.district && (
-                      <div className="absolute z-10 w-full mt-1 bg-white border border-[#b09d94] rounded-md shadow-lg max-h-28 overflow-y-auto">
-                        {adminTypeOptions.map(option => (
-                          <div
-                            key={option.value}
-                            className="p-1.5 hover:bg-[#FDF8F1] cursor-pointer text-[#3C3A39] text-xs sm:text-sm font-serif"
-                            onClick={() => handleAdminTypeSelect(option.value)}
-                          >
-                            {option.label}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                {formData.adminType === "Panchayat" && (
-                  <div className="space-y-1">
-                    <label className="block text-[#78533F] font-medium text-xs sm:text-sm font-serif">Panchayat</label>
-                    <div className="relative">
-                      <div
-                        className="w-full px-3 py-2 border border-[#b09d94] rounded-full bg-white text-xs sm:text-sm cursor-pointer flex items-center justify-between"
-                        onClick={() => formData.district && setShowPanchayatDropdown(!showPanchayatDropdown)}
-                      >
-                        <span className={formData.panchayat ? "text-[#3C3A39]" : "text-[#b09d94]"}>
-                          {formData.panchayat || "Select panchayat"}
-                        </span>
-                        <span className="text-[#78533F]">&#9662;</span>
-                      </div>
-                      {showPanchayatDropdown && (
-                        <div className="absolute z-10 w-full mt-1 bg-white border border-[#b09d94] rounded-md shadow-lg max-h-28 overflow-y-auto">
-                          {selectedPanchayatOptions.map(option => (
-                            <div
-                              key={option.value}
-                              className="p-1.5 hover:bg-[#FDF8F1] cursor-pointer text-[#3C3A39] text-xs sm:text-sm font-serif"
-                              onClick={() => handlePanchayatSelect(option.value)}
-                            >
-                              {option.label}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
+              {renderStepContent()}
+              <div className="flex justify-between mt-6">
+                {currentStep > 1 && (
+                  <button
+                    type="button"
+                    onClick={handleBack}
+                    className="bg-gray-300 text-[#78533F] font-semibold py-2 px-4 rounded-full shadow-md hover:bg-gray-400 transition-all duration-300 font-serif"
+                  >
+                    Back
+                  </button>
                 )}
-                {formData.adminType === "Municipality" && (
-                  <div className="space-y-1">
-                    <label className="block text-[#78533F] font-medium text-xs sm:text-sm font-serif">Municipality</label>
-                    <div className="relative">
-                      <div
-                        className="w-full px-3 py-2 border border-[#b09d94] rounded-full bg-white text-xs sm:text-sm cursor-pointer flex items-center justify-between"
-                        onClick={() => formData.district && setShowMunicipalityDropdown(!showMunicipalityDropdown)}
-                      >
-                        <span className={formData.municipality ? "text-[#3C3A39]" : "text-[#b09d94]"}>
-                          {formData.municipality || "Select municipality"}
-                        </span>
-                        <span className="text-[#78533F]">&#9662;</span>
-                      </div>
-                      {showMunicipalityDropdown && (
-                        <div className="absolute z-10 w-full mt-1 bg-white border border-[#b09d94] rounded-md shadow-lg max-h-28 overflow-y-auto">
-                          {selectedMunicipalityOptions.map(option => (
-                            <div
-                              key={option.value}
-                              className="p-1.5 hover:bg-[#FDF8F1] cursor-pointer text-[#3C3A39] text-xs sm:text-sm font-serif"
-                              onClick={() => handleMunicipalitySelect(option.value)}
-                            >
-                              {option.label}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                {currentStep < 3 ? (
+                  <button
+                    type="button"
+                    onClick={handleNext}
+                    className="bg-[#ED695A] text-white font-semibold py-2 px-4 rounded-full shadow-md hover:bg-[#d85c4e] transition-all duration-300 font-serif ml-auto"
+                  >
+                    Next
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    className="w-full bg-[#ED695A] text-white font-semibold py-2 rounded-full shadow-md hover:bg-[#d85c4e] transition-all duration-300 font-serif"
+                  >
+                    Register
+                  </button>
                 )}
-                {formData.adminType === "Corporation" && (
-                  <div className="space-y-1">
-                    <label className="block text-[#78533F] font-medium text-xs sm:text-sm font-serif">Corporation</label>
-                    <div className="relative">
-                      <div
-                        className="w-full px-3 py-2 border border-[#b09d94] rounded-full bg-white text-xs sm:text-sm cursor-pointer flex items-center justify-between"
-                        onClick={() => formData.district && setShowCorporationDropdown(!showCorporationDropdown)}
-                      >
-                        <span className={formData.corporation ? "text-[#3C3A39]" : "text-[#b09d94]"}>
-                          {formData.corporation || "Select corporation"}
-                        </span>
-                        <span className="text-[#78533F]">&#9662;</span>
-                      </div>
-                      {showCorporationDropdown && (
-                        <div className="absolute z-10 w-full mt-1 bg-white border border-[#b09d94] rounded-md shadow-lg max-h-28 overflow-y-auto">
-                          {selectedCorporationOptions.map(option => (
-                            <div
-                              key={option.value}
-                              className="p-1.5 hover:bg-[#FDF8F1] cursor-pointer text-[#3C3A39] text-xs sm:text-sm font-serif"
-                              onClick={() => handleCorporationSelect(option.value)}
-                            >
-                              {option.label}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-                <div className="space-y-1">
-                  <label htmlFor="password" className="block text-[#78533F] font-medium text-xs sm:text-sm font-serif">Password</label>
-                  <div className="relative">
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      id="password"
-                      name="password"
-                      className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-sm pr-10 focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200"
-                      value={formData.password}
-                      onChange={handleChange}
-                      placeholder="Create a password"
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    >
-                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <label htmlFor="confirmPassword" className="block text-[#78533F] font-medium text-xs sm:text-sm font-serif">Confirm Password</label>
-                  <div className="relative">
-                    <input
-                      type={showConfirmPassword ? 'text' : 'password'}
-                      id="confirmPassword"
-                      name="confirmPassword"
-                      className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-sm pr-10 focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200"
-                      value={formData.confirmPassword}
-                      onChange={handleChange}
-                      placeholder="Confirm password"
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    >
-                      {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
-                </div>
               </div>
-              <div className="flex items-center">
-                <input
-                  id="terms"
-                  name="terms"
-                  type="checkbox"
-                  className="h-3.5 w-3.5 text-[#ED695A] border-[#b09d94] rounded focus:ring-2 focus:ring-[#ED695A]"
-                  required
-                />
-                <label htmlFor="terms" className="ml-2 block text-xs sm:text-sm text-gray-600 font-serif">
-                  I agree to the <span className="text-[#ED695A] hover:underline cursor-pointer">Terms of Service</span>{" "}
-                  and <span className="text-[#ED695A] hover:underline cursor-pointer">Privacy Policy</span>
-                </label>
-              </div>
-              <button
-                type="submit"
-                className="w-full bg-[#ED695A] text-white font-semibold py-2 rounded-full shadow-md hover:bg-[#d85c4e] transition-all duration-300 font-serif"
-              >
-                Register
-              </button>
             </form>
             <div className="text-center mt-3">
               <p className="text-gray-600 text-xs sm:text-sm font-serif">
@@ -739,14 +867,25 @@ const AuditoriumRegistrationPage: React.FC = () => {
               <h2 className="text-base sm:text-lg font-bold text-[#78533F] mb-3 font-serif">Verify OTP</h2>
               <input
                 type="text"
-                placeholder="Enter OTP"
-                className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200"
+                placeholder="Enter 6-digit OTP"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value)}
                 maxLength={6}
+                className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200"
               />
-              <div className="mt-3 flex justify-end">
+              <div className="mt-3 flex justify-end space-x-2">
+                <button
+                  className="bg-gray-300 text-[#78533F] px-4 py-1.5 rounded-full hover:bg-gray-400 font-serif"
+                  onClick={() => {
+                    setShowOtpModal(false)
+                    setOtp("")
+                  }}
+                >
+                  Cancel
+                </button>
                 <button
                   className="bg-[#ED695A] text-white px-4 py-1.5 rounded-full hover:bg-[#d85c4e] font-serif"
-                  onClick={handleOtpModal}
+                  onClick={handleVerifyOtp}
                 >
                   Verify
                 </button>

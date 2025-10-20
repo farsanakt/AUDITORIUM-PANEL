@@ -1,22 +1,47 @@
 "use client"
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import tk from "../../assets/Rectangle 50.png";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import Header from "../../component/user/Header";
-import { AuditoriumLogin } from "../../api/userApi";
+import { AuditoriumLogin, forgotPassword, verifyOTP, resetPassword } from "../../api/userApi";
 import { toast } from "react-toastify";
 import { useDispatch } from 'react-redux';
 import { loginFailure, loginStart, loginSuccess } from "../../redux/slices/authSlice";
 
 const LoginPage: React.FC = () => {
-  const [email, setEmail] = useState("");
+  const location = useLocation();
+  const [email, setEmail] = useState(location.state?.email || "");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
+  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState(email);
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
+  const [timer, setTimer] = useState(60);
+  const [isResendDisabled, setIsResendDisabled] = useState(true);
+
+  useEffect(() => {
+    let interval;
+    if (showOtpModal && timer > 0) {
+      interval = setInterval(() => {
+        setTimer((prev) => prev - 1);
+      }, 1000);
+    } else if (timer === 0) {
+      setIsResendDisabled(false);
+    }
+    return () => clearInterval(interval);
+  }, [showOtpModal, timer]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,7 +66,62 @@ const LoginPage: React.FC = () => {
   };
 
   const handleForgotPassword = () => {
-    navigate("/forgot-password");
+    setForgotEmail(email);
+    setShowForgotModal(true);
+  };
+
+  const handleSendOtp = async () => {
+    try {
+      await forgotPassword(forgotEmail);
+      toast.success("OTP sent to your email");
+      setShowForgotModal(false);
+      setShowOtpModal(true);
+      setTimer(60);
+      setIsResendDisabled(true);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Error sending OTP");
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    try {
+      await verifyOTP(forgotEmail, otp);
+      toast.success("OTP verified");
+      setShowOtpModal(false);
+      setShowResetModal(true);
+      setOtp(""); // Clear OTP after verification
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Invalid OTP");
+    }
+  };
+
+  const handleResendOtp = async () => {
+    try {
+      await forgotPassword(forgotEmail);
+      toast.success("OTP resent");
+      setTimer(60);
+      setIsResendDisabled(true);
+      setOtp(""); // Clear OTP when resending
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Error resending OTP");
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (newPassword !== confirmNewPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+    try {
+      await resetPassword(newPassword,forgotEmail);
+      toast.success("Password reset successful");
+      setShowResetModal(false);
+      setNewPassword(""); // Clear new password
+      setConfirmNewPassword(""); // Clear confirm new password
+      setForgotEmail(""); // Clear forgot email
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Error resetting password");
+    }
   };
 
   const handleSignup = () => {
@@ -98,7 +178,6 @@ const LoginPage: React.FC = () => {
             </div>
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-1">
-                {/* <label htmlFor="email" className="block text-sm text-[#78533F] font-medium font-serif">Email</label> */}
                 <div className="relative">
                   <input
                     type="text"
@@ -117,7 +196,6 @@ const LoginPage: React.FC = () => {
                 </div>
               </div>
               <div className="space-y-1">
-                {/* <label htmlFor="password" className="block text-sm text-[#78533F] font-medium font-serif">Password</label> */}
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}
@@ -161,34 +239,6 @@ const LoginPage: React.FC = () => {
               >
                 Sign In
               </button>
-              {/* <div className="relative my-3">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-[#b09d94]"></div>
-                </div>
-                <div className="relative flex justify-center text-xs">
-                  <span className="px-2 bg-white text-gray-600 font-serif">Or continue with</span>
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                <button type="button" className="flex justify-center items-center py-1 px-2 border border-[#b09d94] rounded-full bg-white hover:bg-gray-50 transition-all duration-200">
-                  <svg className="w-4 h-4" viewBox="0 0 24 24">
-                    <path fill="#EA4335" d="M12 11.7v2.6h5.4c-.2 1.3-.8 2.4-1.7 3.1v2.6h2.8c1.6-1.4 2.5-3.5 2.5-5.9 0-.6-.1-1.2-.2-1.8H12z"/>
-                    <path fill="#34A853" d="M12 23c2.4 0 4.5-.8 6.1-2.2l-2.8-2.6c-.8.5-1.9.8-3.3.8-2.5 0-4.7-1.7-5.5-4.1H3.5v2.6C5.1 20.9 8.3 23 12 23z"/>
-                    <path fill="#FBBC05" d="M6.5 14.9c-.2-.5-.3-1-.3-1.6s.1-1.1.3-1.6V9.1H3.5C2.8 10.6 2.4 12.3 2.4 14s.4 3.4 1.1 4.9l3-2.6z"/>
-                    <path fill="#4285F4" d="M12 6.3c1.3 0 2.5.5 3.4 1.3l2.5-2.5C16.5 3.3 14.4 2.4 12 2.4 8.3 2.4 5.1 4.5 3.5 7.4l3 2.6c.8-2.4 3-4.1 5.5-4.1z"/>
-                  </svg>
-                </button>
-                <button type="button" className="flex justify-center items-center py-1 px-2 border border-[#b09d94] rounded-full bg-white hover:bg-gray-50 transition-all duration-200">
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="#1877F2">
-                    <path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 5 3.66 9.12 8.44 9.88v-7h-2.54v-2.88h2.54V9.88c0-2.51 1.49-3.88 3.78-3.88 1.1 0 2.25.2 2.25.2v2.48h-1.27c-1.25 0-1.63.77-1.63 1.56v1.88h2.78L16.1 14.88h-2.26v7C18.34 21.12 22 17 22 12z"/>
-                  </svg>
-                </button>
-                <button type="button" className="flex justify-center items-center py-1 px-2 border border-[#b09d94] rounded-full bg-white hover:bg-gray-50 transition-all duration-200">
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="#000000">
-                    <path d="M16.365 1.43c0 1.14-.48 2.26-1.32 3.06-.9.86-2.16 1.38-3.36 1.3-.03-1.15.45-2.28 1.29-3.08.45-.44 1.07-.8 1.74-1.01.15-.04.29-.07.44-.07.27 0 .53.06.77.17.16.08.31.2.44.34zM20.25 17.01c-.24.58-.49 1.15-.76 1.69-.43.86-.88 1.7-1.52 2.39-.61.67-1.22 1.34-2.12 1.36-.82.02-1.08-.52-2.23-.51-1.15.01-1.45.52-2.27.51-.91-.02-1.5-.68-2.1-1.34-.67-.74-1.17-1.61-1.6-2.5-.71-1.48-1.29-3.08-1.04-4.76.19-1.29.74-2.4 1.61-3.27.83-.82 2.12-1.43 3.11-1.27.61.1 1.05.33 1.37.33.29 0 .85-.42 1.59-.36.27.01 1.16.11 1.7.86-.05.03-1.02.6-1 1.77.03 1.43 1.23 1.91 1.28 1.93-.01.04-1.26.88-1.24 2.34.01 1.85 1.54 2.47 1.56 2.47z"/>
-                  </svg>
-                </button>
-              </div> */}
               <div className="text-center mt-3">
                 <span className="text-sm text-gray-600 font-serif">Don't have an account?</span>
                 <button
@@ -203,6 +253,139 @@ const LoginPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Forgot Password Modal */}
+      {showForgotModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-2">
+          <div className="bg-white rounded-2xl shadow-lg p-4 w-full max-w-xs">
+            <h2 className="text-base sm:text-lg font-bold text-[#78533F] mb-3 font-serif">Forgot Password</h2>
+            <input
+              type="email"
+              placeholder="Enter your email"
+              value={forgotEmail}
+              onChange={(e) => setForgotEmail(e.target.value)}
+              className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200"
+            />
+            <div className="mt-3 flex justify-end space-x-2">
+              <button
+                className="bg-gray-300 text-[#78533F] px-4 py-1.5 rounded-full hover:bg-gray-400 font-serif"
+                onClick={() => setShowForgotModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="bg-[#ED695A] text-white px-4 py-1.5 rounded-full hover:bg-[#d85c4e] font-serif"
+                onClick={handleSendOtp}
+              >
+                Send OTP
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* OTP Modal */}
+      {showOtpModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-2">
+          <div className="bg-white rounded-2xl shadow-lg p-4 w-full max-w-xs">
+            <h2 className="text-base sm:text-lg font-bold text-[#78533F] mb-3 font-serif">Verify OTP</h2>
+            <input
+              type="text"
+              placeholder="Enter 6-digit OTP"
+              value={otp}
+              onChange={(e) => setOtp(e.target.value)}
+              maxLength={6}
+              className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200"
+            />
+            <div className="mt-3 flex justify-end space-x-2">
+              <button
+                className="bg-gray-300 text-[#78533F] px-4 py-1.5 rounded-full hover:bg-gray-400 font-serif"
+                onClick={() => setShowOtpModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="bg-[#ED695A] text-white px-4 py-1.5 rounded-full hover:bg-[#d85c4e] font-serif"
+                onClick={handleVerifyOtp}
+              >
+                Verify
+              </button>
+            </div>
+            <div className="mt-2 text-center">
+              {timer > 0 ? (
+                <p className="text-sm text-gray-600 font-serif">
+                  Resend in {Math.floor(timer / 60)}:{timer % 60 < 10 ? `0${timer % 60}` : timer % 60}
+                </p>
+              ) : (
+                <button
+                  className="text-[#ED695A] hover:underline font-serif"
+                  onClick={handleResendOtp}
+                  disabled={isResendDisabled}
+                >
+                  Resend OTP
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reset Password Modal */}
+      {showResetModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-2">
+          <div className="bg-white rounded-2xl shadow-lg p-4 w-full max-w-xs">
+            <h2 className="text-base sm:text-lg font-bold text-[#78533F] mb-3 font-serif">Reset Password</h2>
+            <div className="space-y-2">
+              <div className="relative">
+                <input
+                  type={showNewPassword ? "text" : "password"}
+                  placeholder="New Password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-sm pr-10 focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+              <div className="relative">
+                <input
+                  type={showConfirmNewPassword ? "text" : "password"}
+                  placeholder="Confirm New Password"
+                  value={confirmNewPassword}
+                  onChange={(e) => setConfirmNewPassword(e.target.value)}
+                  className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-sm pr-10 focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmNewPassword(!showConfirmNewPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  {showConfirmNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+            <div className="mt-3 flex justify-end space-x-2">
+              <button
+                className="bg-gray-300 text-[#78533F] px-4 py-1.5 rounded-full hover:bg-gray-400 font-serif"
+                onClick={() => setShowResetModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="bg-[#ED695A] text-white px-4 py-1.5 rounded-full hover:bg-[#d85c4e] font-serif"
+                onClick={handleResetPassword}
+              >
+                Reset
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
