@@ -1,10 +1,10 @@
 import type React from "react"
-import { useState } from "react"
-import { Eye, EyeOff } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Eye, EyeOff, Loader2 } from "lucide-react"
 import tk from '../../assets/Rectangle 30.png'
 import { useNavigate } from "react-router-dom"
 import Header from "../../component/user/Header"
-import { userSingUpRequest } from "../../api/userApi"
+import { userSingUpRequest, verifyOTP, verifyUserOtp } from "../../api/userApi"
 import { toast } from 'react-toastify'
 
 const UserRegistrationPage: React.FC = () => {
@@ -12,13 +12,14 @@ const UserRegistrationPage: React.FC = () => {
   const [showOtpModal, setShowOtpModal] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [otp, setOtp] = useState("")
+  const [timer, setTimer] = useState(60)
+  const [isResendDisabled, setIsResendDisabled] = useState(true)
+  const [isSigningUp, setIsSigningUp] = useState(false)
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false)
+  const [isResendingOtp, setIsResendingOtp] = useState(false)
 
   const [formData, setFormData] = useState({
-    district: "",
-    administrative: "",
-    panchayath: "",
-    location: "",
-    address: "",
     firstName: "",
     lastName: "",
     email: "",
@@ -26,6 +27,19 @@ const UserRegistrationPage: React.FC = () => {
     password: "",
     confirmPassword: "",
   })
+
+  // Timer for resend OTP
+  useEffect(() => {
+    let interval: any
+    if (showOtpModal && timer > 0) {
+      interval = setInterval(() => {
+        setTimer((prev) => prev - 1)
+      }, 1000)
+    } else if (timer === 0) {
+      setIsResendDisabled(false)
+    }
+    return () => clearInterval(interval)
+  }, [showOtpModal, timer])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -35,26 +49,96 @@ const UserRegistrationPage: React.FC = () => {
     })
   }
 
-  const handleOtpModal = async () => {
-    setShowOtpModal(false)
-    navigate('/login', { state: { email: formData.email } })
+  const handleVerifyOtp = async () => {
+    if (!otp || otp.length !== 6) {
+      toast.error("Please enter a valid 6-digit OTP")
+      return
+    }
+    setIsVerifyingOtp(true)
+    try {
+      console.log("Verifying OTP for email:", formData.email, "OTP:", otp)
+      await verifyUserOtp(formData.email, otp)
+      toast.success("OTP verified successfully")
+      setShowOtpModal(false)
+      setOtp("")
+      navigate('/login', { state: { email: formData.email } })
+    } catch (error: any) {
+      console.error("OTP verification error:", error)
+      toast.error(error.response?.data?.message || "Invalid OTP")
+    } finally {
+      setIsVerifyingOtp(false)
+    }
+  }
+
+  const handleResendOtp = async () => {
+    setIsResendingOtp(true)
+    try {
+      console.log("Resending OTP for email:", formData.email)
+      // await resendOTP(formData.email)
+      toast.success("OTP resent to your email")
+      setTimer(60)
+      setIsResendDisabled(true)
+      setOtp("")
+    } catch (error: any) {
+      console.error("Resend OTP error:", error)
+      toast.error(error.response?.data?.message || "Error resending OTP")
+    } finally {
+      setIsResendingOtp(false)
+    }
   }
 
   const handleSignup = async () => {
-    const response = await userSingUpRequest(formData)
-    if (response.data.success === false) {
-      toast.error(response.data.message || 'Signup failed!')
-    } else {
-      setShowOtpModal(true)
+    if (formData.password !== formData.confirmPassword) {
+      toast.error("Passwords do not match")
+      return
+    }
+    if (!formData.firstName || !formData.lastName || !formData.email || !formData.phone) {
+      toast.error("Please fill all required fields")
+      return
+    }
+    setIsSigningUp(true)
+    try {
+      console.log("Sending userSingUpRequest with formData:", formData)
+      const response = await userSingUpRequest(formData)
+      console.log("userSingUpRequest response:", response)
+      // Show OTP modal if OTP is sent (new user or existing unverified user)
+
+      if (response.data.success === false) {
+              toast.error(response.data.message || 'Signup failed!')
+            } else {
+              toast.success("OTP sent to your email")
+              setShowOtpModal(true)
+              setTimer(60)
+        setIsResendDisabled(true)
+            }
+      // if (
+      //   response.success ||
+      //   response.data.message.includes("OTP is still valid") ||
+      //   response.message.includes("A new OTP has been sent")
+      // ) {
+      //   toast.success(response.message || "OTP sent to your email")
+      //   setShowOtpModal(true)
+      //   setTimer(60)
+      //   setIsResendDisabled(true)
+      // } else {
+      //   toast.error(response.message || "Signup failed!")
+      // }
+    } catch (error: any) {
+      console.error("Signup error:", error)
+      toast.error(error.response?.data?.message || "Error during signup")
+    } finally {
+      setIsSigningUp(false)
     }
   }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    console.log("Form submitted")
     handleSignup()
   }
 
   const handleLogin = () => {
+    console.log("Navigating to login with email:", formData.email)
     navigate('/login', { state: { email: formData.email } })
   }
 
@@ -110,81 +194,6 @@ const UserRegistrationPage: React.FC = () => {
             <form onSubmit={handleSubmit} className="space-y-3">
               <div className="bg-gray-50 p-3 rounded-xl">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <label htmlFor="district" className="text-left block text-[#78533F] font-medium text-sm font-serif">
-                      District
-                    </label>
-                    <input
-                      type="text"
-                      id="district"
-                      name="district"
-                      className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200"
-                      value={formData.district}
-                      onChange={handleChange}
-                      placeholder="Enter district"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label htmlFor="administrative" className="text-left block text-[#78533F] font-medium text-sm font-serif">
-                      Administrative
-                    </label>
-                    <input
-                      type="text"
-                      id="administrative"
-                      name="administrative"
-                      className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200"
-                      value={formData.administrative}
-                      onChange={handleChange}
-                      placeholder="Enter administrative"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label htmlFor="panchayath" className="text-left block text-[#78533F] font-medium text-sm font-serif">
-                      Panchayath
-                    </label>
-                    <input
-                      type="text"
-                      id="panchayath"
-                      name="panchayath"
-                      className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200"
-                      value={formData.panchayath}
-                      onChange={handleChange}
-                      placeholder="Enter panchayath"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label htmlFor="location" className="text-left block text-[#78533F] font-medium text-sm font-serif">
-                      Location
-                    </label>
-                    <input
-                      type="text"
-                      id="location"
-                      name="location"
-                      className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200"
-                      value={formData.location}
-                      onChange={handleChange}
-                      placeholder="Enter location"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label htmlFor="address" className="text-left block text-[#78533F] font-medium text-sm font-serif">
-                      Address
-                    </label>
-                    <input
-                      type="text"
-                      id="address"
-                      name="address"
-                      className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200"
-                      value={formData.address}
-                      onChange={handleChange}
-                      placeholder="Enter address"
-                      required
-                    />
-                  </div>
                   <div className="space-y-1">
                     <label htmlFor="firstName" className="text-left block text-[#78533F] font-medium text-sm font-serif">
                       First Name
@@ -312,9 +321,17 @@ const UserRegistrationPage: React.FC = () => {
 
               <button
                 type="submit"
-                className="w-full bg-[#ED695A] text-white font-semibold py-2 rounded-full shadow hover:bg-[#d85c4e] transition-all duration-300 font-serif"
+                className="w-full bg-[#ED695A] text-white font-semibold py-2 rounded-full shadow hover:bg-[#d85c4e] transition-all duration-300 font-serif flex items-center justify-center"
+                disabled={isSigningUp}
               >
-                Create Account
+                {isSigningUp ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  'Create Account'
+                )}
               </button>
             </form>
 
@@ -330,21 +347,56 @@ const UserRegistrationPage: React.FC = () => {
         </div>
 
         {showOtpModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-2">
             <div className="bg-white rounded-2xl shadow-lg p-4 w-full max-w-xs sm:max-w-sm">
               <h2 className="text-lg sm:text-xl font-bold text-[#6D4C41] mb-3 font-serif">Enter OTP</h2>
               <input
                 type="text"
-                placeholder="Enter OTP"
+                placeholder="Enter 6-digit OTP"
                 className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                maxLength={6}
               />
-              <div className="mt-3 flex justify-end">
+              <div className="mt-3 flex justify-end space-x-2">
                 <button
-                  className="bg-[#EB5E28] text-white px-3 py-1.5 rounded-full hover:bg-[#d44f1f] font-serif"
-                  onClick={handleOtpModal}
+                  className="bg-gray-300 text-[#78533F] px-3 py-1.5 rounded-full hover:bg-gray-400 font-serif"
+                  onClick={() => {
+                    setShowOtpModal(false)
+                    setOtp("")
+                  }}
                 >
-                  Submit
+                  Cancel
                 </button>
+                <button
+                  className="bg-[#EB5E28] text-white px-3 py-1.5 rounded-full hover:bg-[#d44f1f] font-serif flex items-center justify-center"
+                  onClick={handleVerifyOtp}
+                  disabled={isVerifyingOtp}
+                >
+                  {isVerifyingOtp ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Verifying...
+                    </>
+                  ) : (
+                    'Submit'
+                  )}
+                </button>
+              </div>
+              <div className="mt-2 text-center">
+                {timer > 0 ? (
+                  <p className="text-sm text-gray-600 font-serif">
+                    Resend in {Math.floor(timer / 60)}:{timer % 60 < 10 ? `0${timer % 60}` : timer % 60}
+                  </p>
+                ) : (
+                  <button
+                    className={`text-[#ED695A] hover:underline font-serif ${isResendDisabled || isResendingOtp ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    onClick={handleResendOtp}
+                    disabled={isResendDisabled || isResendingOtp}
+                  >
+                    {isResendingOtp ? 'Resending...' : 'Resend OTP'}
+                  </button>
+                )}
               </div>
             </div>
           </div>

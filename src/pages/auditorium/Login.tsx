@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import tk from "../../assets/Rectangle 50.png";
 import { useNavigate, useLocation } from "react-router-dom";
 import Header from "../../component/user/Header";
@@ -30,9 +30,14 @@ const LoginPage: React.FC = () => {
   const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
   const [timer, setTimer] = useState(60);
   const [isResendDisabled, setIsResendDisabled] = useState(true);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [isResendingOtp, setIsResendingOtp] = useState(false);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
 
   useEffect(() => {
-    let interval;
+    let interval:any;
     if (showOtpModal && timer > 0) {
       interval = setInterval(() => {
         setTimer((prev) => prev - 1);
@@ -45,6 +50,7 @@ const LoginPage: React.FC = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoggingIn(true);
     try {
       dispatch(loginStart());
       const response = await AuditoriumLogin(email, password);
@@ -62,6 +68,8 @@ const LoginPage: React.FC = () => {
     } catch (error: any) {
       dispatch(loginFailure());
       toast.error(error.response?.data?.message || 'Login failed');
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
@@ -71,6 +79,7 @@ const LoginPage: React.FC = () => {
   };
 
   const handleSendOtp = async () => {
+    setIsSendingOtp(true);
     try {
       await forgotPassword(forgotEmail);
       toast.success("OTP sent to your email");
@@ -80,10 +89,13 @@ const LoginPage: React.FC = () => {
       setIsResendDisabled(true);
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Error sending OTP");
+    } finally {
+      setIsSendingOtp(false);
     }
   };
 
   const handleVerifyOtp = async () => {
+    setIsVerifyingOtp(true);
     try {
       await verifyOTP(forgotEmail, otp);
       toast.success("OTP verified");
@@ -92,10 +104,13 @@ const LoginPage: React.FC = () => {
       setOtp(""); // Clear OTP after verification
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Invalid OTP");
+    } finally {
+      setIsVerifyingOtp(false);
     }
   };
 
   const handleResendOtp = async () => {
+    setIsResendingOtp(true);
     try {
       await forgotPassword(forgotEmail);
       toast.success("OTP resent");
@@ -104,6 +119,8 @@ const LoginPage: React.FC = () => {
       setOtp(""); // Clear OTP when resending
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Error resending OTP");
+    } finally {
+      setIsResendingOtp(false);
     }
   };
 
@@ -112,6 +129,7 @@ const LoginPage: React.FC = () => {
       toast.error("Passwords do not match");
       return;
     }
+    setIsResettingPassword(true);
     try {
       await resetPassword(newPassword,forgotEmail);
       toast.success("Password reset successful");
@@ -121,6 +139,8 @@ const LoginPage: React.FC = () => {
       setForgotEmail(""); // Clear forgot email
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Error resetting password");
+    } finally {
+      setIsResettingPassword(false);
     }
   };
 
@@ -235,9 +255,17 @@ const LoginPage: React.FC = () => {
               </div>
               <button
                 type="submit"
-                className="w-full bg-[#ED695A] text-white font-semibold py-2 rounded-full shadow-md hover:bg-[#d85c4e] transition-all duration-300 font-serif"
+                className="w-full bg-[#ED695A] text-white font-semibold py-2 rounded-full shadow-md hover:bg-[#d85c4e] transition-all duration-300 font-serif flex items-center justify-center"
+                disabled={isLoggingIn}
               >
-                Sign In
+                {isLoggingIn ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Signing In...
+                  </>
+                ) : (
+                  'Sign In'
+                )}
               </button>
               <div className="text-center mt-3">
                 <span className="text-sm text-gray-600 font-serif">Don't have an account?</span>
@@ -274,10 +302,18 @@ const LoginPage: React.FC = () => {
                 Cancel
               </button>
               <button
-                className="bg-[#ED695A] text-white px-4 py-1.5 rounded-full hover:bg-[#d85c4e] font-serif"
+                className="bg-[#ED695A] text-white px-4 py-1.5 rounded-full hover:bg-[#d85c4e] font-serif flex items-center justify-center"
                 onClick={handleSendOtp}
+                disabled={isSendingOtp}
               >
-                Send OTP
+                {isSendingOtp ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  'Send OTP'
+                )}
               </button>
             </div>
           </div>
@@ -293,7 +329,7 @@ const LoginPage: React.FC = () => {
               type="text"
               placeholder="Enter 6-digit OTP"
               value={otp}
-              onChange={(e) => setOtp(e.target.value)}
+              onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
               maxLength={6}
               className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200"
             />
@@ -305,10 +341,18 @@ const LoginPage: React.FC = () => {
                 Cancel
               </button>
               <button
-                className="bg-[#ED695A] text-white px-4 py-1.5 rounded-full hover:bg-[#d85c4e] font-serif"
+                className="bg-[#ED695A] text-white px-4 py-1.5 rounded-full hover:bg-[#d85c4e] font-serif flex items-center justify-center"
                 onClick={handleVerifyOtp}
+                disabled={isVerifyingOtp}
               >
-                Verify
+                {isVerifyingOtp ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Verifying...
+                  </>
+                ) : (
+                  'Verify'
+                )}
               </button>
             </div>
             <div className="mt-2 text-center">
@@ -318,11 +362,11 @@ const LoginPage: React.FC = () => {
                 </p>
               ) : (
                 <button
-                  className="text-[#ED695A] hover:underline font-serif"
+                  className={`text-[#ED695A] hover:underline font-serif ${isResendDisabled || isResendingOtp ? 'opacity-50 cursor-not-allowed' : ''}`}
                   onClick={handleResendOtp}
-                  disabled={isResendDisabled}
+                  disabled={isResendDisabled || isResendingOtp}
                 >
-                  Resend OTP
+                  {isResendingOtp ? 'Resending...' : 'Resend OTP'}
                 </button>
               )}
             </div>
@@ -377,10 +421,18 @@ const LoginPage: React.FC = () => {
                 Cancel
               </button>
               <button
-                className="bg-[#ED695A] text-white px-4 py-1.5 rounded-full hover:bg-[#d85c4e] font-serif"
+                className="bg-[#ED695A] text-white px-4 py-1.5 rounded-full hover:bg-[#d85c4e] font-serif flex items-center justify-center"
                 onClick={handleResetPassword}
+                disabled={isResettingPassword}
               >
-                Reset
+                {isResettingPassword ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Resetting...
+                  </>
+                ) : (
+                  'Reset'
+                )}
               </button>
             </div>
           </div>

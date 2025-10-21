@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState } from "react"
-import { Eye, EyeOff } from "lucide-react"
+import { Eye, EyeOff, Loader2 } from "lucide-react"
 import tk from "../../assets/Rectangle 50.png"
 import { useNavigate } from "react-router-dom"
 import Header from "../../component/user/Header"
@@ -23,6 +23,8 @@ const AuditoriumRegistrationPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [currentStep, setCurrentStep] = useState(1)
+  const [isSigningUp, setIsSigningUp] = useState(false)
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false)
 
   const [formData, setFormData] = useState({
     auditoriumName: "",
@@ -298,6 +300,7 @@ const AuditoriumRegistrationPage: React.FC = () => {
       toast.error("Please enter a valid 6-digit OTP")
       return
     }
+    setIsVerifyingOtp(true)
     try {
       console.log("Verifying OTP for email:", formData.email, "OTP:", otp)
       await verifyOTP(formData.email, otp)
@@ -308,6 +311,8 @@ const AuditoriumRegistrationPage: React.FC = () => {
     } catch (error: any) {
       console.error("OTP verification error:", error)
       toast.error(error.response?.data?.message || "Invalid OTP")
+    } finally {
+      setIsVerifyingOtp(false)
     }
   }
 
@@ -368,6 +373,7 @@ const AuditoriumRegistrationPage: React.FC = () => {
       toast.error('Please enter address.')
       return
     }
+    setIsSigningUp(true)
     try {
       console.log("Sending signUpRequest with formData:", formData)
       const response = await singUpRequest(formData)
@@ -381,6 +387,8 @@ const AuditoriumRegistrationPage: React.FC = () => {
     } catch (error: any) {
       console.error("Signup error:", error)
       toast.error(error.response?.data?.message || "Error during signup")
+    } finally {
+      setIsSigningUp(false)
     }
   }
 
@@ -842,9 +850,17 @@ const AuditoriumRegistrationPage: React.FC = () => {
                 ) : (
                   <button
                     type="submit"
-                    className="w-full bg-[#ED695A] text-white font-semibold py-2 rounded-full shadow-md hover:bg-[#d85c4e] transition-all duration-300 font-serif"
+                    className="w-full bg-[#ED695A] text-white font-semibold py-2 rounded-full shadow-md hover:bg-[#d85c4e] transition-all duration-300 font-serif flex items-center justify-center"
+                    disabled={isSigningUp}
                   >
-                    Register
+                    {isSigningUp ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Registering...
+                      </>
+                    ) : (
+                      'Register'
+                    )}
                   </button>
                 )}
               </div>
@@ -869,7 +885,7 @@ const AuditoriumRegistrationPage: React.FC = () => {
                 type="text"
                 placeholder="Enter 6-digit OTP"
                 value={otp}
-                onChange={(e) => setOtp(e.target.value)}
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
                 maxLength={6}
                 className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200"
               />
@@ -884,10 +900,18 @@ const AuditoriumRegistrationPage: React.FC = () => {
                   Cancel
                 </button>
                 <button
-                  className="bg-[#ED695A] text-white px-4 py-1.5 rounded-full hover:bg-[#d85c4e] font-serif"
+                  className="bg-[#ED695A] text-white px-4 py-1.5 rounded-full hover:bg-[#d85c4e] font-serif flex items-center justify-center"
                   onClick={handleVerifyOtp}
+                  disabled={isVerifyingOtp}
                 >
-                  Verify
+                  {isVerifyingOtp ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Verifying...
+                    </>
+                  ) : (
+                    'Verify'
+                  )}
                 </button>
               </div>
             </div>

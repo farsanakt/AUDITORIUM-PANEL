@@ -409,8 +409,6 @@ export const currentVendorUserData=async(id:string)=>{
 
 export const userSingUpRequest=async(formData:any)=>{
 
-  console.log('apiii',formData)
-
   try {
 
       const response = await api.post('/registration', formData)
@@ -523,6 +521,32 @@ export const resetPassword=async(pass:string,email:string)=>{
   return await api.post('/resetpass',{pass,email})
 
 }
+
+
+//################# Forget password in user side ############
+
+export const  verifyUserOtp=async(email:string,otp:string)=>{
+
+  return await api.post('/verifyuserotp',{email,otp})
+
+
+
+}
+
+export const userResetPassword=async(email:string,pass:string)=>{
+
+  return await api.post('/userresetpass',{pass,email})
+
+}
+
+export const userForgotPassword=async(email:string)=>{
+
+  console.log('nknnneneee')
+
+  return await api.post('/userforgetpass',{email})
+
+}
+
 
 //################# Admin ############
 
