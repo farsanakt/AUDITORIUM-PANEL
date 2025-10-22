@@ -13,7 +13,7 @@ interface SubscriptionPlan {
   durationUnits: string;
   description: string;
   features: string[];
-  userType: 'vendorside' | 'auditoriumside';
+  userType: 'vendorside' | 'auditoriumside' | 'both';
   userId: string;
 }
 
@@ -23,7 +23,7 @@ interface RootState {
   };
 }
 
-const initialFormData: Omit<SubscriptionPlan, 'id' | 'userId'> = {
+const initialFormData: Omit<SubscriptionPlan, '_id' | 'userId'> = {
   planName: '',
   price: 0,
   duration: 0,
@@ -38,7 +38,7 @@ const AdminSubscriptionManager: React.FC = () => {
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentPlan, setCurrentPlan] = useState<SubscriptionPlan | null>(null);
-  const [formData, setFormData] = useState<Omit<SubscriptionPlan, 'id' | 'userId'>>(initialFormData);
+  const [formData, setFormData] = useState<Omit<SubscriptionPlan, '_id' | 'userId'>>(initialFormData);
   const [newFeature, setNewFeature] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -48,12 +48,6 @@ const AdminSubscriptionManager: React.FC = () => {
   }, [currentUser]);
 
   const fetchUserPlans = async () => {
-    // if (!currentUser?.id) {
-    //   setError('User not logged in');
-    //   setIsLoading(false);
-    //   return;
-    // }
-
     try {
       setIsLoading(true);
       const response = await fetchAdminPlans();
@@ -115,6 +109,7 @@ const AdminSubscriptionManager: React.FC = () => {
         console.log('hiiii')
         console.log(currentPlan._id,'ide')
         const response = await updateSubscriptionPlan(currentPlan._id, formData);
+        
         if (response.data.message) {
           toast.success('Plan updated successfully');
           await fetchUserPlans();
@@ -124,6 +119,7 @@ const AdminSubscriptionManager: React.FC = () => {
         }
       } else {
         const response = await createSubscriptionPlan(formData);
+        console.log('res',response)
         if (response.data.message) {
           toast.success('Plan created successfully');
           await fetchUserPlans();
@@ -162,7 +158,7 @@ const AdminSubscriptionManager: React.FC = () => {
     if (!result.isConfirmed) return;
 
     try {
-      const response = await deleteSubscriptionPlan(planId);
+      const response= await deleteSubscriptionPlan(planId);
       if (response.data.success) {
         toast.success('Plan deleted successfully');
         await fetchUserPlans();
@@ -177,8 +173,17 @@ const AdminSubscriptionManager: React.FC = () => {
     }
   };
 
-  const getUserTypeLabel = (userType: 'vendorside' | 'auditoriumside') => {
-    return userType === 'vendorside' ? 'Vendor Side' : 'Auditorium Side';
+  const getUserTypeLabel = (userType: 'vendorside' | 'auditoriumside' | 'both') => {
+    switch (userType) {
+      case 'vendorside':
+        return 'Vendor Side';
+      case 'auditoriumside':
+        return 'Auditorium Side';
+      case 'both':
+        return 'Both';
+      default:
+        return userType;
+    }
   };
 
   return (
@@ -282,7 +287,9 @@ const AdminSubscriptionManager: React.FC = () => {
                             className={`inline-flex px-2 sm:px-2.5 py-1 rounded-full text-xs sm:text-sm font-semibold ring-1 ring-inset ${
                               plan.userType === 'vendorside'
                                 ? 'bg-green-50 text-green-700 ring-green-600/20'
-                                : 'bg-indigo-50 text-indigo-700 ring-indigo-600/20'
+                                : plan.userType === 'auditoriumside'
+                                ? 'bg-indigo-50 text-indigo-700 ring-indigo-600/20'
+                                : 'bg-blue-50 text-blue-700 ring-blue-600/20'
                             }`}
                           >
                             {getUserTypeLabel(plan.userType)}
@@ -438,6 +445,7 @@ const AdminSubscriptionManager: React.FC = () => {
                   >
                     <option value="vendorside">Vendor Side</option>
                     <option value="auditoriumside">Auditorium Side</option>
+                    <option value="both">Both</option>
                   </select>
                 </div>
               </div>
