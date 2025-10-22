@@ -9,6 +9,7 @@ import VendorsManagement from "../admin/AllVendors"
 import VoucherList from "../admin/VoucherList"
 import AddAdminStaff from "../admin/AdminStaff"
 import BookingsManagement from "../admin/AllAuditoriumBookings"
+import AdminSubscriptionManager from "../admin/Subscription"
 
 const AdminRoute = () => {
 
@@ -24,6 +25,7 @@ const AdminRoute = () => {
         <Route path='/allvouchers' element={<VoucherList/>}/>
         <Route path='/adminstaff' element={<AddAdminStaff/>}/>
         <Route path='/allauditoriumbookings' element={<BookingsManagement/>}/>
+        <Route path='/subscriptionmanagement' element={<AdminSubscriptionManager/>}/>
         </Routes> 
     </div>
   )
