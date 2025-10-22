@@ -92,6 +92,7 @@ const AdminDashboard: React.FC = () => {
     { path: '/admin/allvouchers', label: 'All Vouchers', icon: Ticket, count: stats.totalVouchers || 0 },
     { path: '/admin/adminstaff', label: 'Staff', icon: Users, count: 0 },
     { path: '/admin/others', label: 'Others', icon: Home, count: 0 },
+    { path: '/admin/subscriptionmanagement', label: 'Subscription', icon: Home, count: 0 },
   ];
 
   return (
@@ -129,7 +130,7 @@ const AdminDashboard: React.FC = () => {
               </div>
 
               {/* Recent Activity */}
-              <div className="bg-white p-6 rounded-xl shadow-md border border-[#b09d94]">
+              {/* <div className="bg-white p-6 rounded-xl shadow-md border border-[#b09d94]">
                 <h3 className="text-sm font-semibold text-[#78533F] font-serif mb-4">Recent Activity</h3>
                 <div className="space-y-4">
                   {dummyRecentActivity.map((activity) => (
@@ -142,7 +143,7 @@ const AdminDashboard: React.FC = () => {
                     </div>
                   ))}
                 </div>
-              </div>
+              </div> */}
             </div>
           )}
         </div>
