@@ -58,7 +58,7 @@ const Sidebar: React.FC = () => {
     { title: "Settings", path: "#" },
   ];
 
-  // ✅ Add "Subscription" option only if vendor is verified
+
   const menuItems = vendorData?.isVerified
     ? [
         ...baseMenuItems.slice(0, 4),

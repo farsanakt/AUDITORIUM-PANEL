@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
 import { createSubscriptionPlan, deleteSubscriptionPlan, fetchAdminPlans, updateSubscriptionPlan } from '../../api/userApi';
+import Header from '../../component/user/Header';
 
 interface SubscriptionPlan {
   _id?: string;
@@ -188,8 +189,9 @@ const AdminSubscriptionManager: React.FC = () => {
 
   return (
     <div className="min-h-screen from-slate-50 via-white to-gray-50 py-6 px-4 sm:px-6 lg:px-8">
+      <Header/>
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center text-[#78533F] mb-8 sm:mb-12">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl  font-bold text-center text-[#78533F] mb-8 sm:mb-12">
           Subscription Plans Management
         </h1>
         {isLoading ? (
@@ -202,7 +204,7 @@ const AdminSubscriptionManager: React.FC = () => {
             <div className="p-4 sm:p-6 border-b bg-gradient-to-r from-[#78533F]/5 to-[#ED695A]/5">
               <button
                 onClick={() => openModal()}
-                className="inline-flex items-center px-4 py-2 sm:px-6 sm:py-3 bg-[#78533F] text-white rounded-full font-semibold text-sm sm:text-base hover:bg-[#634331] transition-all duration-300 shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-[#ED695A] focus:ring-offset-2"
+                className="inline-flex items-center mt-0 px-4 py-2 sm:px-6 sm:py-3 bg-[#78533F] text-white rounded-full font-semibold text-sm sm:text-base hover:bg-[#634331] transition-all duration-300 shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-[#ED695A] focus:ring-offset-2"
               >
                 <span className="mr-2">+</span>
                 Add New Plan

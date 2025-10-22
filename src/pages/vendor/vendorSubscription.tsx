@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react"
 import { Check, ChevronLeft, ChevronRight } from "lucide-react"
 import { fetchAdminPlans } from "../../api/userApi"
+import Header from "../../component/user/Header"
 
 
 interface Plan {
@@ -113,6 +114,7 @@ const SubscriptionPlans: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#FDF8F1] py-8 px-4 sm:px-6 lg:px-8">
+      {/* <Header/> */}
       <div className="max-w-7xl mx-auto">
         {/* Header Section */}
         <div className="text-center mb-8 sm:mb-12">
