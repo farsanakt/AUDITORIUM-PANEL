@@ -557,6 +557,7 @@ export const addAdminStaff=async(formdata:any)=>{
 }
 
 
+
 export const fetchAllAdminStaff=async()=>{
 
   return await api.get('/fetchadminstaff')
@@ -581,5 +582,30 @@ export const deleteAdminStaff=async(id:string)=>{
 export const allAuditoriumBookings=async()=>{
 
   return await api.get('/allauditoriumbokkings')
+
+}
+
+
+export const fetchAdminPlans=async()=>{
+
+  return await api.get('/allsubplans')
+
+}
+
+export const updateSubscriptionPlan=async(planId:string,planData:any)=>{
+
+  return await api.put(`/updatesubplans/${planId}`,planData)
+
+}
+
+export const deleteSubscriptionPlan=async(planId:string)=>{
+
+  return await api.delete(`/deletesubplans/${planId}`)
+
+}
+
+export const createSubscriptionPlan=async(planeData:any)=>{
+
+  return await api.post('/createsubplans',planeData)
 
 }
