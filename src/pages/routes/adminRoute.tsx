@@ -1,4 +1,4 @@
-import { Route, Routes } from "react-router-dom"
+import { Navigate, Route, Routes } from "react-router-dom"
 import AdminLogin from "../admin/AdminLogin"
 import AdminDashboard from "../admin/AdminDasboard"
 import AuditoriumManagement from "../admin/AllAuditorium"
@@ -10,8 +10,12 @@ import VoucherList from "../admin/VoucherList"
 import AddAdminStaff from "../admin/AdminStaff"
 import BookingsManagement from "../admin/AllAuditoriumBookings"
 import AdminSubscriptionManager from "../admin/Subscription"
+import { useSelector } from "react-redux"
 
 const AdminRoute = () => {
+  const { currentUser } = useSelector((state: any) => state.auth);
+
+
 
   return (
     <div>
@@ -26,6 +30,16 @@ const AdminRoute = () => {
         <Route path='/adminstaff' element={<AddAdminStaff/>}/>
         <Route path='/allauditoriumbookings' element={<BookingsManagement/>}/>
         <Route path='/subscriptionmanagement' element={<AdminSubscriptionManager/>}/>
+          <Route
+        path="/"
+        element={
+          currentUser?.role === "admin" ? (
+            <Navigate to="/admin/dashboard" />
+          ) : (
+            <Navigate to="/admin/login" />
+          )
+        }
+      />
         </Routes> 
     </div>
   )

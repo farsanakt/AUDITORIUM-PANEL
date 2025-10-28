@@ -1,5 +1,5 @@
 
-import { Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes } from 'react-router-dom'
 import AuditoriumDetails from '../user/AuditoriumDetails'
 import Bookings from '../user/Bookings'
 import DetailsForm from '../auditorium/details'
@@ -13,10 +13,16 @@ import VendorDetails from '../user/vendorDetails'
 import ProtectedRoute from '../../service/user/userProtectedRoute'
 import UserProfile from '../user/userProfile'
 import UserBookings from '../user/userBookings'
+import { useSelector } from 'react-redux'
 
 
 
 const UserRoute = () => {
+
+  // const { currentUser } = useSelector((state: any) => state.auth);
+
+  // if (!currentUser) return <Navigate to="/login" />;
+  // if (currentUser.role !== "user") return <Navigate to="/" />;
  
   return (
     <div>

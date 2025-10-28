@@ -1,4 +1,4 @@
-import { Route,Routes } from "react-router-dom";
+import { Navigate, Route,Routes } from "react-router-dom";
 import LoginPage from "../auditorium/Login";
 import SignupPage from "../auditorium/Signup";
 import VenueManagement from "../auditorium/Venue";
@@ -8,18 +8,20 @@ import SlotManagementCalendar from "../auditorium/Slot";
 import DetailsForm from "../auditorium/details";
 import PaymentDetails from "../auditorium/Payment";
 import BookingConfirmation from "../auditorium/BookingsDetails";
-import AuditoriumDetails from "../user/AuditoriumDetails";
 import StaffManagementUI from "../auditorium/Staff";
 import InvoicePanel from "../auditorium/Invoice";
 import ProtectedRoute from "../../service/protectedRoute";
 import PublicRoute from "../../service/publicRoutes";
 import AuditoriumProfile from "../auditorium/profile";
 import Offer from "../auditorium/Offer";
-import NikahCertificate from "../auditorium/Certificate";
+
 import MarriageCertificateTemplate from "../auditorium/Certificate";
+import { useSelector } from "react-redux";
 
 
 function AuditoriumRoute() {
+   const { currentUser } = useSelector((state: any) => state.auth);
+
   return (
     <div>
       <Routes>
@@ -40,6 +42,16 @@ function AuditoriumRoute() {
         <Route path='/profile' element={<ProtectedRoute><AuditoriumProfile/></ProtectedRoute>}/>
         <Route path='/offer' element={<ProtectedRoute><Offer/></ProtectedRoute>}/>
         <Route path='/certificate' element={<MarriageCertificateTemplate/>}/>
+           <Route
+        path="/"
+        element={
+          currentUser?.role === "auditorium" ? (
+            <Navigate to="/auditorium/dashboard" />
+          ) : (
+            <Navigate to="/auditorium/login" />
+          )
+        }
+      />
       </Routes>
     </div>
   )
