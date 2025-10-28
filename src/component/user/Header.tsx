@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { logout } from "../../redux/slices/authSlice";
 import { User } from "lucide-react";
+import { toast } from "react-toastify";
 
 interface HeaderProps {
   onLoginClick?: () => void;
@@ -53,7 +54,8 @@ const Header: React.FC<HeaderProps> = () => {
   // 🔒 If logged in, warn before navigating to other login portals
   const handlePortalClick = (path: string) => {
     if (currentUser) {
-      alert("Please logout first before switching accounts.");
+      toast.error("Please logout first before switching accounts.")
+      // alert("Please logout first before switching accounts.");
       return;
     }
     navigate(path);
