@@ -1,131 +1,254 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
-import { Mail, Lock } from 'lucide-react';
+"use client";
 
+import React, { useState } from "react";
+import { Eye, EyeOff, Loader2, User, ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { toast } from "react-toastify";
+import Header from "../../component/user/Header"; // Adjust path as needed
+import { loginStart, loginSuccess, loginFailure } from "../../redux/slices/authSlice";
+import { AdminStaffLogin } from "../../api/userApi";
 
-const adminLoginAPI = async (email: string, password: string) => {
+// Types
+interface AdminStaff {
+  id: string;
+  staffid?: string;
+  role: "admin" | "staff";
+  email: string;
+}
 
-  return new Promise<{ success: boolean; message: string }>((resolve, reject) => {
-    setTimeout(() => {
-      if (email === 'admin@gmail.com' && password === 'admin123') {
-        resolve({ success: true, message: 'Login successful' });
-      } else {
-        reject({ success: false, message: 'Invalid email or password' });
-      }
-    }, 1000);
-  });
-};
+interface LoginFormData {
+  staffid: string;
+  email: string;
+  password: string;
+}
+
+interface RootState {
+  auth: {
+    currentUser: AdminStaff | null;
+  };
+}
 
 const AdminLogin: React.FC = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [loginMode, setLoginMode] = useState<"admin" | "staff">("admin");
+  const [formData, setFormData] = useState<LoginFormData>({ staffid: "", email: "", password: "" });
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const dispatch = useDispatch();
   const navigate = useNavigate();
 
+  const handleInputChange = (field: keyof LoginFormData, value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
   const validateForm = () => {
-    if (!email) {
-      setError('Email is required');
+    if (loginMode === "staff" && !formData.staffid) {
+      toast.error("Staff ID is required");
       return false;
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setError('Invalid email format');
+    if (!formData.email) {
+      toast.error("Email is required");
       return false;
     }
-    if (!password) {
-      setError('Password is required');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      toast.error("Invalid email format");
       return false;
     }
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters');
+    if (!formData.password) {
+      toast.error("Password is required");
+      return false;
+    }
+    if (formData.password.length < 6) {
+      toast.error("Password must be at least 6 characters");
       return false;
     }
     return true;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
+ const handleLogin = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!validateForm()) return;
 
-    if (!validateForm()) return;
+  setIsLoggingIn(true);
 
-    setIsLoading(true);
-    try {
-      const response = await adminLoginAPI(email, password);
-      if (response.success) {
-        toast.success(response.message);
-        navigate('/admin/dashboard');
-      }
-    } catch (error: any) {
-      const errorMessage = error.message || 'Login failed. Please try again.';
-      setError(errorMessage);
-      toast.error(errorMessage);
-    } finally {
-      setIsLoading(false);
+  try {
+    dispatch(loginStart());
+
+    const response = await AdminStaffLogin(
+      loginMode,                // ✅ first argument: loginMode
+      formData.email,           // ✅ second: email
+      formData.password,        // ✅ third: password
+      formData.staffid || ""    // ✅ fourth: staffid (optional)
+    );
+
+    const data = response.data; // ✅ always use response.data for Axios
+
+    if (data.success) {
+      dispatch(
+        loginSuccess({
+          user: {
+            id: data.user.id,
+            staffid: data.user.staffid,
+            role: data.user.role,
+            email: data.user.email,
+          },
+          accessToken: data.accessToken,
+        })
+      );
+      toast.success(data.message);
+      navigate("/admin/dashboard");
+    } else {
+      dispatch(loginFailure());
+      toast.error(data.message || "Login failed");
     }
+
+  } catch (error: any) {
+    dispatch(loginFailure());
+    toast.error(error.response?.data?.message || "Login failed");
+  } finally {
+    setIsLoggingIn(false);
+  }
+};
+
+  const handleSignup = () => {
+    navigate("/admin/signup");
   };
 
   return (
-    <div className="min-h-screen bg-[#FDF8F1] flex items-center justify-center px-4 py-6">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-[#b09d94] p-6 sm:p-8">
-        <h2 className="text-2xl sm:text-3xl font-bold text-[#78533F] font-serif text-center mb-6">
-          Admin Login
-        </h2>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Email Field */}
-          <div className="relative">
-            <label htmlFor="email" className="block text-sm font-semibold text-[#78533F] mb-2">
-              Email
-            </label>
-            <div className="flex items-center border border-[#b09d94] rounded-lg focus-within:ring-2 focus-within:ring-[#ED695A]">
-              <Mail size={20} className="ml-3 text-gray-400" />
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-3 py-2 border-none rounded-lg focus:outline-none text-sm text-[#78533F] bg-transparent"
-                placeholder="Enter your email"
-                disabled={isLoading}
-              />
-            </div>
-          </div>
-
-          {/* Password Field */}
-          <div className="relative">
-            <label htmlFor="password" className="block text-sm font-semibold text-[#78533F] mb-2">
-              Password
-            </label>
-            <div className="flex items-center border border-[#b09d94] rounded-lg focus-within:ring-2 focus-within:ring-[#ED695A]">
-              <Lock size={20} className="ml-3 text-gray-400" />
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-3 py-2 border-none rounded-lg focus:outline-none text-sm text-[#78533F] bg-transparent"
-                placeholder="Enter your password"
-                disabled={isLoading}
-              />
-            </div>
-          </div>
-
-          {/* Error Message */}
-          {error && (
-            <p className="text-sm text-[#ED695A] font-serif text-center">{error}</p>
-          )}
-
-          {/* Submit Button */}
+    <div className="min-h-screen bg-[#FDF8F1] flex flex-col items-center justify-center px-4 py-6 box-border">
+      <Header />
+      <div className="w-full max-w-md my-8">
+        <div className="flex items-center mb-6">
           <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full py-3 bg-[#ED695A] text-white rounded-lg hover:bg-[#D65A4C] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-semibold"
+            onClick={() => navigate("/admin")}
+            className="p-2 text-[#ED695A] hover:text-[#d85c4e] hover:bg-[#ED695A]/10 rounded-full"
           >
-            {isLoading ? 'Logging in...' : 'Login'}
+            <ArrowLeft size={24} />
           </button>
-        </form>
+          <h2 className="text-2xl md:text-3xl font-bold text-[#78533F] font-serif text-center flex-1">
+            {loginMode === "admin" ? "Admin Login" : "Staff Login"}
+          </h2>
+        </div>
+        <div className="bg-white shadow-2xl rounded-2xl p-6 border border-[#b09d94]">
+          <div className="flex justify-center space-x-4 mb-6">
+            <button
+              onClick={() => setLoginMode("admin")}
+              className={`px-4 py-2 font-serif text-sm rounded-full ${
+                loginMode === "admin"
+                  ? "bg-[#ED695A] text-white"
+                  : "bg-gray-200 text-[#78533F] hover:bg-gray-300"
+              } transition-all duration-300`}
+              disabled={isLoggingIn}
+            >
+              Admin
+            </button>
+            <button
+              onClick={() => setLoginMode("staff")}
+              className={`px-4 py-2 font-serif text-sm rounded-full ${
+                loginMode === "staff"
+                  ? "bg-[#ED695A] text-white"
+                  : "bg-gray-200 text-[#78533F] hover:bg-gray-300"
+              } transition-all duration-300`}
+              disabled={isLoggingIn}
+            >
+              Staff
+            </button>
+          </div>
+          <form onSubmit={handleLogin} className="space-y-4">
+            {loginMode === "staff" && (
+              <div className="space-y-1">
+                <div className="relative">
+                  <input
+                    type="text"
+                    id="staffid"
+                    value={formData.staffid}
+                    onChange={(e) => handleInputChange("staffid", e.target.value)}
+                    placeholder="Enter your staff ID"
+                    required
+                    className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200 font-serif"
+                  />
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <User size={16} className="text-[#b09d94]" />
+                  </div>
+                </div>
+              </div>
+            )}
+            <div className="space-y-1">
+              <div className="relative">
+                <input
+                  type="email"
+                  id="email"
+                  value={formData.email}
+                  onChange={(e) => handleInputChange("email", e.target.value)}
+                  placeholder="Enter your email"
+                  required
+                  className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200 font-serif"
+                />
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4 text-[#b09d94]"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="space-y-1">
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  id="password"
+                  value={formData.password}
+                  onChange={(e) => handleInputChange("password", e.target.value)}
+                  placeholder="Enter your password"
+                  required
+                  className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-sm pr-10 focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200 font-serif"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+            <button
+              type="submit"
+              className="w-full bg-[#ED695A] text-white font-semibold py-2 rounded-full shadow-md hover:bg-[#d85c4e] transition-all duration-300 font-serif flex items-center justify-center"
+              disabled={isLoggingIn}
+            >
+              {isLoggingIn ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Signing In...
+                </>
+              ) : (
+                "Sign In"
+              )}
+            </button>
+            <div className="text-center mt-3">
+              <span className="text-sm text-gray-600 font-serif">Don't have an account?</span>
+              <button
+                type="button"
+                onClick={handleSignup}
+                className="text-sm text-[#ED695A] ml-1 hover:text-[#78533F] hover:underline font-semibold font-serif"
+              >
+                Sign Up
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );

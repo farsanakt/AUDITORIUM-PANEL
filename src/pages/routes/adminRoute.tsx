@@ -11,6 +11,8 @@ import AddAdminStaff from "../admin/AdminStaff"
 import BookingsManagement from "../admin/AllAuditoriumBookings"
 import AdminSubscriptionManager from "../admin/Subscription"
 import { useSelector } from "react-redux"
+import AdminStaffLogin from "../admin/stafflogin"
+
 
 const AdminRoute = () => {
   const { currentUser } = useSelector((state: any) => state.auth);
@@ -29,6 +31,7 @@ const AdminRoute = () => {
         <Route path='/allvouchers' element={<VoucherList/>}/>
         <Route path='/adminstaff' element={<AddAdminStaff/>}/>
         <Route path='/allauditoriumbookings' element={<BookingsManagement/>}/>
+        <Route path='/stafflogin' element={<AdminStaffLogin/>}/>
         <Route path='/subscriptionmanagement' element={<AdminSubscriptionManager/>}/>
           <Route
         path="/"

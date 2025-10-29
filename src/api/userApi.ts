@@ -569,6 +569,21 @@ export const addAdminStaff=async(formdata:any)=>{
 }
 
 
+export const AdminStaffLogin = async (
+  loginMode: string,
+  email: string,
+  password: string,
+  staffid?: string
+): Promise<any> => {
+  const payload =
+    loginMode === "staff"
+      ? { staffid, email, password }
+      : { email, password };
+
+  return await api.post("/adminstaff/login", payload);
+};
+
+
 
 export const fetchAllAdminStaff=async()=>{
 
