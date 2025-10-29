@@ -35,7 +35,7 @@ const Header: React.FC<HeaderProps> = () => {
 
     const role = currentUser.role;
     if (role === "user") {
-      navigate("/profile");
+      navigate("/userprofile");
     } else if (role === "auditorium") {
       navigate("/auditorium/profile");
     } else if (role === "vendor") {
@@ -51,11 +51,10 @@ const Header: React.FC<HeaderProps> = () => {
     setDropdownOpen(false);
   };
 
-  // 🔒 If logged in, warn before navigating to other login portals
   const handlePortalClick = (path: string) => {
     if (currentUser) {
       toast.error("Please logout first before switching accounts.")
-      // alert("Please logout first before switching accounts.");
+
       return;
     }
     navigate(path);

@@ -115,6 +115,18 @@ export const verifyPswrd=async(id:string,password:string)=>{
 
 }
 
+export const updateEmaill=async(id:string,email:string)=>{
+
+return await api.put(`/updateemail/${id}`,{email})
+
+}
+
+export const updateProfile=async(id:string,updates: { [key: string]: any })=>{
+  
+  return await api.put(`/updatefeild/${id}`,updates)
+
+}
+
 export const updateVenues = async (formData: any, id: string) => {
   const response = await api.put(`/updatevenues/${id}`, formData, {
     headers: {

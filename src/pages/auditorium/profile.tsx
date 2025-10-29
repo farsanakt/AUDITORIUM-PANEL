@@ -1,20 +1,31 @@
-import React, { useState, useEffect } from 'react';
-import { Edit2, Save, X, Mail, Lock } from 'lucide-react';
-import { useSelector } from 'react-redux';
-import { fetchAuditoriumUserdetails, verifyPswrd } from '../../api/userApi';
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { Edit2, Save, X, Mail, Lock, Loader2, ArrowLeft } from "lucide-react";
+import { useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { fetchAuditoriumUserdetails, verifyPswrd, updateEmaill, updateProfile } from "../../api/userApi";
+import { toast } from "react-toastify";
 
 // Types
 interface AuditoriumUser {
   _id?: string;
   email: string;
   password: string;
+  role: "user" | "auditorium" | "admin";
   isVerified: boolean;
+  isOtp: boolean;
   isBlocked: boolean;
-  auditoriumName: string;
-  ownerName: string;
-  events: string[];
-  locations: string[];
-  phone: string;
+  auditoriumName?: string;
+  ownerName?: string;
+  address?: string;
+  district?: string;
+  panchayat?: string;
+  corporation?: string;
+  municipality?: string;
+  phone?: string;
+  events?: string[];
+  locations?: string[];
 }
 
 interface EditState {
@@ -35,48 +46,39 @@ interface RootState {
   };
 }
 
-// Mock API function - replace with your actual import
-// const fetchAuditoriumUserdetails = async (userId: string) => {
-//   // Replace this with your actual API call
-//   const response = await fetch(`/api/auditorium/user/${userId}`, {
-//     headers: {
-//       'Authorization': `Bearer ${localStorage.getItem('token')}`
-//     }
-//   });
-//   const data = await response.json();
-//   return { data: data.data };
-// };
-
 const AuditoriumProfile: React.FC = () => {
   const [userData, setUserData] = useState<AuditoriumUser | null>(null);
   const [editState, setEditState] = useState<EditState>({});
   const [formData, setFormData] = useState<FormData>({});
   const { currentUser } = useSelector((state: RootState) => state.auth);
-  
+  const navigate = useNavigate();
+
   // Email editing states
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showEmailModal, setShowEmailModal] = useState(false);
-  const [passwordInput, setPasswordInput] = useState('');
-  const [newEmailInput, setNewEmailInput] = useState('');
-  const [passwordError, setPasswordError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [passwordInput, setPasswordInput] = useState("");
+  const [newEmailInput, setNewEmailInput] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const fetchUserData = async () => {
     try {
       if (!currentUser?.id) return;
-      
-      setLoading(true);
+
+      setIsLoading(true);
       const response = await fetchAuditoriumUserdetails(currentUser.id);
-      console.log(response.data, 'this profile data');
-      
-      if (response.data) {
+
+      if (response.data.success === false) {
+        toast.error(response.data.message || "Error loading user data");
+      } else {
         setUserData(response.data);
+        // toast.success("Profile data loaded successfully");
       }
-    } catch (error) {
-      console.error('Error fetching user data:', error);
-      alert('Error loading user data');
+    } catch (error: any) {
+      console.error("Error fetching user data:", error);
+      toast.error(error.response?.data?.message || "Error loading user data");
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -84,276 +86,239 @@ const AuditoriumProfile: React.FC = () => {
     fetchUserData();
   }, [currentUser]);
 
-  // Show loading state if userData is not loaded
   if (!userData) {
     return (
-      <div className="max-w-4xl mx-auto p-6 bg-white">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-gray-500">Loading user data...</div>
+      <div className="min-h-screen bg-[#FDF8F1] flex items-center justify-center px-4 py-6">
+        <div className="bg-white shadow-2xl rounded-2xl p-6 max-w-3xl w-full flex items-center justify-center h-64">
+          <div className="text-[#78533F] font-serif">Loading user data...</div>
         </div>
       </div>
     );
   }
 
   const handleEditToggle = (field: string) => {
-    setEditState(prev => ({
+    setEditState((prev) => ({
       ...prev,
-      [field]: !prev[field]
+      [field]: !prev[field],
     }));
-    
+
     if (!editState[field]) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        [field]: userData[field as keyof AuditoriumUser]
+        [field]: userData[field as keyof AuditoriumUser],
       }));
     }
   };
 
   const handleInputChange = (field: string, value: any) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
   const handleArrayChange = (field: string, index: number, value: string) => {
-    const currentArray = formData[field] || userData[field as keyof AuditoriumUser];
+    const currentArray = formData[field] || userData[field as keyof AuditoriumUser] || [];
     const newArray = [...currentArray];
     newArray[index] = value;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: newArray
+      [field]: newArray,
     }));
   };
 
   const addArrayItem = (field: string) => {
-    const currentArray = formData[field] || userData[field as keyof AuditoriumUser];
-    const newArray = [...currentArray, ''];
-    setFormData(prev => ({
+    const currentArray = formData[field] || userData[field as keyof AuditoriumUser] || [];
+    const newArray = [...currentArray, ""];
+    setFormData((prev) => ({
       ...prev,
-      [field]: newArray
+      [field]: newArray,
     }));
   };
 
   const removeArrayItem = (field: string, index: number) => {
-    const currentArray = formData[field] || userData[field as keyof AuditoriumUser];
+    const currentArray = formData[field] || userData[field as keyof AuditoriumUser] || [];
     const newArray = currentArray.filter((_: any, i: number) => i !== index);
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: newArray
+      [field]: newArray,
     }));
   };
 
   const handleSave = async (field: string) => {
     try {
-      setLoading(true);
-      
-      // Use your actual API endpoint
-      const response = await fetch(`/api/auditorium/update-profile/${currentUser?.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          [field]: formData[field]
-        }),
-      });
-
-      const result = await response.json();
-
-      if (response.ok && result.success) {
-        setUserData(prev => prev ? ({
-          ...prev,
-          [field]: formData[field]
-        }) : null);
-        
-        setEditState(prev => ({
-          ...prev,
-          [field]: false
-        }));
-        
-        alert('Data updated successfully!');
-      } else {
-        alert(result.message || 'Failed to update data');
+      if (!currentUser?.id) {
+        toast.error("User ID not found");
+        return;
       }
-    } catch (error) {
-      console.error('Error updating data:', error);
-      alert('Error updating data');
+
+      setIsLoading(true);
+      const response = await updateProfile(currentUser.id, { [field]: formData[field] });
+
+      if (response.data.success) {
+        setUserData((prev) =>
+          prev
+            ? {
+                ...prev,
+                [field]: formData[field],
+              }
+            : null
+        );
+
+        setEditState((prev) => ({
+          ...prev,
+          [field]: false,
+        }));
+
+        toast.success("Data updated successfully!");
+      } else {
+        toast.error(response.data.message || "Failed to update data");
+      }
+    } catch (error: any) {
+      console.error("Error updating data:", error);
+      toast.error(error.response?.data?.message || "Error updating data");
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   const handleEmailEditClick = () => {
     setShowPasswordModal(true);
-    setPasswordInput('');
-    setPasswordError('');
+    setPasswordInput("");
+    setPasswordError("");
   };
-
-  // const verifyPassword = async () => {
-  //   try {
-  //     setLoading(true);
-  //     setPasswordError('');
-      
-  //     // const response = await fetch(`/api/auditorium/verify-password/${currentUser?.id}`, {
-  //     //   method: 'POST',
-  //     //   headers: {
-  //     //     'Content-Type': 'application/json',
-  //     //     'Authorization': `Bearer ${localStorage.getItem('token')}`
-  //     //   },
-  //     //   body: JSON.stringify({
-  //     //     password: passwordInput
-  //     //   }),
-  //     // });
-
-  //     const response=await verifyPswrd(currentUser?.id)
-
-  //     const data = await response.json();
-      
-  //     if (response.ok && data.success) {
-  //       setShowPasswordModal(false);
-  //       setShowEmailModal(true);
-  //       setNewEmailInput(userData?.email || '');
-  //     } else {
-  //       setPasswordError(data.message || 'Incorrect password');
-  //     }
-  //   } catch (error) {
-  //     console.error('Error verifying password:', error);
-  //     setPasswordError('Error verifying password');
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
 
   const verifyPassword = async () => {
     try {
-      setLoading(true);
-      setPasswordError('');
-      
-  
-      const response=await verifyPswrd(currentUser?.id,passwordInput)
+      if (!currentUser?.id) {
+        toast.error("User ID not found");
+        return;
+      }
 
-      // const data = await response.json();
-      
-      // if (response.ok && data.success) {
-      //   setShowPasswordModal(false);
-      //   setShowEmailModal(true);
-      //   setNewEmailInput(userData?.email || '');
-      // } else {
-      //   setPasswordError(data.message || 'Incorrect password');
-      // }
-    } catch (error) {
-      console.error('Error verifying password:', error);
-      setPasswordError('Error verifying password');
+      setIsLoading(true);
+      setPasswordError("");
+
+      const response = await verifyPswrd(currentUser.id, passwordInput);
+
+      if (response.data.success) {
+        setShowPasswordModal(false);
+        setShowEmailModal(true);
+        setNewEmailInput(userData?.email || "");
+        toast.success("Password verified successfully");
+      } else {
+        setPasswordError(response.data.message || "Incorrect password");
+        toast.error(response.data.message || "Incorrect password");
+      }
+    } catch (error: any) {
+      console.error("Error verifying password:", error);
+      setPasswordError(error.response?.data?.message || "Error verifying password");
+      toast.error(error.response?.data?.message || "Error verifying password");
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   const updateEmail = async () => {
     try {
-      setLoading(true);
-      
-      const response = await fetch(`/api/auditorium/update-email/${currentUser?.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          newEmail: newEmailInput
-        }),
-      });
-
-      const result = await response.json();
-
-      if (response.ok && result.success) {
-        setUserData(prev => prev ? ({
-          ...prev,
-          email: newEmailInput
-        }) : null);
-        
-        setShowEmailModal(false);
-        alert('Email updated successfully!');
-      } else {
-        alert(result.message || 'Failed to update email');
+      if (!currentUser?.id) {
+        toast.error("User ID not found");
+        return;
       }
-    } catch (error) {
-      console.error('Error updating email:', error);
-      alert('Error updating email');
+
+      setIsLoading(true);
+      const response = await updateEmaill(currentUser.id, newEmailInput);
+
+      if (response.data.success) {
+        setUserData((prev) =>
+          prev
+            ? {
+                ...prev,
+                email: newEmailInput,
+              }
+            : null
+        );
+
+        setShowEmailModal(false);
+        toast.success("Email updated successfully!");
+      } else {
+        toast.error(response.data.message || "Failed to update email");
+      }
+    } catch (error: any) {
+      console.error("Error updating email:", error);
+      toast.error(error.response?.data?.message || "Error updating email");
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  const renderField = (field: string, label: string, type: 'text' | 'boolean' | 'array' = 'text') => {
+  const renderField = (field: string, label: string, type: "text" | "boolean" | "array" = "text") => {
     const isEditing = editState[field];
     const value = formData[field] !== undefined ? formData[field] : userData[field as keyof AuditoriumUser];
 
     return (
-      <div className="mb-6 p-4 border border-gray-200 rounded-lg">
+      <div className="mb-4 bg-white shadow-2xl rounded-2xl p-4 border border-[#b09d94]">
         <div className="flex justify-between items-center mb-2">
-          <label className="block text-sm font-medium text-gray-700">{label}</label>
-          {field !== 'email' && (
+          <label className="text-sm font-medium text-[#78533F] font-serif">{label}</label>
+          {field !== "email" && field !== "isOtp" && (
             <button
               onClick={() => handleEditToggle(field)}
-              className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded"
-              disabled={loading}
+              className="p-2 text-[#ED695A] hover:text-[#d85c4e] hover:bg-[#ED695A]/10 rounded-full"
+              disabled={isLoading}
             >
               {isEditing ? <X size={16} /> : <Edit2 size={16} />}
             </button>
           )}
         </div>
 
-        {type === 'boolean' ? (
+        {type === "boolean" ? (
           <div className="flex items-center space-x-4">
-            <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-              value ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-            }`}>
-              {value ? 'Yes' : 'No'}
+            <span
+              className={`px-3 py-1 rounded-full text-sm font-medium font-serif ${
+                value ? "bg-[#ED695A]/20 text-[#ED695A]" : "bg-gray-100 text-gray-600"
+              }`}
+            >
+              {value ? "Yes" : "No"}
             </span>
             {isEditing && (
               <div className="flex items-center space-x-2">
-                <label className="flex items-center">
+                <label className="flex items-center text-[#78533F] font-serif">
                   <input
                     type="radio"
                     name={field}
                     checked={formData[field] === true}
                     onChange={() => handleInputChange(field, true)}
-                    className="mr-1"
+                    className="mr-1 text-[#ED695A] border-[#b09d94]"
                   />
                   Yes
                 </label>
-                <label className="flex items-center">
+                <label className="flex items-center text-[#78533F] font-serif">
                   <input
                     type="radio"
                     name={field}
                     checked={formData[field] === false}
                     onChange={() => handleInputChange(field, false)}
-                    className="mr-1"
+                    className="mr-1 text-[#ED695A] border-[#b09d94]"
                   />
                   No
                 </label>
               </div>
             )}
           </div>
-        ) : type === 'array' ? (
+        ) : type === "array" ? (
           <div>
             {isEditing ? (
               <div>
-                {(formData[field] || value).map((item: string, index: number) => (
+                {(formData[field] || value || []).map((item: string, index: number) => (
                   <div key={index} className="flex items-center space-x-2 mb-2">
                     <input
                       type="text"
                       value={item}
                       onChange={(e) => handleArrayChange(field, index, e.target.value)}
-                      className="flex-1 p-2 border border-gray-300 rounded"
+                      className="flex-1 px-3 py-2 border border-[#b09d94] rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200"
                     />
                     <button
                       onClick={() => removeArrayItem(field, index)}
-                      className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded"
+                      className="p-2 text-[#ED695A] hover:text-[#d85c4e] hover:bg-[#ED695A]/10 rounded-full"
                     >
                       <X size={16} />
                     </button>
@@ -361,15 +326,18 @@ const AuditoriumProfile: React.FC = () => {
                 ))}
                 <button
                   onClick={() => addArrayItem(field)}
-                  className="text-blue-600 hover:text-blue-800 text-sm"
+                  className="text-[#ED695A] hover:text-[#d85c4e] hover:underline text-sm font-serif"
                 >
                   + Add {label.slice(0, -1)}
                 </button>
               </div>
             ) : (
               <div className="flex flex-wrap gap-2">
-                {value.map((item: string, index: number) => (
-                  <span key={index} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                {(value || []).map((item: string, index: number) => (
+                  <span
+                    key={index}
+                    className="px-3 py-1 bg-[#ED695A]/20 text-[#ED695A] rounded-full text-sm font-serif"
+                  >
                     {item}
                   </span>
                 ))}
@@ -381,12 +349,12 @@ const AuditoriumProfile: React.FC = () => {
             {isEditing ? (
               <input
                 type="text"
-                value={formData[field] || ''}
+                value={formData[field] || ""}
                 onChange={(e) => handleInputChange(field, e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded"
+                className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200"
               />
             ) : (
-              <span className="text-gray-900">{value}</span>
+              <span className="text-[#78533F] font-serif">{value || "Not set"}</span>
             )}
           </div>
         )}
@@ -395,15 +363,24 @@ const AuditoriumProfile: React.FC = () => {
           <div className="flex space-x-2 mt-3">
             <button
               onClick={() => handleSave(field)}
-              disabled={loading}
-              className="flex items-center space-x-1 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+              disabled={isLoading}
+              className="flex items-center space-x-1 px-4 py-1.5 bg-[#ED695A] text-white rounded-full hover:bg-[#d85c4e] font-serif transition-all duration-300 disabled:opacity-50"
             >
-              <Save size={16} />
-              <span>Save</span>
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save size={16} />
+                  <span>Save</span>
+                </>
+              )}
             </button>
             <button
               onClick={() => handleEditToggle(field)}
-              className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+              className="px-4 py-1.5 bg-gray-300 text-[#78533F] rounded-full hover:bg-gray-400 font-serif"
             >
               Cancel
             </button>
@@ -414,115 +391,143 @@ const AuditoriumProfile: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-white">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">Auditorium User Management</h1>
-
-      {/* Email Field with Special Handling */}
-      <div className="mb-6 p-4 border border-gray-200 rounded-lg">
-        <div className="flex justify-between items-center mb-2">
-          <label className="block text-sm font-medium text-gray-700">Email</label>
+    <div className="min-h-screen bg-[#FDF8F1] flex flex-col items-center justify-center px-4 py-6">
+      <div className="w-full max-w-3xl my-8">
+        <div className="flex items-center mb-6">
           <button
-            onClick={handleEmailEditClick}
-            className="flex items-center space-x-1 p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded"
-            disabled={loading}
+            onClick={() => navigate("/auditorium/dashboard")}
+            className="p-2 text-[#ED695A] hover:text-[#d85c4e] hover:bg-[#ED695A]/10 rounded-full"
           >
-            <Mail size={16} />
-            <span>Edit Email</span>
+            <ArrowLeft size={24} />
           </button>
+          <h1 className="text-2xl md:text-3xl font-bold text-[#78533F] font-serif text-center flex-1">
+            Auditorium User Management
+          </h1>
         </div>
-        <span className="text-gray-900">{userData?.email}</span>
+
+        {/* Email Field with Special Handling */}
+        <div className="mb-4 bg-white shadow-2xl rounded-2xl p-4 border border-[#b09d94]">
+          <div className="flex justify-between items-center mb-2">
+            <label className="text-sm font-medium text-[#78533F] font-serif">Email</label>
+            <button
+              onClick={handleEmailEditClick}
+              className="flex items-center space-x-1 p-2 text-[#ED695A] hover:text-[#d85c4e] hover:bg-[#ED695A]/10 rounded-full"
+              disabled={isLoading}
+            >
+              <Edit2 size={16} />
+              <span className="hidden sm:inline text-xs font-serif">Edit</span>
+            </button>
+          </div>
+          <span className="text-[#78533F] font-serif">{userData?.email}</span>
+        </div>
+
+        {/* Other Fields - No Role Field */}
+        {renderField("auditoriumName", "Auditorium Name")}
+        {renderField("ownerName", "Owner Name")}
+        {renderField("phone", "Phone Number")}
+        {renderField("address", "Address")}
+        {renderField("district", "District")}
+        {renderField("panchayat", "Panchayat")}
+        {renderField("corporation", "Corporation")}
+        {renderField("municipality", "Municipality")}
+        {/* {renderField("isVerified", "Verified Status", "boolean")}
+        {renderField("isOtp", "OTP Status", "boolean")}
+        {renderField("isBlocked", "Blocked Status", "boolean")}
+        {renderField("events", "Events", "array")} */}
+        {renderField("locations", "Locations", "array")}
+
+        {/* Password Verification Modal */}
+        {showPasswordModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-2">
+            <div className="bg-white rounded-2xl shadow-lg p-4 w-full max-w-xs">
+              <h2 className="text-base sm:text-lg font-bold text-[#78533F] mb-3 font-serif">Verify Password</h2>
+              <p className="text-gray-600 text-sm mb-3 font-serif">Please enter your current password to change email</p>
+
+              <div className="mb-3">
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#b09d94]" />
+                  <input
+                    type="password"
+                    value={passwordInput}
+                    onChange={(e) => setPasswordInput(e.target.value)}
+                    className="w-full pl-10 pr-3 py-2 border border-[#b09d94] rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200"
+                    placeholder="Enter your password"
+                  />
+                </div>
+                {passwordError && <p className="text-red-500 text-sm mt-1 font-serif">{passwordError}</p>}
+              </div>
+
+              <div className="flex justify-end space-x-2">
+                <button
+                  onClick={() => setShowPasswordModal(false)}
+                  className="px-4 py-1.5 bg-gray-300 text-[#78533F] rounded-full hover:bg-gray-400 font-serif"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={verifyPassword}
+                  disabled={isLoading || !passwordInput}
+                  className="px-4 py-1.5 bg-[#ED695A] text-white rounded-full hover:bg-[#d85c4e] font-serif flex items-center justify-center disabled:opacity-50"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Verifying...
+                    </>
+                  ) : (
+                    "Verify"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Email Update Modal */}
+        {showEmailModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-2">
+            <div className="bg-white rounded-2xl shadow-lg p-4 w-full max-w-xs">
+              <h2 className="text-base sm:text-lg font-bold text-[#78533F] mb-3 font-serif">Update Email</h2>
+
+              <div className="mb-3">
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#b09d94]" />
+                  <input
+                    type="email"
+                    value={newEmailInput}
+                    onChange={(e) => setNewEmailInput(e.target.value)}
+                    className="w-full pl-10 pr-3 py-2 border border-[#b09d94] rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200"
+                    placeholder="Enter new email"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-2">
+                <button
+                  onClick={() => setShowEmailModal(false)}
+                  className="px-4 py-1.5 bg-gray-300 text-[#78533F] rounded-full hover:bg-gray-400 font-serif"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={updateEmail}
+                  disabled={isLoading || !newEmailInput || newEmailInput === userData?.email}
+                  className="px-4 py-1.5 bg-[#ED695A] text-white rounded-full hover:bg-[#d85c4e] font-serif flex items-center justify-center disabled:opacity-50"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Updating...
+                    </>
+                  ) : (
+                    "Update Email"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
-
-      {/* Other Fields */}
-      {renderField('auditoriumName', 'Auditorium Name')}
-      {renderField('ownerName', 'Owner Name')}
-      {renderField('phone', 'Phone Number')}
-      {renderField('isVerified', 'Verified Status', 'boolean')}
-      {renderField('isBlocked', 'Blocked Status', 'boolean')}
-      {renderField('events', 'Events', 'array')}
-      {renderField('locations', 'Locations', 'array')}
-
-      {/* Password Verification Modal */}
-      {showPasswordModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg w-96">
-            <h2 className="text-xl font-bold mb-4">Verify Password</h2>
-            <p className="text-gray-600 mb-4">Please enter your current password to change email</p>
-            
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                <input
-                  type="password"
-                  value={passwordInput}
-                  onChange={(e) => setPasswordInput(e.target.value)}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded"
-                  placeholder="Enter your password"
-                />
-              </div>
-              {passwordError && (
-                <p className="text-red-500 text-sm mt-1">{passwordError}</p>
-              )}
-            </div>
-
-            <div className="flex space-x-3">
-              <button
-                onClick={verifyPassword}
-                disabled={loading || !passwordInput}
-                className="flex-1 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-              >
-                {loading ? 'Verifying...' : 'Verify'}
-              </button>
-              <button
-                onClick={() => setShowPasswordModal(false)}
-                className="flex-1 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Email Update Modal */}
-      {showEmailModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg w-96">
-            <h2 className="text-xl font-bold mb-4">Update Email</h2>
-            
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">New Email</label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                <input
-                  type="email"
-                  value={newEmailInput}
-                  onChange={(e) => setNewEmailInput(e.target.value)}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded"
-                  placeholder="Enter new email"
-                />
-              </div>
-            </div>
-
-            <div className="flex space-x-3">
-              <button
-                onClick={updateEmail}
-                disabled={loading || !newEmailInput || newEmailInput === userData?.email}
-                className="flex-1 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
-              >
-                {loading ? 'Updating...' : 'Update Email'}
-              </button>
-              <button
-                onClick={() => setShowEmailModal(false)}
-                className="flex-1 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
