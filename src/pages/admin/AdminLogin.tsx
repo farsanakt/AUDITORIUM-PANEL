@@ -5,11 +5,10 @@ import { Eye, EyeOff, Loader2, User, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { toast } from "react-toastify";
-import Header from "../../component/user/Header"; // Adjust path as needed
+import Header from "../../component/user/Header"
 import { loginStart, loginSuccess, loginFailure } from "../../redux/slices/authSlice";
 import { AdminStaffLogin } from "../../api/userApi";
 
-// Types
 interface AdminStaff {
   id: string;
   staffid?: string;

@@ -577,11 +577,12 @@ export const AdminStaffLogin = async (
 ): Promise<any> => {
   const payload =
     loginMode === "staff"
-      ? { staffid, email, password }
-      : { email, password };
+      ? { loginMode, staffid, email, password }   // ✅ include loginMode
+      : { loginMode, email, password };           // ✅ include loginMode
 
-  return await api.post("/adminstaff/login", payload);
+  return await api.post("/adminstafflogin", payload);
 };
+
 
 
 
