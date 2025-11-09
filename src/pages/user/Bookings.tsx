@@ -840,7 +840,7 @@ const Bookings: React.FC = () => {
                       <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 text-[#3C3A39]" />
                     </button>
                   </div>
-                  <div className="grid grid-cols-7 gap-1 sm:gap-2 overflow-hidden">
+                  <div className="grid grid-cols-7 gap-1 sm:gap-2">
                     {["S", "M", "T", "W", "T", "F", "S"].map((day, index) => (
                       <div
                         key={index}
@@ -857,7 +857,7 @@ const Bookings: React.FC = () => {
                         style={{ aspectRatio: "1" }}
                       >
                         {dateObj.day || ""}
-                        {dateObj.isCurrentMonth && dateObj.date && (
+                        {dateObj.isCurrentMonth && dateObj.date && getDateStatus(dateObj.date) !== "past" && (
                           <div className="hidden group-hover:block">{getTooltipContent(dateObj.date)}</div>
                         )}
                       </div>
@@ -899,7 +899,12 @@ const Bookings: React.FC = () => {
                         className="w-full p-2 sm:p-3 border-2 border-[#b09d94] text-[#3C3A39] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ED695A] focus:border-transparent transition-all text-xs sm:text-sm"
                       >
                         <option value="">Select AC Option</option>
-                        {venue?.acType ? (
+                        {venue?.acType === "both" ? (
+                          <>
+                            <option value="AC">AC</option>
+                            <option value="Non-AC">Non-AC</option>
+                          </>
+                        ) : venue?.acType ? (
                           <option value={venue.acType}>{venue.acType}</option>
                         ) : (
                           <option value="">No AC option available</option>

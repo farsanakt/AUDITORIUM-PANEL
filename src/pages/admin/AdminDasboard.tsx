@@ -91,7 +91,7 @@ const AdminDashboard: React.FC = () => {
     { path: '/admin/finances', label: 'Total Amount', icon: DollarSign, count: stats.totalAmount ? `₹${stats.totalAmount.toLocaleString()}` : '₹0' },
     { path: '/admin/allvouchers', label: 'All Vouchers', icon: Ticket, count: stats.totalVouchers || 0 },
     { path: '/admin/adminstaff', label: 'Staff', icon: Users, count: 0 },
-    { path: '/admin/others', label: 'Others', icon: Home, count: 0 },
+    { path: '/admin/items', label: 'Others', icon: Home, count: 0 },
     { path: '/admin/subscriptionmanagement', label: 'Subscription', icon: Home, count: 0 },
   ];
 

@@ -170,7 +170,6 @@ export const upComingEvents=async(id:string)=>{
 
 }
 
-//  acceptAuditorium, rejectAuditorium
 
 export const getAllAuditoriums=async()=>{
   
@@ -636,4 +635,31 @@ export const createSubscriptionPlan=async(planeData:any)=>{
 
   return await api.post('/createsubplans',planeData)
 
+}
+
+
+
+
+
+export const getItems=async(type:string)=>{
+
+  return await api.get('/getalladminitems')
+
+}
+
+export const addItem=async(type:string,data:string)=>{
+
+  return await api.post('/addadminitem',data)
+
+}
+
+export const updateItem=async(id:string,type:string,data:string)=>{
+
+  return await api.post('/addadminitem')
+
+}
+
+export const deleteItem=async(type:string,id:string)=>{
+
+ return await api.delete('/delte')
 }
