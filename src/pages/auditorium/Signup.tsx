@@ -347,50 +347,81 @@ const AuditoriumRegistrationPage: React.FC = () => {
     setCurrentStep(prev => prev - 1)
   }
 
-  const handleSignup = async () => {
-    console.log("handleSignup called with formData:", formData)
-    if (formData.events.length === 0 || formData.locations.length === 0) {
-      toast.error('Select at least one event and location.')
-      return
-    }
-    if (formData.district === "" || formData.adminType === "") {
-      toast.error('Select district and administrative type.')
-      return
-    }
-    if (
-      (formData.adminType === "Panchayat" && formData.panchayat === "") ||
-      (formData.adminType === "Municipality" && formData.municipality === "") ||
-      (formData.adminType === "Corporation" && formData.corporation === "")
-    ) {
-      toast.error('Select a valid administrative area.')
-      return
-    }
-    if (formData.password !== formData.confirmPassword) {
-      toast.error('Passwords do not match.')
-      return
-    }
-    if (!formData.address) {
-      toast.error('Please enter address.')
-      return
-    }
-    setIsSigningUp(true)
-    try {
-      console.log("Sending signUpRequest with formData:", formData)
-      const response = await singUpRequest(formData)
-      console.log("signUpRequest response:", response)
-      if (response.data.success === false) {
-        toast.error(response.data.message || 'Signup failed!')
-      } else {
-        toast.success("OTP sent to your email")
-        setShowOtpModal(true)
-      }
-    } catch (error: any) {
-      console.error("Signup error:", error)
-      toast.error(error.response?.data?.message || "Error during signup")
-    } finally {
-      setIsSigningUp(false)
-    }
+const handleSignup = async () => {
+  console.log("handleSignup called with formData:", formData);
+
+  if (formData.events.length === 0 || formData.locations.length === 0) {
+    toast.error('Select at least one event and location.');
+    return;
   }
+
+  if (!formData.district || !formData.adminType) {
+    toast.error('Select district and administrative type.');
+    return;
+  }
+
+  if (
+    (formData.adminType === "Panchayat" && !formData.panchayat) ||
+    (formData.adminType === "Municipality" && !formData.municipality) ||
+    (formData.adminType === "Corporation" && !formData.corporation)
+  ) {
+    toast.error('Select a valid administrative area.');
+    return;
+  }
+
+  if (formData.password !== formData.confirmPassword) {
+    toast.error('Passwords do not match.');
+    return;
+  }
+
+  if (!formData.address.trim()) {
+    toast.error('Please enter address.');
+    return;
+  }
+
+  setIsSigningUp(true);
+
+  try {
+    console.log("Sending signUpRequest with formData:", formData);
+    const response = await singUpRequest(formData);
+    console.log("signUpRequest response:", response);
+
+    const { data } = response;
+
+
+    if (data?.success === true) {
+      toast.success(data.message || "OTP sent to your email");
+      setShowOtpModal(true);
+    } 
+    else if (data?.success === false) {
+     
+      toast.info(data.message || "Signup status update");
+      
+     
+      if (
+        data.message?.includes("OTP") || 
+        data.message?.toLowerCase().includes("verify")
+      ) {
+        setShowOtpModal(true);
+      }
+    } 
+    else if (data?.message) {
+    
+      toast.success(data.message);
+      setShowOtpModal(true);
+    } 
+    else {
+      toast.error("Unexpected response from server.");
+    }
+
+  } catch (error: any) {
+    console.error("Signup error:", error);
+    toast.error(error.response?.data?.message || "Error during signup");
+  } finally {
+    setIsSigningUp(false);
+  }
+};
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
