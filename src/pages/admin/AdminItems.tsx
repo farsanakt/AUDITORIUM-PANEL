@@ -1,130 +1,176 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash, X } from 'lucide-react';
-import { useDispatch } from 'react-redux';
-import { toast } from 'react-toastify';
+import React, { useState, useEffect } from "react";
+import { Plus, Edit, Trash, X } from "lucide-react";
+import { toast } from "react-toastify";
+import Swal from "sweetalert2";
+import { getItems, addItem, updateItem, deleteItem } from "../../api/userApi";
+import Header from "../../component/user/Header";
 
-// Assume API imports - adjust based on your actual API structure
-import { getItems, addItem, updateItem, deleteItem } from '../../api/userApi'; 
-import Header from '../../component/user/Header';
-
-type ItemType = 'events' | 'locations' | 'amenities';
+type ItemType = "events" | "locations" | "amenities";
 type Item = { _id: string; name: string };
 
 const AdminItemsManagement: React.FC = () => {
-  const [currentTab, setCurrentTab] = useState<ItemType>('events');
+  const [currentTab, setCurrentTab] = useState<ItemType>("events");
   const [items, setItems] = useState<Record<ItemType, Item[]>>({
     events: [],
     locations: [],
     amenities: [],
   });
-  const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
-  const [selectedType, setSelectedType] = useState<ItemType>('events');
-  const [newItemName, setNewItemName] = useState<string>('');
-  const [editingItem, setEditingItem] = useState<{ type: ItemType; id: string; name: string } | null>(null);
-  const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [selectedType, setSelectedType] = useState<ItemType>("events");
+  const [newItemName, setNewItemName] = useState("");
+  const [editingItem, setEditingItem] = useState<{
+    type: ItemType;
+    oldName: string;
+    name: string;
+  } | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-  const dispatch = useDispatch(); // If needed for auth or other, else remove
+  const stringArrayToItems = (arr: string[]): Item[] => {
+    return arr.map((name, index) => ({
+      _id: `temp-${index}-${Date.now()}`,
+      name,
+    }));
+  };
 
-  const fetchItems = async (type: ItemType) => {
+  const fetchAllItems = async () => {
     try {
-      const response = await getItems(type);
-      if (response.data.items) {
-        setItems((prev) => ({ ...prev, [type]: response.data.items }));
-      }
+      const response = await getItems("all");
+      const backendItems = response.data.items || {};
+
+      const transformed = {
+        events: backendItems.events ? stringArrayToItems(backendItems.events) : [],
+        locations: backendItems.locations
+          ? stringArrayToItems(backendItems.locations)
+          : [],
+        amenities: backendItems.amenities
+          ? stringArrayToItems(backendItems.amenities)
+          : [],
+      };
+
+      setItems(transformed);
     } catch (error: any) {
-      toast.error(error.response?.data?.message || `Failed to fetch ${type}`);
+      toast.error(error.response?.data?.message || "Failed to fetch items");
     }
   };
 
   useEffect(() => {
-    // Fetch all on mount
-    fetchItems('events');
-    fetchItems('locations');
-    fetchItems('amenities');
+    fetchAllItems();
   }, []);
 
   const handleAddItem = async () => {
     if (!newItemName.trim()) {
-      toast.error('Item name is required');
+      toast.error("Item name is required");
       return;
     }
+
     try {
       const response = await addItem(selectedType, newItemName);
-      if (response.data.item) {
+      const { success, message, data } = response.data;
+
+      if (success && data && data[selectedType]) {
+        const newItems = stringArrayToItems(data[selectedType]);
         setItems((prev) => ({
           ...prev,
-          [selectedType]: [...prev[selectedType], response.data.item],
+          [selectedType]: newItems,
         }));
-        setNewItemName('');
-        toast.success(`${selectedType} added successfully`);
-        // Modal stays open for adding multiple
+
+        setNewItemName("");
+        setIsAddModalOpen(false);
+        toast.success(message || `${selectedType} added successfully`);
+      } else {
+        toast.error("Failed to add item");
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to add item');
+      toast.error(error.response?.data?.message || "Failed to add item");
     }
   };
 
   const handleUpdateItem = async () => {
     if (!editingItem || !editingItem.name.trim()) {
-      toast.error('Item name is required');
+      toast.error("Item name is required");
       return;
     }
+
     try {
-      const response = await updateItem(editingItem.type, editingItem.id, editingItem.name);
-      if (response.data.item) {
+      const response = await updateItem(
+        editingItem.type,
+        editingItem.oldName,
+        editingItem.name
+      );
+
+      if (response.data.success && response.data.data) {
+        const updatedArray: string[] = response.data.data[editingItem.type] || [];
+        const updatedItems = stringArrayToItems(updatedArray);
+
         setItems((prev) => ({
           ...prev,
-          [editingItem.type]: prev[editingItem.type].map((item) =>
-            item._id === editingItem.id ? response.data.item : item
-          ),
+          [editingItem.type]: updatedItems,
         }));
+
         setIsEditModalOpen(false);
         setEditingItem(null);
         toast.success(`${editingItem.type} updated successfully`);
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to update item');
+      toast.error(error.response?.data?.message || "Failed to update item");
     }
   };
 
-  const handleDeleteItem = async (type: ItemType, id: string) => {
-    if (!window.confirm('Are you sure you want to delete this item?')) return;
+  const handleDeleteItem = async (type: ItemType, itemName: string) => {
+    const confirm = await Swal.fire({
+      title: "Are you sure?",
+      text: `Do you really want to delete this ${type}?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete it!",
+    });
+
+    if (!confirm.isConfirmed) return;
+
     try {
-      const response = await deleteItem(type, id);
-      if (response.data.success) {
+      const response = await deleteItem(type, itemName);
+      if (response.data.success && response.data.data) {
+        const updatedArray: string[] = response.data.data[type] || [];
+        const updatedItems = stringArrayToItems(updatedArray);
+
         setItems((prev) => ({
           ...prev,
-          [type]: prev[type].filter((item) => item._id !== id),
+          [type]: updatedItems,
         }));
-        toast.success(`${type} deleted successfully`);
+
+        Swal.fire("Deleted!", `${type} deleted successfully`, "success");
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to delete item');
+      toast.error(error.response?.data?.message || "Failed to delete item");
     }
   };
 
   const openEditModal = (type: ItemType, item: Item) => {
-    setEditingItem({ type, id: item._id, name: item.name });
+    setEditingItem({ type, oldName: item.name, name: item.name });
     setIsEditModalOpen(true);
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center px-2 sm:px-4 py-4">
-        <Header/>
+      <Header />
       <div className="bg-white rounded-xl shadow-lg w-full max-w-4xl overflow-hidden">
         <div className="p-4 sm:p-6">
-          <h2 className="text-2xl font-bold text-[#78533F] mb-4 text-center">Manage Items</h2>
+          <h2 className="text-2xl font-bold text-[#78533F] mb-4 text-center">
+            Manage Items
+          </h2>
 
-          {/* Top tabs */}
+          {/* Tabs */}
           <div className="flex justify-center space-x-2 mb-6">
-            {(['events', 'locations', 'amenities'] as ItemType[]).map((tab) => (
+            {(["events", "locations", "amenities"] as ItemType[]).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setCurrentTab(tab)}
                 className={`px-4 py-2 rounded-full font-semibold text-sm capitalize ${
                   currentTab === tab
-                    ? 'bg-[#78533F] text-white'
-                    : 'bg-white text-[#78533F] border border-[#b09d94] hover:bg-gray-50'
+                    ? "bg-[#78533F] text-white"
+                    : "bg-white text-[#78533F] border border-[#b09d94] hover:bg-gray-50"
                 }`}
               >
                 {tab}
@@ -132,10 +178,13 @@ const AdminItemsManagement: React.FC = () => {
             ))}
           </div>
 
-          {/* Add button */}
+          {/* Add Button */}
           <div className="flex justify-end mb-4">
             <button
-              onClick={() => setIsAddModalOpen(true)}
+              onClick={() => {
+                setSelectedType(currentTab);
+                setIsAddModalOpen(true);
+              }}
               className="flex items-center px-4 py-2 bg-[#ED695A] text-white rounded-full font-semibold hover:bg-[#c8564b] transition"
             >
               <Plus size={16} className="mr-2" />
@@ -143,10 +192,12 @@ const AdminItemsManagement: React.FC = () => {
             </button>
           </div>
 
-          {/* Items list */}
+          {/* Item List */}
           <div className="space-y-3">
             {items[currentTab].length === 0 ? (
-              <p className="text-center text-gray-600">No {currentTab} added yet.</p>
+              <p className="text-center text-gray-600">
+                No {currentTab} added yet.
+              </p>
             ) : (
               items[currentTab].map((item) => (
                 <div
@@ -162,7 +213,7 @@ const AdminItemsManagement: React.FC = () => {
                       <Edit size={16} />
                     </button>
                     <button
-                      onClick={() => handleDeleteItem(currentTab, item._id)}
+                      onClick={() => handleDeleteItem(currentTab, item.name)}
                       className="p-1 text-[#78533F] hover:text-[#ED695A]"
                     >
                       <Trash size={16} />
@@ -181,7 +232,10 @@ const AdminItemsManagement: React.FC = () => {
           <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-bold text-[#78533F]">Add New Item</h3>
-              <button onClick={() => setIsAddModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+              <button
+                onClick={() => setIsAddModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
                 <X size={20} />
               </button>
             </div>
@@ -207,7 +261,6 @@ const AdminItemsManagement: React.FC = () => {
             >
               Add Item
             </button>
-            <p className="text-xs text-gray-600 mt-2 text-center">You can add multiple items one by one.</p>
           </div>
         </div>
       )}
@@ -218,14 +271,19 @@ const AdminItemsManagement: React.FC = () => {
           <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-bold text-[#78533F]">Edit Item</h3>
-              <button onClick={() => setIsEditModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+              <button
+                onClick={() => setIsEditModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
                 <X size={20} />
               </button>
             </div>
             <input
               type="text"
               value={editingItem.name}
-              onChange={(e) => setEditingItem({ ...editingItem, name: e.target.value })}
+              onChange={(e) =>
+                setEditingItem({ ...editingItem, name: e.target.value })
+              }
               placeholder="Enter item name"
               className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-sm mb-3 focus:ring-2 focus:ring-[#ED695A]"
             />

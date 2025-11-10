@@ -649,17 +649,18 @@ export const getItems=async(type:string)=>{
 
 export const addItem=async(type:string,data:string)=>{
 
-  return await api.post('/addadminitem',data)
+  return await api.post('/addadminitem',{type,data})
 
 }
 
-export const updateItem=async(id:string,type:string,data:string)=>{
+export const updateItem = async (type: string, oldName: string, newName: string) => {
+  return await api.put(`/updateadminitem/${type}`, { oldName, newName });
+};
 
-  return await api.post('/addadminitem')
 
-}
+export const deleteItem = async (type: string, itemName: string) => {
+  return await api.delete("/deleteitem", {
+    data: { type, itemName },
+  });
+};
 
-export const deleteItem=async(type:string,id:string)=>{
-
- return await api.delete('/delte')
-}
