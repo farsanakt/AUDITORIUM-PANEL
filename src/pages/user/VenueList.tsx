@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import Header from "../../component/user/Header";
@@ -19,7 +18,7 @@ interface Offer {
 interface Auditorium {
   _id: string;
   name: string;
-  cities: string[];
+  locations: string[]; // ← Changed from `cities` to `locations`
   images: string[];
   acType: string;
   seatingCapacity: string;
@@ -27,9 +26,10 @@ interface Auditorium {
   phone: string;
   audiUserId: string;
   totalamount: string;
-  advAmnt?: string; // Optional to handle typo
-  advamnt?: string; // Handle typo in API response
+  advAmnt?: string;
+  advamnt?: string;
   offer?: Offer;
+  isVerified?: boolean; // For filtering
 }
 
 const VenuePage: React.FC = () => {
@@ -49,53 +49,53 @@ const VenuePage: React.FC = () => {
         FetchAuditoriumById(id!),
         fetchAllExistingOffer(),
       ]);
-      console.log("Auditorium API response:", JSON.stringify(auditoriumResponse.data, null, 2));
-      console.log("Fetched offers:", JSON.stringify(offerResponse.data, null, 2));
+
+      console.log("Auditorium API:", JSON.stringify(auditoriumResponse.data, null, 2));
+      console.log("Offers API:", JSON.stringify(offerResponse.data, null, 2));
 
       const currentDate = new Date();
-      console.log("Current date:", currentDate.toISOString());
 
       const auditoriumData = Array.isArray(auditoriumResponse.data)
-        ? auditoriumResponse.data.map((item: Auditorium) => {
-            const matchingOffer = offerResponse.data.find(
-              (offer: Offer) => {
-                const isMatch = offer.userId === item.audiUserId && offer.isActive;
-                console.log(
-                  `Checking auditorium ${item._id}: audiUserId=${item.audiUserId}, offer.userId=${
-                    offer.userId
-                  }, isActive=${offer.isActive}, validFrom=${offer.validFrom}, validTo=${
-                    offer.validTo
-                  }, match=${isMatch}`
+        ? auditoriumResponse.data
+            .filter((item: Auditorium) => item.isVerified === true) // Only verified
+            .map((item: Auditorium) => {
+              const matchingOffer = offerResponse.data.find((offer: Offer) => {
+                const validFrom = new Date(offer.validFrom);
+                const validTo = new Date(offer.validTo);
+                const isDateValid = validFrom <= currentDate && validTo >= currentDate;
+
+                return (
+                  offer.userId === item.audiUserId &&
+                  offer.isActive &&
+                  isDateValid
                 );
-                return isMatch;
-              }
-            );
-            return {
-              ...item,
-              advAmnt: item.advAmnt || item.advamnt, // Handle typo
-              offer: matchingOffer,
-            };
-          })
+              });
+
+              return {
+                ...item,
+                advAmnt: item.advAmnt || item.advamnt,
+                offer: matchingOffer,
+              };
+            })
         : [];
 
       if (!auditoriumData.length) {
-        throw new Error(`No auditoriums found with audiUserId: ${id}`);
+        throw new Error("No verified venues found.");
       }
-      console.log("Mapped auditoriums with offers:", JSON.stringify(auditoriumData, null, 2));
+
       setAuditoriums(auditoriumData);
       setOffers(offerResponse.data);
       setLoading(false);
     } catch (err: any) {
-      console.error("Error fetching auditoriums or offers:", err);
-      setError(err.message || "Failed to load venue details. Please try again.");
+      console.error("Fetch error:", err);
+      setError(err.message || "Failed to load venue.");
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (id) {
-      fetchAuditoriums();
-    } else {
+    if (id) fetchAuditoriums();
+    else {
       setError("Invalid venue ID.");
       setLoading(false);
     }
@@ -104,65 +104,78 @@ const VenuePage: React.FC = () => {
   useEffect(() => {
     if (auditoriums.length > 0 && auditoriums[0].images?.length > 1) {
       const interval = setInterval(() => {
-        setCurrentImageIndex((prevIndex) =>
-          prevIndex === auditoriums[0].images.length - 1 ? 0 : prevIndex + 1
+        setCurrentImageIndex((prev) =>
+          prev === auditoriums[0].images.length - 1 ? 0 : prev + 1
         );
       }, 3000);
       return () => clearInterval(interval);
     }
   }, [auditoriums]);
 
-  const getFormattedPrice = (amount: string | undefined, offer?: Offer, isTotalAmount: boolean = false) => {
-    console.log(`Formatting price:`, { amount, offer, isTotalAmount });
+  const getFormattedPrice = (
+    amount: string | undefined,
+    offer?: Offer,
+    isTotalAmount: boolean = false
+  ) => {
     if (!amount || isNaN(parseFloat(amount))) {
-      console.warn(`Invalid price format: ${amount}`);
-      return <span>Price not available</span>;
+      return <span className="text-gray-500">N/A</span>;
     }
 
     const originalPrice = parseFloat(amount);
+    const formatted = originalPrice.toLocaleString("en-IN", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+
     if (!offer || !isTotalAmount) {
-      return <span>₹{originalPrice.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>;
+      return <span>₹{formatted}</span>;
     }
 
-    let discountedPrice: number;
-    if (offer.discountType === "percentage") {
-      discountedPrice = originalPrice * (1 - offer.discountValue / 100);
-    } else {
-      discountedPrice = originalPrice - offer.discountValue;
-    }
+    const discountedPrice =
+      offer.discountType === "percentage"
+        ? originalPrice * (1 - offer.discountValue / 100)
+        : originalPrice - offer.discountValue;
+
+    const discountedFormatted = discountedPrice.toLocaleString("en-IN", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
 
     return (
       <div className="flex flex-col">
         <div>
-          <span className="line-through text-gray-500 mr-2">
-            ₹{originalPrice.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </span>
-          <span className="text-green-600">
-            ₹{discountedPrice.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </span>
+          <span className="line-through text-gray-500 mr-2">₹{formatted}</span>
+          <span className="text-green-600 font-bold">₹{discountedFormatted}</span>
         </div>
         <span className="text-xs text-green-600">
-          ({offer.discountValue}{offer.discountType === "percentage" ? "%" : "₹"} off with {offer.offerCode})
+          {offer.discountValue}
+          {offer.discountType === "percentage" ? "%" : "₹"} off • {offer.offerCode}
         </span>
       </div>
     );
   };
 
+  // === EARLY RETURNS ===
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#fff9f4]">
-        <p className="text-gray-600 text-xs sm:text-sm md:text-base">Loading...</p>
+        <p className="text-gray-600 animate-pulse">Loading venue...</p>
       </div>
     );
   }
 
-  if (error || !auditoriums.length) {
+  if (error || !auditoriums.length || !auditoriums[0]) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#fff9f4]">
-        <p className="text-red-600 text-xs sm:text-sm md:text-base">{error || "No venues found."}</p>
+      <div className="min-h-screen flex items-center justify-center bg-[#fff9f4] px-4">
+        <p className="text-red-600 text-center">{error || "No verified venues found."}</p>
       </div>
     );
   }
+
+  // === SAFE DATA EXTRACTION ===
+  const primary = auditoriums[0];
+  const safeLocations = Array.isArray(primary.locations) ? primary.locations : [];
+  const safeImages = Array.isArray(primary.images) ? primary.images : [];
 
   return (
     <section className="min-h-screen bg-[#fff9f4] px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
@@ -176,7 +189,7 @@ const VenuePage: React.FC = () => {
             border-radius: 50%;
             font-size: 0.75rem;
             line-height: 1rem;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
             width: 80px;
             height: 80px;
             display: flex;
@@ -189,24 +202,24 @@ const VenuePage: React.FC = () => {
             bottom: -40px;
             right: -40px;
             z-index: 10;
+            animation: pulse 2s infinite;
           }
-          .venue-image-container {
-            position: relative;
-            overflow: visible;
+          @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.08); }
           }
+          .venue-image-container { position: relative; overflow: visible; }
         `}
       </style>
-      {/* Header and Hero Section */}
+
+      {/* Hero Section */}
       <section className="relative min-h-[60vh] sm:min-h-[70vh] md:min-h-[80vh] flex items-center justify-center overflow-hidden pt-8">
         <div
           className="absolute inset-0 w-full h-full bg-contain sm:bg-cover bg-center bg-no-repeat"
-          style={{
-            backgroundImage: `url(${bgImg})`,
-          }}
-        ></div>
+          style={{ backgroundImage: `url(${bgImg})` }}
+        />
         <Header />
 
-        {/* Content */}
         <div className="relative z-20 w-full max-w-7xl px-4 sm:px-6 flex flex-col md:flex-row justify-between items-start gap-6 sm:gap-8 mt-12">
           <div className="text-left md:w-1/2">
             <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-serif text-[#5B4336] mb-3 sm:mb-4">
@@ -222,94 +235,102 @@ const VenuePage: React.FC = () => {
               beachfront wedding, choosing the right venue is the first step
               in bringing your dream to life.
             </p>
-            <button className="bg-[#6e3d2b] text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full shadow-md hover:bg-[#5a2f20] text-xs sm:text-sm md:text-base">
+            <button className="bg-[#6e3d2b] text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full shadow-md hover:bg-[#5a2f20] transition text-xs sm:text-sm md:text-base">
               View Details
             </button>
           </div>
         </div>
       </section>
 
-      {/* Venue Result Section */}
+      {/* Venue Details */}
       <div className="max-w-7xl mx-auto mt-8 sm:mt-12">
         <div className="flex flex-col md:flex-row gap-4 sm:gap-6 items-stretch">
-          {/* Venue Image */}
+          {/* Image */}
           <div className="w-full md:w-1/3 venue-image-container rounded-2xl overflow-visible shadow-lg relative h-64 sm:h-80 md:h-96">
             <img
-              src={auditoriums[0].images[currentImageIndex] || "/placeholder.svg?height=400&width=300"}
-              alt={auditoriums[0].name}
-              className="w-full h-full object-cover transition-opacity duration-500 ease-in-out"
+              src={safeImages[currentImageIndex] || "/placeholder.svg?height=400&width=300"}
+              alt={primary.name}
+              className="w-full h-full object-cover rounded-2xl transition-opacity duration-500"
               onError={(e) => {
-                console.error("Error loading image:", auditoriums[0].images[currentImageIndex]);
                 (e.target as HTMLImageElement).src = "/placeholder.svg?height=400&width=300";
               }}
             />
             <span
-              className={`absolute bottom-2 sm:bottom-3 left-2 sm:left-3 text-white text-xs sm:text-sm px-2 sm:px-3 py-1 rounded-full shadow ${
-                auditoriums[0].acType.toLowerCase() === "ac"
+              className={`absolute bottom-2 sm:bottom-3 left-2 sm:left-3 text-white text-xs sm:text-sm px-2 sm:px-3 py-1 rounded-full shadow font-medium ${
+                primary.acType.toLowerCase() === "ac"
                   ? "bg-blue-600"
-                  : auditoriums[0].acType.toLowerCase() === "both"
-                  ? "bg-purple-500"
-                  : "bg-gray-500"
+                  : primary.acType.toLowerCase() === "both"
+                  ? "bg-purple-600"
+                  : "bg-gray-600"
               }`}
             >
-              {auditoriums[0].acType}
+              {primary.acType}
             </span>
-            {auditoriums[0].offer && (
-              <span className="coupon-badge">
-                {auditoriums[0].offer.offerCode}
-              </span>
+            {primary.offer && (
+              <div className="coupon-badge">
+                {primary.offer.offerCode}
+              </div>
             )}
           </div>
 
-          {/* Venue Details */}
+          {/* Details */}
           <div className="w-full md:w-2/3 flex flex-col justify-between">
             <div>
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
                 <div>
                   <h3 className="text-lg sm:text-xl md:text-2xl font-semibold text-[#6e3d2b]">
-                    {auditoriums[0].name}
+                    {primary.name}
                   </h3>
                   <p className="text-gray-600 text-xs sm:text-sm md:text-base">
-                    {auditoriums[0].cities.join(", ")}
+                    {safeLocations.length > 0 ? safeLocations.join(", ") : "Location not available"}
                   </p>
                 </div>
-                <button className="bg-[#9c7c5d] text-white text-xs sm:text-sm md:text-base px-3 sm:px-4 py-2 rounded shadow hover:bg-[#483b2f] w-full sm:w-auto">
-                  📞 {auditoriums[0].phone}
-                </button>
+                <a
+                  href={`tel:${primary.phone}`}
+                  className="bg-[#9c7c5d] text-white text-xs sm:text-sm md:text-base px-3 sm:px-4 py-2 rounded shadow hover:bg-[#8b6b4e] transition w-full sm:w-auto text-center"
+                >
+                  Call: {primary.phone}
+                </a>
               </div>
 
               {/* Table */}
               <div className="overflow-x-auto mt-4 sm:mt-6">
                 <table className="w-full text-xs sm:text-sm border border-gray-300 rounded-lg overflow-hidden">
-                  <thead className="bg-[#6e3d2b] text-white text-left sticky top-0">
+                  <thead className="bg-[#6e3d2b] text-white text-left">
                     <tr>
-                      <th className="py-2 sm:py-3 px-3 sm:px-4 sm:min-w-[120px] font-semibold text-xs sm:text-sm">Venue Name</th>
-                      <th className="py-2 sm:py-3 px-3 sm:px-4 sm:min-w-[80px] font-semibold text-xs sm:text-sm">Type</th>
-                      <th className="py-2 sm:py-3 px-3 sm:px-4 sm:min-w-[80px] font-semibold text-xs sm:text-sm">Capacity</th>
-                      <th className="py-2 sm:py-3 px-3 sm:px-4 sm:min-w-[100px] font-semibold text-xs sm:text-sm">Total Amount</th>
-                      <th className="py-2 sm:py-3 px-3 sm:px-4 sm:min-w-[100px] font-semibold text-xs sm:text-sm">Advance Amount</th>
-                      <th className="py-2 sm:py-3 px-3 sm:px-4 sm:min-w-[80px] font-semibold text-xs sm:text-sm">Action</th>
+                      <th className="py-2 sm:py-3 px-3 sm:px-4 font-semibold">Venue Name</th>
+                      <th className="py-2 sm:py-3 px-3 sm:px-4 font-semibold">Type</th>
+                      <th className="py-2 sm:py-3 px-3 sm:px-4 font-semibold">Capacity</th>
+                      <th className="py-2 sm:py-3 px-3 sm:px-4 font-semibold">Total Amount</th>
+                      <th className="py-2 sm:py-3 px-3 sm:px-4 font-semibold">Advance</th>
+                      <th className="py-2 sm:py-3 px-3 sm:px-4 font-semibold">Action</th>
                     </tr>
                   </thead>
                   <tbody>
                     {auditoriums.map((auditorium, index) => (
                       <tr
                         key={auditorium._id}
-                        className={`border-t ${index % 2 === 0 ? "bg-white" : "bg-gray-50"} hover:bg-gray-100`}
+                        className={`border-t ${index % 2 === 0 ? "bg-white" : "bg-gray-50"} hover:bg-gray-100 transition`}
                       >
-                        <td className="py-2 px-3 sm:px-4 text-xs sm:text-sm">{auditorium.name}</td>
-                        <td className="py-2 px-3 sm:px-4 text-xs sm:text-sm">{auditorium.acType}</td>
-                        <td className="py-2 px-3 sm:px-4 text-xs sm:text-sm">{auditorium.seatingCapacity}</td>
-                        <td className="py-2 px-3 sm:px-4 text-xs sm:text-sm">
+                        <td className="py-2 px-3 sm:px-4 font-medium">{auditorium.name}</td>
+                        <td className="py-2 px-3 sm:px-4">{auditorium.acType}</td>
+                        <td className="py-2 px-3 sm:px-4">{auditorium.seatingCapacity}</td>
+                        <td className="py-2 px-3 sm:px-4">
                           {getFormattedPrice(auditorium.totalamount, auditorium.offer, true)}
                         </td>
-                        <td className="py-2 px-3 sm:px-4 text-xs sm:text-sm">
-                          {getFormattedPrice(auditorium.advAmnt, undefined)}
+                        <td className="py-2 px-3 sm:px-4">
+                          {getFormattedPrice(auditorium.advAmnt)}
                         </td>
                         <td className="py-2 px-3 sm:px-4">
                           <button
-                            className="px-5 py-2 bg-gradient-to-r from-[#8B4513] to-[#D2691E] text-white rounded-full shadow-md hover:from-[#A0522D] hover:to-[#FF8C00] hover:shadow-lg transition-all duration-300 ease-in-out text-sm sm:text-base font-semibold tracking-wide whitespace-nowrap"
-                            onClick={() => navigate(`/auditoriumdetails/${auditorium._id}?date=${encodeURIComponent(searchParams.get("date") || "")}`)}
+                            className="px-5 py-2 bg-gradient-to-r from-[#8B4513] to-[#D2691E] text-white rounded-full shadow-md hover:from-[#A0522D] hover:to-[#FF8C00] hover:shadow-lg transition-all duration-300 text-sm sm:text-base font-semibold tracking-wide"
+                            onClick={() =>
+                              navigate(
+                                `/auditoriumdetails/${auditorium._id}?date=${encodeURIComponent(
+                                  searchParams.get("date") || ""
+                                )}`
+                              )
+                            }
                           >
                             Book Now
                           </button>
@@ -327,4 +348,4 @@ const VenuePage: React.FC = () => {
   );
 };
 
-export default VenuePage
+export default VenuePage;
