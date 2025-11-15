@@ -332,9 +332,12 @@ const Bookings: React.FC = () => {
         fetchAllExistingVouchers(),
       ])
 
+      console.log(venueResponse.data,'ithe')
+
       if (venueResponse.data) {
         const venueData = venueResponse.data
-        const eventTypes = Object.keys(venueData.tariff || {}).filter((key) => venueData.tariff[key] === "t")
+        const eventTypes = venueData.events || [];
+
 
         const originalTotal = venueData.totalamount || ""
         const originalAdvance = venueData.advAmnt || venueData.advamnt || ""
