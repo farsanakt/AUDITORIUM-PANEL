@@ -46,6 +46,73 @@ interface Auditorium {
   termsAndConditions?: string[]; // e.g., ["cfff,ddd"]
 }
 
+interface PolicyCardProps {
+  title: string;
+  content: string;
+  maxLines?: number;
+}
+
+interface ExpandableTextProps {
+  content: string;
+  maxLines?: number;
+}
+
+const ExpandableText: React.FC<ExpandableTextProps> = ({ content, maxLines = 3 }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  // Split by \r\n or \n to get actual lines
+  const lines = content.split(/\r\n|\n/).filter(line => line.trim());
+  const shouldShowMore = lines.length > maxLines;
+  const displayLines = isExpanded ? lines : lines.slice(0, maxLines);
+
+  return (
+    <div>
+      <div className="text-xs sm:text-sm md:text-base text-gray-700 text-left space-y-2">
+        {displayLines.map((line, idx) => (
+          <p key={idx} className="leading-relaxed">{line}</p>
+        ))}
+      </div>
+      {shouldShowMore && (
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="mt-3 text-[#9c7c5d] hover:text-[#d85c4e] font-medium text-xs sm:text-sm transition-colors"
+        >
+          {isExpanded ? '↑ Show Less' : '↓ Show More'}
+        </button>
+      )}
+    </div>
+  );
+};
+
+const PolicyCard: React.FC<PolicyCardProps> = ({ title, content, maxLines = 3 }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  // Split by \r\n or \n to get actual lines from backend
+  const lines = content.split(/\r\n|\n/).filter(line => line.trim());
+  const shouldShowMore = lines.length > maxLines;
+  const displayLines = isExpanded ? lines : lines.slice(0, maxLines);
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 mb-4">
+      <h4 className="font-semibold text-base md:text-lg text-[#2A2929] mb-3 text-left">{title}</h4>
+      <div className="text-xs sm:text-sm md:text-base text-gray-700 text-left space-y-2">
+        {displayLines.map((line, idx) => (
+          <p key={idx} className="leading-relaxed">{line}</p>
+        ))}
+      </div>
+      {shouldShowMore && (
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="mt-3 text-[#9c7c5d] hover:text-[#d85c4e] font-medium text-xs sm:text-sm transition-colors"
+        >
+          {isExpanded ? '↑ Show Less' : '↓ Show More'}
+        </button>
+      )}
+    </div>
+  );
+};
+
+
 const AuditoriumDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -229,7 +296,7 @@ const AuditoriumDetails: React.FC = () => {
         `}
       </style>
       <img
-        src={Lines}
+        src={Lines || "/placeholder.svg"}
         alt="Lines"
         className="absolute top-0 left-0 h-full object-cover mt-0 z-0 sm:scale-150 scale-125"
         style={{ maxWidth: "none" }}
@@ -314,7 +381,7 @@ const AuditoriumDetails: React.FC = () => {
                       index === current ? "border-[#b09d94] shadow-md" : "border-gray-200 hover:border-gray-400"
                     }`}
                   >
-                    <img src={img} alt={`Thumbnail ${index + 1}`} className="w-full h-full object-cover" />
+                    <img src={img || "/placeholder.svg"} alt={`Thumbnail ${index + 1}`} className="w-full h-full object-cover" />
                   </button>
                 ))}
               </div>
@@ -327,14 +394,15 @@ const AuditoriumDetails: React.FC = () => {
               <h3 className="text-base sm:text-lg md:text-xl font-semibold text-left text-[#5B4336] mt-4 sm:mt-6 mb-3">
                 About Venue
               </h3>
-              <p className="text-xs sm:text-sm md:text-base text-[#000000] text-left leading-relaxed">
-                {auditorium.name} is a premier event venue offering modern amenities and elegant spaces for various events.
-                With a seating capacity of {auditorium.seatingCapacity} and dining capacity of {auditorium.diningCapacity},
-                it’s ideal for {auditorium.tariff.wedding === "t" ? "weddings" : ""}
-                {auditorium.tariff.wedding === "t" && auditorium.tariff.reception === "t" ? ", " : ""}
-                {auditorium.tariff.reception === "t" ? "receptions" : ""}, and other celebrations.
-                The venue supports {auditorium.foodPolicy} food options and {auditorium.decorPolicy} decoration policies.
-              </p>
+              <ExpandableText 
+                content={`${auditorium.name} is a premier event venue offering modern amenities and elegant spaces for various events.
+With a seating capacity of ${auditorium.seatingCapacity} and dining capacity of ${auditorium.diningCapacity},
+it's ideal for ${auditorium.tariff.wedding === "t" ? "weddings" : ""}
+${auditorium.tariff.wedding === "t" && auditorium.tariff.reception === "t" ? ", " : ""}
+${auditorium.tariff.reception === "t" ? "receptions" : ""}, and other celebrations.
+The venue supports ${auditorium.foodPolicy} food options and ${auditorium.decorPolicy} decoration policies.`}
+                maxLines={3}
+              />
             </div>
             <div className="flex-shrink-0 w-full lg:w-auto">
               <button
@@ -381,7 +449,7 @@ const AuditoriumDetails: React.FC = () => {
           {/* Service Cards Grid */}
           <div className="relative z-10">
             <img
-              src={Bshape}
+              src={Bshape || "/placeholder.svg"}
               alt="Lines"
               className="absolute bottom-0 left-[-40px] sm:left-[-60px] h-[80%] sm:h-[90%] object-cover z-0"
               style={{ maxWidth: "none" }}
@@ -452,59 +520,128 @@ const AuditoriumDetails: React.FC = () => {
                   </ul>
                 </div>
 
-                {/* Terms & Conditions */}
-                {termsList.length > 0 && (
-                  <div className="lg:col-span-3">
-                    <h4 className="font-semibold text-sm sm:text-base md:text-lg text-[#2A2929] mb-2 text-left">
-                      Terms & Conditions
-                    </h4>
-                    <ul className="list-disc list-inside space-y-1 text-left text-xs sm:text-sm md:text-base">
-                      {termsList.map((term, idx) => (
-                        <li key={idx}>{term}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+                {/* Terms & Conditions were moved below policy cards */}
               </div>
             </div>
+          </div>
 
-            {/* Location Section */}
-            <div className="mb-6 sm:mb-8">
-              <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-left text-[#5B4336] mt-6 sm:mt-8 md:mt-10 mb-3 sm:mb-4">
-                Location
-              </h2>
-              <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4 md:p-6 location-card">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 md:gap-8">
-                  <div className="order-1">
-                    <h3 className="text-sm sm:text-base md:text-lg font-semibold text-[#9c7c5d] mb-3 sm:mb-4 text-left">
-                      Venue Video
-                    </h3>
-                    <div className="relative w-full h-88 location-content">
-                      {auditorium.youtubeLink ? (
-                        <iframe
-                          className="w-full h-full rounded-lg"
-                          src={auditorium.youtubeLink.replace("watch?v=", "embed/").split("&")[0]}
-                          title="Venue Video"
-                          frameBorder="0"
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                          allowFullScreen
-                        ></iframe>
-                      ) : (
-                        <div className="bg-gray-200 rounded-lg h-full flex items-center justify-center">
-                          <p className="text-gray-500 font-medium text-xs sm:text-sm md:text-base">No video available</p>
-                        </div>
-                      )}
-                    </div>
+          <div className="mt-8 sm:mt-10 md:mt-12 max-w-6xl mx-auto">
+            <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-left text-[#5B4336] mb-4 sm:mb-6">
+              Venue Policies
+            </h2>
+
+            {/* Food Policy */}
+            {auditorium.foodPolicy && (
+              <PolicyCard title="Food Policy" content={auditorium.foodPolicy} maxLines={3} />
+            )}
+
+            {/* Decoration Policy */}
+            {auditorium.decorPolicy && (
+              <PolicyCard title="Decoration Policy" content={auditorium.decorPolicy} maxLines={3} />
+            )}
+
+            {/* Cancellation Policy */}
+            {auditorium.cancellationPolicy && (
+              <PolicyCard title="Cancellation Policy" content={auditorium.cancellationPolicy} maxLines={3} />
+            )}
+
+            {/* Terms & Conditions */}
+            {termsList.length > 0 && (
+              <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 mb-4">
+                <h4 className="font-semibold text-base md:text-lg text-[#2A2929] mb-3 text-left">
+                  Terms & Conditions
+                </h4>
+                <ExpandableText 
+                  content={termsList.join("\n")}
+                  maxLines={3}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Location Section */}
+          <div className="mb-6 sm:mb-8">
+            <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-left text-[#5B4336] mt-6 sm:mt-8 md:mt-10 mb-3 sm:mb-4">
+              Location
+            </h2>
+            <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4 md:p-6 location-card">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 md:gap-8">
+                <div className="order-1">
+                  <h3 className="text-sm sm:text-base md:text-lg font-semibold text-[#9c7c5d] mb-3 sm:mb-4 text-left">
+                    Venue Video
+                  </h3>
+                  <div className="relative w-full h-88 location-content">
+                    {auditorium.youtubeLink ? (
+                      <iframe
+                        className="w-full h-full rounded-lg"
+                        src={auditorium.youtubeLink.replace("watch?v=", "embed/").split("&")[0]}
+                        title="Venue Video"
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      ></iframe>
+                    ) : (
+                      <div className="bg-gray-200 rounded-lg h-full flex items-center justify-center">
+                        <p className="text-gray-500 font-medium text-xs sm:text-sm md:text-base">No video available</p>
+                      </div>
+                    )}
                   </div>
+                </div>
 
-                  <div className="order-2">
-                    <h3 className="text-sm sm:text-base md:text-lg font-semibold text-[#9c7c5d] mb-3 sm:mb-4 text-left">
-                      Address Details
-                    </h3>
-                    <div className="space-y-2 sm:space-y-3 location-content">
-                      <div className="flex items-start space-x-2 sm:space-x-3">
+                <div className="order-2">
+                  <h3 className="text-sm sm:text-base md:text-lg font-semibold text-[#9c7c5d] mb-3 sm:mb-4 text-left">
+                    Address Details
+                  </h3>
+                  <div className="space-y-2 sm:space-y-3 location-content">
+                    <div className="flex items-start space-x-2 sm:space-x-3">
+                      <svg
+                        className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500 mt-0.5"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      <div>
+                        <p className="font-medium text-gray-800 text-xs sm:text-sm md:text-base">{auditorium.name}</p>
+                        <p className="text-gray-600 text-xs sm:text-sm md:text-base">
+                          {auditorium.address},{' '}
+                          {Array.isArray(auditorium.locations) && auditorium.locations.length > 0
+                            ? auditorium.locations.join(", ")
+                            : "City not specified"}{' '}
+                          {auditorium.pincode}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2 sm:space-x-3">
+                      <svg
+                        className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                        />
+                      </svg>
+                      <p className="text-gray-600 text-xs sm:text-sm md:text-base">Easily accessible by public transport</p>
+                    </div>
+                    <div className="bg-gray-200 rounded-lg h-40 sm:h-48 md:h-64 flex items-center justify-center cursor-pointer hover:bg-gray-300 transition-colors">
+                      <div className="text-center">
                         <svg
-                          className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500 mt-0.5"
+                          className="w-6 h-6 sm:w-8 sm:h-8 md:w-12 md:h-12 text-gray-400 mx-auto mb-2"
                           fill="currentColor"
                           viewBox="0 0 20 20"
                         >
@@ -514,55 +651,8 @@ const AuditoriumDetails: React.FC = () => {
                             clipRule="evenodd"
                           />
                         </svg>
-                        <div>
-                          <p className="font-medium text-gray-800 text-xs sm:text-sm md:text-base">{auditorium.name}</p>
-                          <p className="text-gray-600 text-xs sm:text-sm md:text-base">
-                            {auditorium.address},{' '}
-                            {Array.isArray(auditorium.locations) && auditorium.locations.length > 0
-                              ? auditorium.locations.join(", ")
-                              : "City not specified"}{' '}
-                            {auditorium.pincode}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2 sm:space-x-3">
-                        <svg
-                          className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                          />
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                          />
-                        </svg>
-                        <p className="text-gray-600 text-xs sm:text-sm md:text-base">Easily accessible by public transport</p>
-                      </div>
-                      <div className="bg-gray-200 rounded-lg h-40 sm:h-48 md:h-64 flex items-center justify-center cursor-pointer hover:bg-gray-300 transition-colors">
-                        <div className="text-center">
-                          <svg
-                            className="w-6 h-6 sm:w-8 sm:h-8 md:w-12 md:h-12 text-gray-400 mx-auto mb-2"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                          <p className="text-gray-500 font-medium text-xs sm:text-sm md:text-base">View on Map</p>
-                          <p className="text-xs sm:text-sm text-gray-400">Click to open location</p>
-                        </div>
+                        <p className="text-gray-500 font-medium text-xs sm:text-sm md:text-base">View on Map</p>
+                        <p className="text-xs sm:text-sm text-gray-400">Click to open location</p>
                       </div>
                     </div>
                   </div>
