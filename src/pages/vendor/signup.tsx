@@ -1,14 +1,15 @@
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import Header from "../../component/user/Header"
-import { vendorSingUpRequest } from "../../api/userApi"
+import { vendorSingUpRequest, getItems } from "../../api/userApi"
 import tk from "../../assets/k.png"
 import { toast } from 'react-toastify'
 
 const VendorRegistration: React.FC = () => {
   const navigate = useNavigate()
   const [showOtpModal, setShowOtpModal] = useState(false)
+  const [vendorTypes, setVendorTypes] = useState<string[]>([])
 
   const [formData, setFormData] = useState({
     name: "",
@@ -20,14 +21,35 @@ const VendorRegistration: React.FC = () => {
     confirmPassword: "",
   })
 
-  const vendorTypes = [
-    "Caterer",
-    "Photographer",
-    "Decorator",
-    "Event Planner",
-    "Venue Provider",
-    "Entertainer"
-  ]
+  // Fetch vendor types from backend
+  const fetchVendorTypes = async () => {
+    try {
+      const response = await getItems('hi') // Assuming 'hi' is used to fetch admin items including vendor types
+      console.log("Admin items response:", response.data)
+
+      if (response.data?.success && response.data?.items?.vendorTypes) {
+        const types = response.data.items.vendorTypes
+          .filter((type: string) => type && type.trim())
+          .sort()
+        setVendorTypes(types)
+      }
+    } catch (error) {
+      console.error("Error fetching vendor types:", error)
+      // Fallback to static list if API fails
+      setVendorTypes([
+        "Caterer",
+        "Photographer",
+        "Decorator",
+        "Event Planner",
+        "Venue Provider",
+        "Entertainer"
+      ])
+    }
+  }
+
+  useEffect(() => {
+    fetchVendorTypes()
+  }, [])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -43,11 +65,28 @@ const VendorRegistration: React.FC = () => {
   }
 
   const handleSignup = async () => {
-    const response = await vendorSingUpRequest(formData)
-    if (response.data.success === false) {
-      toast.error(response.data.message || 'Signup failed!')
-    } else {
-      setShowOtpModal(true)
+    // Basic validation
+    if (formData.password !== formData.confirmPassword) {
+      toast.error("Passwords do not match!")
+      return
+    }
+
+    if (!formData.vendortype) {
+      toast.error("Please select a vendor type.")
+      return
+    }
+
+    try {
+      const response = await vendorSingUpRequest(formData)
+      if (response.data.success === false) {
+        toast.error(response.data.message || 'Signup failed!')
+      } else {
+        toast.success(response.data.message || "OTP sent to your email")
+        setShowOtpModal(true)
+      }
+    } catch (error: any) {
+      console.error("Signup error:", error)
+      toast.error(error.response?.data?.message || "Error during signup")
     }
   }
 
@@ -228,19 +267,19 @@ const VendorRegistration: React.FC = () => {
               <p className="font-semibold text-lg">Why Register?</p>
               <ul className="text-sm space-y-3">
                 <li className="flex items-center">
-                  <span className="mr-2 text-[#ED695A]">✔</span>
+                  <span className="mr-2 text-[#ED695A]">Check</span>
                   <span>Connect with thousands of clients</span>
                 </li>
                 <li className="flex items-center">
-                  <span className="mr-2 text-[#ED695A]">✔</span>
+                  <span className="mr-2 text-[#ED695A]">Check</span>
                   <span>Streamline your booking process</span>
                 </li>
                 <li className="flex items-center">
-                  <span className="mr-2 text-[#ED695A]">✔</span>
+                  <span className="mr-2 text-[#ED695A]">Check</span>
                   <span>Showcase your services elegantly</span>
                 </li>
                 <li className="flex items-center">
-                  <span className="mr-2 text-[#ED695A]">✔</span>
+                  <span className="mr-2 text-[#ED695A]">Check</span>
                   <span>Boost your online visibility</span>
                 </li>
               </ul>
@@ -250,11 +289,15 @@ const VendorRegistration: React.FC = () => {
                 src={tk}
                 alt="Vendor Preview"
                 className="w-full h-48 object-cover rounded-md shadow-md"
+                onError={(e) => {
+                  e.currentTarget.src = "https://images.unsplash.com/photo-1519167758481-83f550bb2953"
+                }}
               />
             </div>
           </div>
         </div>
 
+        {/* OTP Modal */}
         {showOtpModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg shadow-lg p-5 w-full max-w-xs">

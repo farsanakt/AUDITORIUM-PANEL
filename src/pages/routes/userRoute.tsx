@@ -13,16 +13,13 @@ import VendorDetails from '../user/vendorDetails'
 import ProtectedRoute from '../../service/user/userProtectedRoute'
 import UserProfile from '../user/userProfile'
 import UserBookings from '../user/userBookings'
-import { useSelector } from 'react-redux'
+
 
 
 
 const UserRoute = () => {
 
-  // const { currentUser } = useSelector((state: any) => state.auth);
-
-  // if (!currentUser) return <Navigate to="/login" />;
-  // if (currentUser.role !== "user") return <Navigate to="/" />;
+  
  
   return (
     <div>

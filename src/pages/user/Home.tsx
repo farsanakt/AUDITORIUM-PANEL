@@ -6,9 +6,9 @@ import bgImg from "../../assets/Rectangle 50.png"
 import pjct from "../../assets/image 16.png"
 import pjct1 from "../../assets/Rectangle 30.png"
 import { useNavigate } from "react-router-dom"
-import { existingVenues, fetchAllExistingOffer, fetchAllExistingVouchers, fetchAllVendors } from "../../api/userApi"
+import { existingVenues, fetchAllExistingOffer, fetchAllExistingVouchers, fetchAllVendors, getItems } from "../../api/userApi"
 
-// Toast component from Sera UI
+
 const Toast = ({ message, type = "error", onClose }: { message: string; type?: string; onClose: () => void }) => {
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -86,14 +86,19 @@ interface Project {
   category: string
 }
 
-// District to locations mapping
-const districtLocations: Record<string, string[]> = {
-  "Ernakulam": ["Kochi", "Aluva", "Perumbavoor", "Fort Kochi"],
-  "Thiruvananthapuram": ["Trivandrum", "Neyyattinkara", "Kovalam", "Varkala"],
-  "Kannur": ["Kannur", "Thalassery", "Payyanur", "Taliparamba"],
-  "Kozhikode": ["Calicut", "Vatakara", "Koyilandy", "Feroke"],
-  "Others": ["Other Locations"],
-};
+// New: API Response Interfaces for JSON data
+interface ApiDistrict {
+  id: number
+  state_id: number
+  name: string
+  country_id: number
+}
+
+interface ApiSubDistrict {
+  id: number
+  district_id: number
+  name: string
+}
 
 const HomePage: React.FC = () => {
   const [isVisible, setIsVisible] = useState<boolean>(false)
@@ -118,8 +123,91 @@ const HomePage: React.FC = () => {
   const [toast, setToast] = useState<{ message: string; type: string } | null>(null)
   const navigate = useNavigate()
 
+  // Dynamic data for dropdowns
+  const [districts, setDistricts] = useState<string[]>([])
+  const [placesByDistrict, setPlacesByDistrict] = useState<Record<string, string[]>>({})
+  const [eventTypes, setEventTypes] = useState<string[]>([])
+  const [loadingDropdowns, setLoadingDropdowns] = useState<boolean>(true)
+  const [allApiData, setAllApiData] = useState<{ districts: ApiDistrict[]; subdistricts: ApiSubDistrict[] } | null>(null)
+
   const venuesRef = useRef<HTMLDivElement>(null)
   const vendorRefs = useRef<Record<string, HTMLDivElement | null>>({})
+
+  // Updated: fetchALLExitingItems - Only extracts events
+  const fetchALLExitingItems = async () => {
+    try {
+      const response = await getItems('hi')
+      console.log("Admin items response:", response.data)
+      
+      if (response.data?.success && response.data?.items?.events) {
+        const events = response.data.items.events.filter((e: string) => e && e.trim()).sort()
+        setEventTypes(events)
+      }
+    } catch (error) {
+      console.error("Error fetching admin items:", error)
+    }
+  }
+
+  // New: Fetch complete Kerala districts and subdistricts (taluks) from free JSON API
+  const fetchDistrictsAndPlaces = async () => {
+    try {
+      const response = await fetch('https://raw.githubusercontent.com/shauryashahi/Indian-State-City-db-json/master/db.json')
+      if (!response.ok) throw new Error('Failed to fetch API data')
+      const data = await response.json()
+      
+      // Filter for Kerala (state_id: 16 for Kerala)
+      const keralaDistricts = data.districts.filter((d: ApiDistrict) => d.state_id === 16)
+      const districtNames = keralaDistricts.map((d: ApiDistrict) => d.name).sort()
+      setDistricts(districtNames)
+
+      // Store full data for taluk lookup
+      setAllApiData({ districts: keralaDistricts as ApiDistrict[], subdistricts: data.subdistricts as ApiSubDistrict[] })
+
+      console.log("Fetched Kerala districts:", districtNames)
+    } catch (error) {
+      console.error("Error fetching districts API:", error)
+      // Fallback: Hardcoded complete 14 districts
+      const fallbackDistricts = [
+        "Alappuzha", "Ernakulam", "Idukki", "Kannur", "Kasaragod", "Kollam", "Kottayam",
+        "Kozhikode", "Malappuram", "Palakkad", "Pathanamthitta", "Thiruvananthapuram",
+        "Thrissur", "Wayanad"
+      ].sort()
+      setDistricts(fallbackDistricts)
+    }
+  }
+
+  // New: Extract taluks/places for selected district
+  const getPlacesForDistrict = (districtName: string) => {
+    if (!allApiData) return []
+
+    const district = allApiData.districts.find(d => d.name === districtName)
+    if (!district) return []
+
+    const taluks = allApiData.subdistricts
+      .filter((sd: ApiSubDistrict) => sd.district_id === district.id)
+      .map((sd: ApiSubDistrict) => sd.name)
+      .sort()
+
+    return taluks
+  }
+
+  // Fallback: Complete hardcoded taluks map (from official sources like Wikipedia)
+  const fallbackPlacesByDistrict: Record<string, string[]> = {
+    "Alappuzha": ["Ambalappuzha", "Chengannur", "Cherthala", "Karukachal", "Kayamkulam", "Mavelikkara"],
+    "Ernakulam": ["Aluva", "Kothamangalam", "Kochi", "Kunnathunad", "Muvattupuzha", "Paravur"],
+    "Idukki": ["Devikulam", "Idukki", "Peermade", "Thodupuzha", "Udumbanchola"],
+    "Kannur": ["Irikkur", "Kannur", "Koothuparamba", "Payyannur", "Taliparamba", "Thalassery"],
+    "Kasaragod": ["Kasaragod", "Hosdurg", "Manjeshwaram", "Vellarikundu"],
+    "Kollam": ["Karunagappally", "Kollam", "Kottarakkara", "Kunnathur", "Pathanapuram"],
+    "Kottayam": ["Changanassery", "Kanjirappally", "Kottayam", "Meenachil", "Vaikom"],
+    "Kozhikode": ["Kozhikode", "Kunnamangalam", "Thamarassery", "Vadakara"],
+    "Malappuram": ["Kondotty", "Nilambur", "Perinthalmanna", "Ponnani", "Tirur", "Tirurangadi"], // Your example
+    "Palakkad": ["Chittur", "Mannarkkad", "Ottappalam", "Palakkad", "Shoranur"],
+    "Pathanamthitta": ["Adoor", "Kozhencherry", "Mallappally", "Ranni"],
+    "Thiruvananthapuram": ["Chirayinkeezhu", "Nedumangad", "Neyyattinkara", "Thiruvananthapuram", "Varkala"],
+    "Thrissur": ["Chavakkad", "Kodungallur", "Mukundapuram", "Talappilly", "Thrissur"],
+    "Wayanad": ["Mananthavady", "Sulthanbathery", "Vythiri"]
+  }
 
   const projects: Project[] = [
     {
@@ -249,7 +337,7 @@ const HomePage: React.FC = () => {
     }
   }
 
-  // Helper function to capitalize words
+ 
   const capitalizeWords = (str: string) => {
     return str
       .split(" ")
@@ -270,7 +358,7 @@ const HomePage: React.FC = () => {
     return capitalized
   }
 
-  // Helper to get description based on type
+
   const getSectionDescription = (type: string) => {
     if (type === "event management") {
       return "Our expert event management teams ensure every detail of your special day is perfectly executed."
@@ -294,6 +382,40 @@ const HomePage: React.FC = () => {
   useEffect(() => {
     fetchVenues()
   }, [offers, vouchers])
+
+  // Updated: Load dynamic dropdown data on mount
+  useEffect(() => {
+    const loadDropdownData = async () => {
+      setLoadingDropdowns(true)
+      await Promise.all([fetchDistrictsAndPlaces(), fetchALLExitingItems()])
+      setLoadingDropdowns(false)
+    }
+    loadDropdownData()
+  }, [])
+
+  // Updated: Fetch/update places when district changes
+  useEffect(() => {
+    if (formData.district) {
+      setLoadingDropdowns(true)
+      let taluks: string[] = []
+
+      // Try API first
+      if (allApiData) {
+        taluks = getPlacesForDistrict(formData.district)
+      }
+
+      // If API empty, use fallback
+      if (taluks.length === 0) {
+        taluks = fallbackPlacesByDistrict[formData.district] || []
+      }
+
+      setPlacesByDistrict(prev => ({ ...prev, [formData.district]: taluks }))
+      console.log(`Fetched taluks for ${formData.district}:`, taluks)
+
+      setLoadingDropdowns(false)
+      setFormData(prev => ({ ...prev, place: "" })) // Reset place
+    }
+  }, [formData.district, allApiData])
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -708,10 +830,11 @@ const HomePage: React.FC = () => {
                     name="district"
                     value={formData.district}
                     onChange={handleInputChange}
+                    disabled={loadingDropdowns}
                     className="w-full h-10 pl-10 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
                   >
                     <option value="">Select District</option>
-                    {Object.keys(districtLocations).map((district) => (
+                    {districts.map((district) => (
                       <option key={district} value={district}>{district}</option>
                     ))}
                   </select>
@@ -722,13 +845,14 @@ const HomePage: React.FC = () => {
                     name="place"
                     value={formData.place}
                     onChange={handleInputChange}
+                    disabled={!formData.district || loadingDropdowns}
                     className="w-full h-10 pl-10 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
-                    disabled={!formData.district}
                   >
-                    <option value="">Select Place</option>
-                    {formData.district && districtLocations[formData.district]?.map((place) => (
-                      <option key={place} value={place}>{place}</option>
-                    ))}
+                    <option value="">Select Place (Taluk)</option>
+                    {formData.district &&
+                      placesByDistrict[formData.district]?.map((place) => (
+                        <option key={place} value={place}>{place}</option>
+                      ))}
                   </select>
                 </div>
                 <div className="relative">
@@ -748,19 +872,19 @@ const HomePage: React.FC = () => {
                     name="event"
                     value={formData.event}
                     onChange={handleInputChange}
+                    disabled={loadingDropdowns}
                     className="w-full h-10 pl-10 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
                   >
                     <option value="">Select Event</option>
-                    <option value="wedding">Wedding</option>
-                    <option value="engagement">Engagement</option>
-                    <option value="reception">Reception</option>
-                    <option value="anniversary">Anniversary</option>
-                    <option value="others">others</option>
+                    {eventTypes.map((event) => (
+                      <option key={event} value={event}>{event}</option>
+                    ))}
                   </select>
                 </div>
                 <button
                   onClick={handleSubmit}
-                  className="h-10 px-4 w-full bg-[#9c7c5d] text-white rounded-md font-medium hover:bg-[#8b6b4a] transition duration-300 flex items-center justify-center gap-2 text-sm"
+                  disabled={loadingDropdowns}
+                  className="h-10 px-4 w-full bg-[#9c7c5d] text-white rounded-md font-medium hover:bg-[#8b6b4a] transition duration-300 flex items-center justify-center gap-2 text-sm disabled:opacity-50"
                 >
                   <span>Find Venues</span>
                   <Search className="w-4 h-4" />
@@ -774,10 +898,11 @@ const HomePage: React.FC = () => {
                     name="district"
                     value={formData.district}
                     onChange={handleInputChange}
+                    disabled={loadingDropdowns}
                     className="w-full h-10 sm:h-12 pl-10 sm:pl-12 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
                   >
                     <option value="">Select District</option>
-                    {Object.keys(districtLocations).map((district) => (
+                    {districts.map((district) => (
                       <option key={district} value={district}>{district}</option>
                     ))}
                   </select>
@@ -788,13 +913,14 @@ const HomePage: React.FC = () => {
                     name="place"
                     value={formData.place}
                     onChange={handleInputChange}
+                    disabled={!formData.district || loadingDropdowns}
                     className="w-full h-10 sm:h-12 pl-10 sm:pl-12 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
-                    disabled={!formData.district}
                   >
-                    <option value="">Select Place</option>
-                    {formData.district && districtLocations[formData.district]?.map((place) => (
-                      <option key={place} value={place}>{place}</option>
-                    ))}
+                    <option value="">Select Place (Taluk)</option>
+                    {formData.district &&
+                      placesByDistrict[formData.district]?.map((place) => (
+                        <option key={place} value={place}>{place}</option>
+                      ))}
                   </select>
                 </div>
                 <div className="relative">
@@ -814,19 +940,19 @@ const HomePage: React.FC = () => {
                     name="event"
                     value={formData.event}
                     onChange={handleInputChange}
+                    disabled={loadingDropdowns}
                     className="w-full h-10 sm:h-12 pl-10 sm:pl-12 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
                   >
                     <option value="">Select Event</option>
-                    <option value="wedding">Wedding</option>
-                    <option value="engagement">Engagement</option>
-                    <option value="reception">Reception</option>
-                    <option value="anniversary">Anniversary</option>
-                    <option value="others">others</option>
+                    {eventTypes.map((event) => (
+                      <option key={event} value={event}>{event}</option>
+                    ))}
                   </select>
                 </div>
                 <button
                   onClick={handleSubmit}
-                  className="h-10 sm:h-12 px-4 w-full col-span-2 bg-[#9c7c5d] text-white rounded-md font-medium hover:bg-[#8b6b4a] transition duration-300 flex items-center justify-center gap-2 text-sm"
+                  disabled={loadingDropdowns}
+                  className="h-10 sm:h-12 px-4 w-full col-span-2 bg-[#9c7c5d] text-white rounded-md font-medium hover:bg-[#8b6b4a] transition duration-300 flex items-center justify-center gap-2 text-sm disabled:opacity-50"
                 >
                   <span>Find Venues</span>
                   <Search className="w-4 h-4" />

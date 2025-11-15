@@ -1,12 +1,12 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Eye, EyeOff, Loader2 } from "lucide-react"
 import tk from "../../assets/Rectangle 50.png"
 import { useNavigate } from "react-router-dom"
 import Header from "../../component/user/Header"
-import {  singUpRequest, verifyOTP } from "../../api/userApi" 
+import {  singUpRequest, verifyOTP, getItems } from "../../api/userApi" 
 import { toast } from 'react-toastify'
 
 const AuditoriumRegistrationPage: React.FC = () => {
@@ -43,37 +43,26 @@ const AuditoriumRegistrationPage: React.FC = () => {
     corporation: ""
   })
 
-  const eventOptions = [
-    { value: "Reception", label: "Reception" },
-    { value: "Engagement", label: "Engagement" },
-    { value: "Anniversary", label: "Anniversary" },
-    { value: "wedding", label: "Wedding" },
-    { value: "other", label: "other" },
-  ]
+  const [eventTypes, setEventTypes] = useState<string[]>([])
+  const [districts, setDistricts] = useState<string[]>([])
+  const [locations, setLocations] = useState<string[]>([])
 
-  const locationOptions = [
-    { value: "Kochi", label: "Kochi" },
-    { value: "Trivandrum", label: "Trivandrum" },
-    { value: "Kannur", label: "Kannur" },
-    { value: "calicut", label: "Calicut" }
-  ]
-
-  const districtOptions = [
-    { value: "Thiruvananthapuram", label: "Thiruvananthapuram" },
-    { value: "Kollam", label: "Kollam" },
-    { value: "Pathanamthitta", label: "Pathanamthitta" },
-    { value: "Alappuzha", label: "Alappuzha" },
-    { value: "Kottayam", label: "Kottayam" },
-    { value: "Idukki", label: "Idukki" },
-    { value: "Ernakulam", label: "Ernakulam" },
-    { value: "Thrissur", label: "Thrissur" },
-    { value: "Palakkad", label: "Palakkad" },
-    { value: "Malappuram", label: "Malappuram" },
-    { value: "Kozhikode", label: "Kozhikode" },
-    { value: "Wayanad", label: "Wayanad" },
-    { value: "Kannur", label: "Kannur" },
-    { value: "Kasaragod", label: "Kasaragod" }
-  ]
+  const fallbackPlacesByDistrict: Record<string, string[]> = {
+    "Alappuzha": ["Ambalappuzha", "Chengannur", "Cherthala", "Karukachal", "Kayamkulam", "Mavelikkara"],
+    "Ernakulam": ["Aluva", "Kothamangalam", "Kochi", "Kunnathunad", "Muvattupuzha", "Paravur"],
+    "Idukki": ["Devikulam", "Idukki", "Peermade", "Thodupuzha", "Udumbanchola"],
+    "Kannur": ["Irikkur", "Kannur", "Koothuparamba", "Payyannur", "Taliparamba", "Thalassery"],
+    "Kasaragod": ["Kasaragod", "Hosdurg", "Manjeshwaram", "Vellarikundu"],
+    "Kollam": ["Karunagappally", "Kollam", "Kottarakkara", "Kunnathur", "Pathanapuram"],
+    "Kottayam": ["Changanassery", "Kanjirappally", "Kottayam", "Meenachil", "Vaikom"],
+    "Kozhikode": ["Kozhikode", "Kunnamangalam", "Thamarassery", "Vadakara"],
+    "Malappuram": ["Kondotty", "Nilambur", "Perinthalmanna", "Ponnani", "Tirur", "Tirurangadi"],
+    "Palakkad": ["Chittur", "Mannarkkad", "Ottappalam", "Palakkad", "Shoranur"],
+    "Pathanamthitta": ["Adoor", "Kozhencherry", "Mallappally", "Ranni"],
+    "Thiruvananthapuram": ["Chirayinkeezhu", "Nedumangad", "Neyyattinkara", "Thiruvananthapuram", "Varkala"],
+    "Thrissur": ["Chavakkad", "Kodungallur", "Mukundapuram", "Talappilly", "Thrissur"],
+    "Wayanad": ["Mananthavady", "Sulthanbathery", "Vythiri"]
+  }
 
   const adminTypeOptions = [
     { value: "Panchayat", label: "Panchayat" },
@@ -250,6 +239,57 @@ const AuditoriumRegistrationPage: React.FC = () => {
     }
   }
 
+  const eventOptions = eventTypes.map((event) => ({ value: event, label: event }))
+
+  const locationOptions = locations.map((loc) => ({ value: loc, label: loc }))
+
+  const districtOptions = districts.map((dist) => ({ value: dist, label: dist }))
+
+  const fetchDropdownData = async () => {
+    try {
+      const response = await fetch('https://raw.githubusercontent.com/shauryashahi/Indian-State-City-db-json/master/db.json')
+      if (!response.ok) throw new Error('Failed to fetch API data')
+      const data = await response.json()
+
+      const keralaDistricts = data.districts.filter((d: any) => d.state_id === 16)
+      const districtNames = keralaDistricts.map((d: any) => d.name).sort()
+      setDistricts(districtNames)
+
+      const keralaDistrictIds = keralaDistricts.map((d: any) => d.id)
+      const keralaSubs = data.subdistricts.filter((sd: any) => keralaDistrictIds.includes(sd.district_id))
+      const uniqueSubs = [...new Set(keralaSubs.map((sd: any) => sd.name))].sort()
+      setLocations(uniqueSubs)
+    } catch (error) {
+      console.error("Error fetching districts and locations:", error)
+      const fallbackDistricts = [
+        "Alappuzha", "Ernakulam", "Idukki", "Kannur", "Kasaragod", "Kollam", "Kottayam",
+        "Kozhikode", "Malappuram", "Palakkad", "Pathanamthitta", "Thiruvananthapuram",
+        "Thrissur", "Wayanad"
+      ].sort()
+      setDistricts(fallbackDistricts)
+
+      const uniquePlaces = [...new Set(Object.values(fallbackPlacesByDistrict).flat())].sort()
+      setLocations(uniquePlaces)
+    }
+
+    try {
+      const response = await getItems('hi')
+      console.log("Admin items response:", response.data)
+      
+      if (response.data?.success && response.data?.items?.events) {
+        const events = response.data.items.events.filter((e: string) => e && e.trim()).sort()
+        setEventTypes(events)
+      }
+    } catch (error) {
+      console.error("Error fetching admin items:", error)
+      setEventTypes(["Reception", "Engagement", "Anniversary", "wedding", "other"])
+    }
+  }
+
+  useEffect(() => {
+    fetchDropdownData()
+  }, [])
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type, checked } = e.target
     if (type === "checkbox") {
@@ -349,6 +389,18 @@ const AuditoriumRegistrationPage: React.FC = () => {
 
 const handleSignup = async () => {
   console.log("handleSignup called with formData:", formData);
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(formData.email)) {
+    toast.error("Please enter a valid email address.");
+    return;
+  }
+
+  const phoneRegex = /^[6-9]\d{9}$/;
+  if (!phoneRegex.test(formData.phone)) {
+    toast.error("Please enter a valid 10-digit Indian mobile number starting with 6-9.");
+    return;
+  }
 
   if (formData.events.length === 0 || formData.locations.length === 0) {
     toast.error('Select at least one event and location.');

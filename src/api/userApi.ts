@@ -390,6 +390,12 @@ export const deleteVoucher=async(id:string)=>{
   return await api.delete(`/delete/${id}`)
 }
 
+export const fetchALLAdminItems=async()=>{
+
+  return await api.get('/fetch')
+
+}
+
 export const deleteOffer = async (id: string) => {
   const response = await api.delete(`/offers/${id}`);
   return response.data;

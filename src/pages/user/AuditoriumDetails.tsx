@@ -405,6 +405,7 @@ const AuditoriumDetails: React.FC = () => {
                     ))}
                   </ul>
                 </div>
+                
 
                 {/* Decoration and Food Policy */}
                 <div>
