@@ -160,13 +160,13 @@ const HomePage: React.FC = () => {
       const districtNames = keralaDistricts.map((d: ApiDistrict) => d.name).sort()
       setDistricts(districtNames)
 
-      // Store full data for taluk lookup
+      
       setAllApiData({ districts: keralaDistricts as ApiDistrict[], subdistricts: data.subdistricts as ApiSubDistrict[] })
 
       console.log("Fetched Kerala districts:", districtNames)
     } catch (error) {
       console.error("Error fetching districts API:", error)
-      // Fallback: Hardcoded complete 14 districts
+      
       const fallbackDistricts = [
         "Alappuzha", "Ernakulam", "Idukki", "Kannur", "Kasaragod", "Kollam", "Kottayam",
         "Kozhikode", "Malappuram", "Palakkad", "Pathanamthitta", "Thiruvananthapuram",
@@ -176,7 +176,7 @@ const HomePage: React.FC = () => {
     }
   }
 
-  // New: Extract taluks/places for selected district
+  
   const getPlacesForDistrict = (districtName: string) => {
     if (!allApiData) return []
 

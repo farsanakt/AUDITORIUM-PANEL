@@ -2,11 +2,11 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
-import { Eye, EyeOff, Loader2 } from "lucide-react"
+import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import tk from "../../assets/Rectangle 50.png"
 import { useNavigate } from "react-router-dom"
 import Header from "../../component/user/Header"
-import {  singUpRequest, verifyOTP, getItems } from "../../api/userApi" 
+import {  singUpRequest, verifyOTP, getItems } from "../../api/userApi"
 import { toast } from 'react-toastify'
 
 const AuditoriumRegistrationPage: React.FC = () => {
@@ -46,6 +46,7 @@ const AuditoriumRegistrationPage: React.FC = () => {
   const [eventTypes, setEventTypes] = useState<string[]>([])
   const [districts, setDistricts] = useState<string[]>([])
   const [locations, setLocations] = useState<string[]>([])
+  const [filteredLocations, setFilteredLocations] = useState<string[]>([])
 
   const fallbackPlacesByDistrict: Record<string, string[]> = {
     "Alappuzha": ["Ambalappuzha", "Chengannur", "Cherthala", "Karukachal", "Kayamkulam", "Mavelikkara"],
@@ -241,7 +242,7 @@ const AuditoriumRegistrationPage: React.FC = () => {
 
   const eventOptions = eventTypes.map((event) => ({ value: event, label: event }))
 
-  const locationOptions = locations.map((loc) => ({ value: loc, label: loc }))
+  const locationOptions = filteredLocations.map((loc) => ({ value: loc, label: loc }))
 
   const districtOptions = districts.map((dist) => ({ value: dist, label: dist }))
 
@@ -275,7 +276,7 @@ const AuditoriumRegistrationPage: React.FC = () => {
     try {
       const response = await getItems('hi')
       console.log("Admin items response:", response.data)
-      
+
       if (response.data?.success && response.data?.items?.events) {
         const events = response.data.items.events.filter((e: string) => e && e.trim()).sort()
         setEventTypes(events)
@@ -289,6 +290,25 @@ const AuditoriumRegistrationPage: React.FC = () => {
   useEffect(() => {
     fetchDropdownData()
   }, [])
+
+  useEffect(() => {
+    if (formData.district && fallbackPlacesByDistrict[formData.district]) {
+      // Use fallback mapping to filter locations by district
+      const districtLocations = fallbackPlacesByDistrict[formData.district].sort()
+      setFilteredLocations(districtLocations)
+    } else if (formData.district) {
+      // If district is selected but not in fallback, try to filter from all locations
+      const districtLocations = locations.filter(loc => {
+        // Filter locations that match the selected district context
+        return fallbackPlacesByDistrict[formData.district]?.includes(loc)
+      })
+      setFilteredLocations(districtLocations.length > 0 ? districtLocations : [])
+    } else {
+      // No district selected, show all locations
+      setFilteredLocations([])
+    }
+  }, [formData.district, locations])
+
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type, checked } = e.target
@@ -308,7 +328,7 @@ const AuditoriumRegistrationPage: React.FC = () => {
   }
 
   const handleDistrictSelect = (value: string) => {
-    setFormData(prev => ({ ...prev, district: value, adminType: "", panchayat: "", municipality: "", corporation: "" }))
+    setFormData(prev => ({ ...prev, district: value, locations: [], adminType: "", panchayat: "", municipality: "", corporation: "" }))
     setShowDistrictDropdown(false)
   }
 
@@ -444,24 +464,24 @@ const handleSignup = async () => {
     if (data?.success === true) {
       toast.success(data.message || "OTP sent to your email");
       setShowOtpModal(true);
-    } 
+    }
     else if (data?.success === false) {
-     
+
       toast.info(data.message || "Signup status update");
-      
-     
+
+
       if (
-        data.message?.includes("OTP") || 
+        data.message?.includes("OTP") ||
         data.message?.toLowerCase().includes("verify")
       ) {
         setShowOtpModal(true);
       }
-    } 
+    }
     else if (data?.message) {
-    
+
       toast.success(data.message);
       setShowOtpModal(true);
-    } 
+    }
     else {
       toast.error("Unexpected response from server.");
     }
@@ -869,7 +889,7 @@ const handleSignup = async () => {
         <div className="md:w-1/2 hidden md:block relative h-64 md:h-auto">
           <div className="relative w-full h-full">
             <img
-              src={tk}
+              src={tk || "/placeholder.svg"}
               alt="Auditorium Preview"
               className="w-full h-full object-cover"
               onError={(e) => {

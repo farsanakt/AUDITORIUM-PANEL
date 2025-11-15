@@ -20,7 +20,7 @@ interface Auditorium {
   _id: string;
   name: string;
   address: string;
-  cities: string[];
+  locations?: string[];
   pincode: string;
   phone: string;
   altPhone: string;
@@ -43,6 +43,7 @@ interface Auditorium {
   advamnt?: string;
   offer?: Offer;
   youtubeLink?: string;
+  termsAndConditions?: string[]; // e.g., ["cfff,ddd"]
 }
 
 const AuditoriumDetails: React.FC = () => {
@@ -87,6 +88,7 @@ const AuditoriumDetails: React.FC = () => {
         ...venueResponse.data,
         advAmnt: venueResponse.data.advAmnt || venueResponse.data.advamnt,
         offer: matchingOffer,
+        termsAndConditions: venueResponse.data.termsAndConditions || [],
       };
       console.log("Mapped auditorium with offer:", JSON.stringify(auditoriumData, null, 2));
       setAuditorium(auditoriumData);
@@ -182,6 +184,22 @@ const AuditoriumDetails: React.FC = () => {
     );
   }
 
+  // Parse comma-separated terms: ["cfff,ddd"] → ["cfff", "ddd"]
+  const parseTerms = (terms: string[] = []): string[] => {
+    const result: string[] = [];
+    terms.forEach((term) => {
+      if (typeof term === "string" && term.includes(",")) {
+        const parts = term.split(",").map((t) => t.trim()).filter((t) => t);
+        result.push(...parts);
+      } else if (term && term.trim()) {
+        result.push(term.trim());
+      }
+    });
+    return result;
+  };
+
+  const termsList = parseTerms(auditorium.termsAndConditions);
+
   return (
     <div className="bg-[#FDF8F1] min-h-screen">
       <style>
@@ -197,7 +215,7 @@ const AuditoriumDetails: React.FC = () => {
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
           }
           .location-card {
-            min-height: 300px; /* Ensures a consistent minimum height */
+            min-height: 300px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
@@ -237,7 +255,11 @@ const AuditoriumDetails: React.FC = () => {
               />
             </svg>
             <span className="text-xs sm:text-sm md:text-base text-[#5B4336]">
-              {auditorium.address}, {auditorium.cities.join(", ")} {auditorium.pincode}
+              {auditorium.address},{' '}
+              {Array.isArray(auditorium.locations) && auditorium.locations.length > 0
+                ? auditorium.locations.join(", ")
+                : "City not specified"}{' '}
+              {auditorium.pincode}
             </span>
           </div>
 
@@ -308,7 +330,8 @@ const AuditoriumDetails: React.FC = () => {
               <p className="text-xs sm:text-sm md:text-base text-[#000000] text-left leading-relaxed">
                 {auditorium.name} is a premier event venue offering modern amenities and elegant spaces for various events.
                 With a seating capacity of {auditorium.seatingCapacity} and dining capacity of {auditorium.diningCapacity},
-                it’s ideal for {auditorium.tariff.wedding === "t" ? "weddings" : ""}{auditorium.tariff.wedding === "t" && auditorium.tariff.reception === "t" ? ", " : ""}
+                it’s ideal for {auditorium.tariff.wedding === "t" ? "weddings" : ""}
+                {auditorium.tariff.wedding === "t" && auditorium.tariff.reception === "t" ? ", " : ""}
                 {auditorium.tariff.reception === "t" ? "receptions" : ""}, and other celebrations.
                 The venue supports {auditorium.foodPolicy} food options and {auditorium.decorPolicy} decoration policies.
               </p>
@@ -405,7 +428,6 @@ const AuditoriumDetails: React.FC = () => {
                     ))}
                   </ul>
                 </div>
-                
 
                 {/* Decoration and Food Policy */}
                 <div>
@@ -429,6 +451,20 @@ const AuditoriumDetails: React.FC = () => {
                     </li>
                   </ul>
                 </div>
+
+                {/* Terms & Conditions */}
+                {termsList.length > 0 && (
+                  <div className="lg:col-span-3">
+                    <h4 className="font-semibold text-sm sm:text-base md:text-lg text-[#2A2929] mb-2 text-left">
+                      Terms & Conditions
+                    </h4>
+                    <ul className="list-disc list-inside space-y-1 text-left text-xs sm:text-sm md:text-base">
+                      {termsList.map((term, idx) => (
+                        <li key={idx}>{term}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -481,7 +517,11 @@ const AuditoriumDetails: React.FC = () => {
                         <div>
                           <p className="font-medium text-gray-800 text-xs sm:text-sm md:text-base">{auditorium.name}</p>
                           <p className="text-gray-600 text-xs sm:text-sm md:text-base">
-                            {auditorium.address}, {auditorium.cities.join(", ")} {auditorium.pincode}
+                            {auditorium.address},{' '}
+                            {Array.isArray(auditorium.locations) && auditorium.locations.length > 0
+                              ? auditorium.locations.join(", ")
+                              : "City not specified"}{' '}
+                            {auditorium.pincode}
                           </p>
                         </div>
                       </div>
