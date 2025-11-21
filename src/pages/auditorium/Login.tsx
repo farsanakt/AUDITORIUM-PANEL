@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from "react";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2, User } from "lucide-react";
 import tk from "../../assets/Rectangle 50.png";
 import { useNavigate, useLocation } from "react-router-dom";
 import Header from "../../component/user/Header";
@@ -12,7 +12,9 @@ import { loginFailure, loginStart, loginSuccess } from "../../redux/slices/authS
 
 const LoginPage: React.FC = () => {
   const location = useLocation();
+  const [loginMode, setLoginMode] = useState<"owner" | "staff">("owner"); // New: tab state
   const [email, setEmail] = useState(location.state?.email || "");
+  const [staffId, setStaffId] = useState(""); // New: for staff login
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -37,7 +39,7 @@ const LoginPage: React.FC = () => {
   const [isResettingPassword, setIsResettingPassword] = useState(false);
 
   useEffect(() => {
-    let interval:any;
+    let interval: any;
     if (showOtpModal && timer > 0) {
       interval = setInterval(() => {
         setTimer((prev) => prev - 1);
@@ -51,9 +53,25 @@ const LoginPage: React.FC = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoggingIn(true);
+
+    // Validation for staff
+    if (loginMode === "staff" && !staffId.trim()) {
+      toast.error("Staff ID is required");
+      setIsLoggingIn(false);
+      return;
+    }
+
     try {
       dispatch(loginStart());
-      const response = await AuditoriumLogin(email, password);
+
+      
+      const response = await AuditoriumLogin(
+        email,
+        password,
+        loginMode,
+        loginMode === "staff" ? staffId : undefined
+      );
+
       if (response.data.success === false) {
         dispatch(loginFailure());
         toast.error(response.data.message);
@@ -101,7 +119,7 @@ const LoginPage: React.FC = () => {
       toast.success("OTP verified");
       setShowOtpModal(false);
       setShowResetModal(true);
-      setOtp(""); // Clear OTP after verification
+      setOtp("");
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Invalid OTP");
     } finally {
@@ -116,7 +134,7 @@ const LoginPage: React.FC = () => {
       toast.success("OTP resent");
       setTimer(60);
       setIsResendDisabled(true);
-      setOtp(""); // Clear OTP when resending
+      setOtp("");
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Error resending OTP");
     } finally {
@@ -131,12 +149,12 @@ const LoginPage: React.FC = () => {
     }
     setIsResettingPassword(true);
     try {
-      await resetPassword(newPassword,forgotEmail);
+      await resetPassword(newPassword, forgotEmail);
       toast.success("Password reset successful");
       setShowResetModal(false);
-      setNewPassword(""); // Clear new password
-      setConfirmNewPassword(""); // Clear confirm new password
-      setForgotEmail(""); // Clear forgot email
+      setNewPassword("");
+      setConfirmNewPassword("");
+      setForgotEmail("");
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Error resetting password");
     } finally {
@@ -152,7 +170,7 @@ const LoginPage: React.FC = () => {
     <div className="min-h-screen bg-[#FDF8F1] flex flex-col items-center justify-center px-4 py-6 box-border">
       <Header />
       <div className="flex flex-col md:flex-row bg-white shadow-2xl rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto box-border my-8 mx-auto">
-        {/* Left Section */}
+        {/* Left Section - Image */}
         <div className="md:w-1/2 hidden md:block relative h-64 md:h-auto">
           <div className="relative w-full h-full">
             <img
@@ -193,15 +211,65 @@ const LoginPage: React.FC = () => {
         <div className="md:w-1/2 p-4 sm:p-6 flex justify-center items-center">
           <div className="w-full max-w-xs">
             <div className="text-center mb-4">
-              <h2 className="text-lg md:text-2xl font-bold text-[#78533F] font-serif">Auditorium Login</h2>
-              <p className="text-gray-600 text-sm mt-1 font-serif">Sign in to your auditorium account</p>
+              <h2 className="text-lg md:text-2xl font-bold text-[#78533F] font-serif">
+                {loginMode === "owner" ? "Auditorium Owner Login" : "Staff Login"}
+              </h2>
+              <p className="text-gray-600 text-sm mt-1 font-serif">Sign in to your account</p>
             </div>
+
+            {/* Tabs */}
+            <div className="flex justify-center space-x-3 mb-5">
+              <button
+                type="button"
+                onClick={() => setLoginMode("owner")}
+                className={`px-5 py-2 rounded-full font-serif text-sm transition-all duration-300 ${
+                  loginMode === "owner"
+                    ? "bg-[#ED695A] text-white shadow-md"
+                    : "bg-gray-200 text-[#78533F] hover:bg-gray-300"
+                }`}
+                disabled={isLoggingIn}
+              >
+                Owner
+              </button>
+              <button
+                type="button"
+                onClick={() => setLoginMode("staff")}
+                className={`px-5 py-2 rounded-full font-serif text-sm transition-all duration-300 ${
+                  loginMode === "staff"
+                    ? "bg-[#ED695A] text-white shadow-md"
+                    : "bg-gray-200 text-[#78533F] hover:bg-gray-300"
+                }`}
+                disabled={isLoggingIn}
+              >
+                Staff
+              </button>
+            </div>
+
             <form onSubmit={handleLogin} className="space-y-4">
+              {/* Staff ID Field - Only for Staff */}
+              {loginMode === "staff" && (
+                <div className="space-y-1">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={staffId}
+                      onChange={(e) => setStaffId(e.target.value)}
+                      placeholder="Enter your Staff ID"
+                      required
+                      className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200"
+                    />
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                      <User size={16} className="text-[#b09d94]" />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Email Field */}
               <div className="space-y-1">
                 <div className="relative">
                   <input
-                    type="text"
-                    id="email"
+                    type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Enter your email"
@@ -215,11 +283,12 @@ const LoginPage: React.FC = () => {
                   </div>
                 </div>
               </div>
+
+              {/* Password Field */}
               <div className="space-y-1">
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}
-                    id="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter your password"
@@ -235,6 +304,7 @@ const LoginPage: React.FC = () => {
                   </button>
                 </div>
               </div>
+
               <div className="flex items-center justify-between text-sm">
                 <label className="flex items-center text-gray-600 font-serif">
                   <input
@@ -253,6 +323,7 @@ const LoginPage: React.FC = () => {
                   Forgot password?
                 </button>
               </div>
+
               <button
                 type="submit"
                 className="w-full bg-[#ED695A] text-white font-semibold py-2 rounded-full shadow-md hover:bg-[#d85c4e] transition-all duration-300 font-serif flex items-center justify-center"
@@ -267,6 +338,7 @@ const LoginPage: React.FC = () => {
                   'Sign In'
                 )}
               </button>
+
               <div className="text-center mt-3">
                 <span className="text-sm text-gray-600 font-serif">Don't have an account?</span>
                 <button
@@ -282,6 +354,7 @@ const LoginPage: React.FC = () => {
         </div>
       </div>
 
+      {/* === All Modals Remain Unchanged === */}
       {/* Forgot Password Modal */}
       {showForgotModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-2">
@@ -292,7 +365,7 @@ const LoginPage: React.FC = () => {
               placeholder="Enter your email"
               value={forgotEmail}
               onChange={(e) => setForgotEmail(e.target.value)}
-              className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200"
+              className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#ED695A]"
             />
             <div className="mt-3 flex justify-end space-x-2">
               <button
@@ -331,7 +404,7 @@ const LoginPage: React.FC = () => {
               value={otp}
               onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
               maxLength={6}
-              className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200"
+              className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#ED695A]"
             />
             <div className="mt-3 flex justify-end space-x-2">
               <button
@@ -386,7 +459,7 @@ const LoginPage: React.FC = () => {
                   placeholder="New Password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-sm pr-10 focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200"
+                  className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-sm pr-10 focus:outline-none focus:ring-2 focus:ring-[#ED695A]"
                 />
                 <button
                   type="button"
@@ -402,7 +475,7 @@ const LoginPage: React.FC = () => {
                   placeholder="Confirm New Password"
                   value={confirmNewPassword}
                   onChange={(e) => setConfirmNewPassword(e.target.value)}
-                  className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-sm pr-10 focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200"
+                  className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-sm pr-10 focus:outline-none focus:ring-2 focus:ring-[#ED695A]"
                 />
                 <button
                   type="button"

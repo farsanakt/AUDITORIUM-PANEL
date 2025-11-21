@@ -22,13 +22,13 @@ export const singUpRequest = async (formData: any) => {
   }
 };
 
-export const AuditoriumLogin =async (email:string,password:string)=>{
+export const AuditoriumLogin =async (email:string,password:string,loginMode:string,staffid:string)=>{
 
   console.log('heooo')
 
   
 
-  const response=await api.post('/login',{email,password}, { withCredentials: true })
+  const response=await api.post('/login',{email,password,loginMode,staffid}, { withCredentials: true })
 
   return response
 
