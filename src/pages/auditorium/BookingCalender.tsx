@@ -178,6 +178,7 @@ const VenueBookingPage: React.FC = () => {
   }
 
   const fetchAllBookings = async () => {
+    console.log(currentUser,'ith current user')
     try {
       if (currentUser) {
         const response = await existingBookings(currentUser.id)

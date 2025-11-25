@@ -47,7 +47,7 @@ const StaffManagementUI: React.FC = () => {
     try {
       setIsLoading(true);
       setError(null);
-      const response = await fetchAllStaff();
+      const response = await fetchAllStaff(currentUser?.id);
       setStaff(response.data.map((s: any) => ({
         id: s._id,
         name: s.name,

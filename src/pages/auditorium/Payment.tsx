@@ -11,6 +11,8 @@ import Header from "../../component/user/Header"
 import Sidebar from "../../component/auditorium/Sidebar"
 import { useLocation, useNavigate } from "react-router-dom"
 import { createBooking, userDetails } from "../../api/userApi"
+import { useSelector } from "react-redux"
+import { RootState } from "../../redux/store"
 
 export default function PaymentDetails() {
   const [paymentStatus, setPaymentStatus] = useState<"pending" | "success">("pending")
@@ -19,49 +21,65 @@ export default function PaymentDetails() {
   const [customer, setCustomer] = useState<any>(null)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
+   const { currentUser } = useSelector((state: RootState) => state.auth);
 
   const location = useLocation()
   const bookingData = location.state
   const navigate = useNavigate()
 
 
+const handlePayment = async () => {
+  setIsProcessing(true)
+  try {
 
-  const handlePayment = async () => {
-    setIsProcessing(true)
-    try {
-      // Prepare payment data for backend
-      const paymentData = {
-        userEmail: bookingData.userEmail,
-        totalAmount: bookingData.totalAmount,
-        venueId: bookingData.venueId,
-        venueName: bookingData.venueName,
-        paidAmount: paymentType === "advance" ? bookingData.advanceAmount : bookingData.totalAmount,
-        balanceAmount: paymentType === "advance" ? 
-          parseInt(bookingData.totalAmount) - parseInt(bookingData.advanceAmount) : 0,
-        bookedDate: bookingData.selectedDate,
-        timeSlot: bookingData.selectedTimeSlot,
-        address: bookingData.address,
-        paymentType: paymentType,
-        paymentMethod: paymentMethod,
-        phone:bookingData.userPhone,
-        communicationPrefer:bookingData.communicationType
-      }
+    // Determine which ID to send based on role
+    const userReferenceId =
+      currentUser?.role === "auditorium"
+        ? currentUser.id
+        : currentUser?.role === "Staff"
+        ? currentUser.staffId
+        : null
 
-      
-      const response = await createBooking(paymentData)
-      
-      
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      
-      setPaymentStatus("success")
-      setShowSuccessModal(true)
-    } catch (error) {
-      console.error("Payment processing failed:", error)
-      alert("Payment processing failed. Please try again.")
-    } finally {
-      setIsProcessing(false)
+    const paymentData = {
+      userEmail: bookingData.userEmail,
+      totalAmount: bookingData.totalAmount,
+      venueId: bookingData.venueId,
+      venueName: bookingData.venueName,
+      paidAmount:
+        paymentType === "advance"
+          ? bookingData.advanceAmount
+          : bookingData.totalAmount,
+      balanceAmount:
+        paymentType === "advance"
+          ? parseInt(bookingData.totalAmount) -
+            parseInt(bookingData.advanceAmount)
+          : 0,
+      bookedDate: bookingData.selectedDate,
+      timeSlot: bookingData.selectedTimeSlot,
+      address: bookingData.address,
+      paymentType: paymentType,
+      paymentMethod: paymentMethod,
+      phone: bookingData.userPhone,
+      communicationPrefer: bookingData.communicationType,
+
+      // 👇 new field added
+      userReferenceId: userReferenceId
     }
+
+    const response = await createBooking(paymentData)
+
+    await new Promise((resolve) => setTimeout(resolve, 2000))
+
+    setPaymentStatus("success")
+    setShowSuccessModal(true)
+  } catch (error) {
+    console.error("Payment processing failed:", error)
+    alert("Payment processing failed. Please try again.")
+  } finally {
+    setIsProcessing(false)
   }
+}
+
 
   const customerDetails = async () => {
     try {
@@ -84,7 +102,7 @@ export default function PaymentDetails() {
 
   const handleSuccessClose = () => {
     setShowSuccessModal(false)
-    navigate("/auditorium/bookings") // Navigate to bookings page or dashboard
+    navigate("/auditorium/bookings")
   }
 
   const paymentDetails = {
@@ -105,9 +123,9 @@ export default function PaymentDetails() {
       <Header />
       <div className="flex">
         {/* Sidebar */}
-        <div className="w-64 shrink-0 h-[calc(100vh-64px)] sticky top-16 hidden md:block">
+        {/* <div className="w-64 shrink-0 h-[calc(100vh-64px)] sticky top-16 hidden md:block">
           <Sidebar />
-        </div>
+        </div> */}
 
         {/* Main Content */}
         <div className="flex-1">

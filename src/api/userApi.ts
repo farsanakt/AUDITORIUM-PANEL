@@ -226,8 +226,8 @@ export const findCount=async()=>{
  
 
 
-export const fetchAllStaff=async()=>{
-return await api.get('/allstaff')
+export const fetchAllStaff=async(id:string)=>{
+return await api.get(`/allstaff/${id}`)
 }
 
 export const addStaff=async(data:any)=>{

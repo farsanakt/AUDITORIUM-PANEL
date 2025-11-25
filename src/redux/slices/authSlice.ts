@@ -4,6 +4,7 @@ interface User {
   id: string;
   role: 'admin' | 'user' | 'auditorium'|'Staff';
   email: string;
+  staffId:string
 }
 
 interface AuthState {
