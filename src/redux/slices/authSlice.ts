@@ -2,7 +2,7 @@ import { createSlice } from '@reduxjs/toolkit';
 
 interface User {
   id: string;
-  role: 'admin' | 'user' | 'auditorium';
+  role: 'admin' | 'user' | 'auditorium'|'Staff';
   email: string;
 }
 
