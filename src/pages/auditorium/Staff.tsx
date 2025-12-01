@@ -12,7 +12,8 @@ type StaffRole = 'Admin' | 'Manager' | 'Staff';
 type StaffStatus = 'active' | 'inactive';
 
 interface Staff {
-  id: string;
+  id: string;           // MongoDB _id
+  staffId: string;      // Real staffId from backend (e.g., xxxx974)
   name: string;
   email: string;
   role: StaffRole;
@@ -30,7 +31,7 @@ interface NewStaffForm {
 
 const StaffManagementUI: React.FC = () => {
   const [staff, setStaff] = useState<Staff[]>([]);
-  const [showModal, setShowModal] = useState<boolean>(false);
+  const [showModal, setShowModal] = useState(false);
   const [editStaffId, setEditStaffId] = useState<string | null>(null);
   const [newStaff, setNewStaff] = useState<NewStaffForm>({
     name: '',
@@ -39,49 +40,60 @@ const StaffManagementUI: React.FC = () => {
     password: '',
     status: 'active'
   });
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
   const { currentUser } = useSelector((state: RootState) => state.auth);
 
   const fetchStaff = async () => {
     try {
       setIsLoading(true);
       setError(null);
+
       const response = await fetchAllStaff(currentUser?.id);
-      setStaff(response.data.map((s: any) => ({
+
+      const staffList: Staff[] = response.data.map((s: any) => ({
         id: s._id,
+        staffId: s.staffId || 'N/A', // Use real staffId from DB
         name: s.name,
         email: s.email,
         role: s.role as StaffRole,
         status: s.status as StaffStatus,
-        createdAt: new Date(s.createdAt).toISOString().split('T')[0]
-      })));
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Error fetching staff';
+        createdAt: new Date(s.createdAt).toLocaleDateString('en-GB') // e.g., 21/11/2025
+      }));
+
+      // Optional: Sort by createdAt or staffId if needed
+      staffList.sort((a, b) => a.staffId.localeCompare(b.staffId));
+
+      setStaff(staffList);
+    } catch (error: any) {
+      const message = error?.message || 'Failed to fetch staff';
+      setError(message);
+      toast.error(message);
       console.error('Fetch staff error:', error);
-      setError(errorMessage);
-      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchStaff();
-  }, []);
+    if (currentUser?.id) {
+      fetchStaff();
+    }
+  }, [currentUser?.id]);
 
-  const generatePassword = (): void => {
+  const generatePassword = () => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
     let password = '';
     for (let i = 0; i < 12; i++) {
       password += chars.charAt(Math.floor(Math.random() * chars.length));
     }
-    setNewStaff({ ...newStaff, password });
+    setNewStaff(prev => ({ ...prev, password }));
   };
 
-  const handleAddStaff = async (): Promise<void> => {
-    if (!newStaff.name || !newStaff.email) {
-      toast.error('Please fill in name and email fields');
+  const handleAddStaff = async () => {
+    if (!newStaff.name.trim() || !newStaff.email.trim()) {
+      toast.error('Name and email are required');
       return;
     }
 
@@ -92,14 +104,14 @@ const StaffManagementUI: React.FC = () => {
 
     try {
       const staffData = {
-        name: newStaff.name,
-        email: newStaff.email,
+        name: newStaff.name.trim(),
+        email: newStaff.email.trim(),
         role: newStaff.role,
-        password: newStaff.password || undefined,
+        password: editStaffId ? undefined : newStaff.password,
         status: newStaff.status,
         audiUserId: currentUser?.id,
       };
-      
+
       if (editStaffId) {
         await updateStaff(editStaffId, staffData);
         toast.success('Staff updated successfully');
@@ -107,19 +119,18 @@ const StaffManagementUI: React.FC = () => {
         await addStaff(staffData);
         toast.success('Staff added successfully');
       }
-      
+
+      // Reset form
       setNewStaff({ name: '', email: '', role: 'Staff', password: '', status: 'active' });
       setEditStaffId(null);
       setShowModal(false);
-      await fetchStaff();
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Error saving staff';
-      console.error('Save staff error:', error);
-      toast.error(errorMessage);
+      await fetchStaff(); // Refresh list with real staffId from backend
+    } catch (error: any) {
+      toast.error(error?.message || 'Operation failed');
     }
   };
 
-  const handleEditStaff = (member: Staff): void => {
+  const handleEditStaff = (member: Staff) => {
     setNewStaff({
       name: member.name,
       email: member.email,
@@ -131,23 +142,21 @@ const StaffManagementUI: React.FC = () => {
     setShowModal(true);
   };
 
-  const handleDeleteStaff = async (id: string): Promise<void> => {
+  const handleDeleteStaff = async (id: string) => {
     const result = await Swal.fire({
-      title: 'Are you sure?',
-      text: 'Do you want to delete this staff member?',
+      title: 'Delete Staff?',
+      text: 'This action cannot be undone',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#ED695A',
       cancelButtonColor: '#78533F',
-      confirmButtonText: 'Yes, delete it!',
+      confirmButtonText: 'Yes, delete',
       cancelButtonText: 'Cancel',
-      buttonsStyling: true,
       customClass: {
         popup: 'rounded-xl',
-        title: 'text-[#78533F] text-lg font-bold',
-        htmlContainer: 'text-gray-600 text-sm',
-        confirmButton: 'px-4 py-2 rounded-full text-white font-semibold',
-        cancelButton: 'px-4 py-2 rounded-full text-white font-semibold'
+        title: 'text-[#78533F] font-bold',
+        confirmButton: 'rounded-full px-5 py-2',
+        cancelButton: 'rounded-full px-5 py-2'
       }
     });
 
@@ -155,30 +164,25 @@ const StaffManagementUI: React.FC = () => {
 
     try {
       await deleteStaff(id);
-      toast.success('Staff deleted successfully');
+      toast.success('Staff deleted');
       await fetchStaff();
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Error deleting staff';
-      console.error('Delete staff error:', error);
-      toast.error(errorMessage);
+    } catch (error: any) {
+      toast.error(error?.message || 'Delete failed');
     }
   };
 
-  const getRoleColor = (role: StaffRole): string => {
+  const getRoleColor = (role: StaffRole) => {
     switch (role) {
       case 'Admin': return 'bg-[#ED695A]/20 text-[#ED695A]';
       case 'Manager': return 'bg-[#78533F]/20 text-[#78533F]';
-      case 'Staff': return 'bg-gray-200 text-gray-700';
       default: return 'bg-gray-200 text-gray-700';
     }
   };
 
-  const getStatusColor = (status: StaffStatus): string => {
-    return status === 'active' ? 'bg-[#ED695A]/20 text-[#ED695A]' : 'bg-gray-200 text-gray-700';
-  };
-
-  const handleInputChange = (field: keyof NewStaffForm, value: string): void => {
-    setNewStaff(prev => ({ ...prev, [field]: value }));
+  const getStatusColor = (status: StaffStatus) => {
+    return status === 'active'
+      ? 'bg-[#ED695A]/20 text-[#ED695A]'
+      : 'bg-gray-200 text-gray-700';
   };
 
   return (
@@ -187,13 +191,13 @@ const StaffManagementUI: React.FC = () => {
       <div className="flex flex-1">
         <Sidebar />
         <main className="flex-1 p-4 sm:p-6">
-          <div className="bg-white rounded-xl shadow-lg max-w-7xl mx-auto space-y-6">
-            {/* Page Header */}
-            <div className="p-4 sm:p-6">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+          <div className="bg-white rounded-xl shadow-lg max-w-7xl mx-auto">
+            {/* Header */}
+            <div className="p-6 border-b border-[#b09d94]/30">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                  <h1 className="text-2xl sm:text-3xl font-bold text-[#78533F] mb-2">Staff Management System</h1>
-                  <p className="text-sm text-gray-600">Manage your staff and track activities</p>
+                  <h1 className="text-2xl sm:text-3xl font-bold text-[#78533F]">Staff Management</h1>
+                  <p className="text-sm text-gray-600 mt-1">Manage your team members</p>
                 </div>
                 <button
                   onClick={() => {
@@ -201,7 +205,7 @@ const StaffManagementUI: React.FC = () => {
                     setNewStaff({ name: '', email: '', role: 'Staff', password: '', status: 'active' });
                     setShowModal(true);
                   }}
-                  className="mt-4 sm:mt-0 px-4 py-2 bg-[#ED695A] text-white rounded-full font-semibold hover:bg-[#f09c87ce] transition flex items-center gap-2"
+                  className="px-5 py-2.5 bg-[#ED695A] text-white rounded-full font-semibold hover:bg-[#d45a4e] transition flex items-center gap-2"
                 >
                   <Plus className="w-4 h-4" />
                   Add Staff
@@ -209,59 +213,68 @@ const StaffManagementUI: React.FC = () => {
               </div>
             </div>
 
-            {/* Staff List Table */}
-            <div className="p-4 sm:p-6">
-              <h2 className="text-xl font-bold text-[#78533F] mb-4">Staff List</h2>
+            {/* Table */}
+            <div className="p-6">
+              <h2 className="text-xl font-bold text-[#78533F] mb-4">All Staff Members</h2>
+
               {isLoading ? (
-                <div className="p-6 text-center text-gray-600">Loading staff...</div>
+                <p className="text-center text-gray-500 py-8">Loading staff...</p>
               ) : error ? (
-                <div className="p-6 text-center text-[#ED695A]">{error}</div>
+                <p className="text-center text-red-600 py-8">{error}</p>
               ) : staff.length === 0 ? (
-                <div className="p-6 text-center text-gray-600">No staff members found.</div>
+                <p className="text-center text-gray-500 py-8">No staff members found</p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead className="bg-[#FDF8F1]">
                       <tr>
-                        <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-[#78533F] uppercase tracking-wider">Name</th>
-                        <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-[#78533F] uppercase tracking-wider">Email</th>
-                        <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-[#78533F] uppercase tracking-wider">Role</th>
-                        <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-[#78533F] uppercase tracking-wider">Status</th>
-                        <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-[#78533F] uppercase tracking-wider">Created</th>
-                        <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-[#78533F] uppercase tracking-wider">Actions</th>
+                        <th className="text-left text-xs font-semibold text-[#78533F uppercase tracking-wider px-4 py-3">Staff ID</th>
+                        <th className="text-left text-xs font-semibold text-[#78533F] uppercase tracking-wider px-4 py-3">Name</th>
+                        <th className="text-left text-xs font-semibold text-[#78533F] uppercase tracking-wider px-4 py-3">Email</th>
+                        <th className="text-left text-xs font-semibold text-[#78533F] uppercase tracking-wider px-4 py-3">Role</th>
+                        <th className="text-left text-xs font-semibold text-[#78533F] uppercase tracking-wider px-4 py-3">Status</th>
+                        <th className="text-left text-xs font-semibold text-[#78533F] uppercase tracking-wider px-4 py-3">Joined</th>
+                        <th className="text-left text-xs font-semibold text-[#78533F] uppercase tracking-wider px-4 py-3">Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="bg-white divide-y divide-[#b09d94]">
+                    <tbody className="divide-y divide-[#b09d94]/30">
                       {staff.map((member) => (
                         <tr key={member.id} className="hover:bg-[#FDF8F1] transition">
-                          <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{member.name}</td>
-                          <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-600">{member.email}</td>
-                          <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
-                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getRoleColor(member.role)}`}>
+                          <td className="px-4 py-4">
+                            <span className="font-mono font-bold text-[#78533F] text-sm">
+                              {member.staffId}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 text-sm font-medium text-gray-900">{member.name}</td>
+                          <td className="px-4 py-4 text-sm text-gray-600">{member.email}</td>
+                          <td className="px-4 py-4">
+                            <span className={`px-3 py-1 text-xs font-semibold rounded-full ${getRoleColor(member.role)}`}>
                               {member.role}
                             </span>
                           </td>
-                          <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
-                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(member.status)}`}>
+                          <td className="px-4 py-4">
+                            <span className={`px-3 py-1 text-xs font-semibold rounded-full ${getStatusColor(member.status)}`}>
                               {member.status}
                             </span>
                           </td>
-                          <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-600">{member.createdAt}</td>
-                          <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <div className="flex space-x-2">
-                              <button 
+                          <td className="px-4 py-4 text-sm text-gray-600">{member.createdAt}</td>
+                          <td className="px-4 py-4">
+                            <div className="flex items-center gap-3">
+                              <button
                                 onClick={() => handleEditStaff(member)}
-                                className="text-[#78533F] hover:text-[#634331] p-1 rounded"
+                                className="text-[#78533F] hover:text-[#634331] transition"
+                                title="Edit"
                               >
                                 <Edit className="w-4 h-4" />
                               </button>
-                              <button 
+                              <button
                                 onClick={() => handleDeleteStaff(member.id)}
-                                className="text-[#ED695A] hover:text-[#f09c87ce] p-1 rounded"
+                                className="text-[#ED695A] hover:text-red-700 transition"
+                                title="Delete"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
-                              <button className="text-gray-600 hover:text-gray-900 p-1 rounded">
+                              <button className="text-gray-500 hover:text-gray-700 transition" title="View">
                                 <Eye className="w-4 h-4" />
                               </button>
                             </div>
@@ -277,14 +290,13 @@ const StaffManagementUI: React.FC = () => {
         </main>
       </div>
 
-      {/* Add/Edit Staff Modal */}
+      {/* Modal - Same as before */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-2 sm:px-4">
-          <div className="bg-white rounded-xl shadow-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-4 sm:p-6 border-b border-[#b09d94]">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl sm:text-2xl font-bold text-[#78533F] flex items-center gap-2">
-                  <Plus className="w-5 h-5" />
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-[#b09d94]/30">
+              <div className="flex justify-between items-center">
+                <h2 className="text-2xl font-bold text-[#78533F]">
                   {editStaffId ? 'Edit Staff' : 'Add New Staff'}
                 </h2>
                 <button
@@ -299,106 +311,96 @@ const StaffManagementUI: React.FC = () => {
                 </button>
               </div>
             </div>
-            
-            <div className="p-4 sm:p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+
+            <div className="p-6 space-y-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
-                  <label className="block text-sm font-semibold text-[#78533F] mb-2 flex items-center gap-2">
-                    <User className="w-4 h-4 text-[#78533F]" />
-                    Name
-                  </label>
+                  <label className="block text-sm font-semibold text-[#78533F] mb-2">Name</label>
                   <input
                     type="text"
                     value={newStaff.name}
-                    onChange={(e) => handleInputChange('name', e.target.value)}
-                    className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-sm focus:ring-2 focus:ring-[#ED695A] focus:border-transparent"
-                    placeholder="Enter full name"
+                    onChange={(e) => setNewStaff(prev => ({ ...prev, name: e.target.value }))}
+                    className="w-full px-4 py-2 border border-[#b09d94] rounded-full focus:ring-2 focus:ring-[#ED695A] outline-none"
+                    placeholder="Full name"
                   />
                 </div>
-                
+
                 <div>
-                  <label className="block text-sm font-semibold text-[#78533F] mb-2 flex items-center gap-2">
-                    <Mail className="w-4 h-4 text-[#78533F]" />
-                    Email
-                  </label>
+                  <label className="block text-sm font-semibold text-[#78533F] mb-2">Email</label>
                   <input
                     type="email"
                     value={newStaff.email}
-                    onChange={(e) => handleInputChange('email', e.target.value)}
-                    className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-sm focus:ring-2 focus:ring-[#ED695A] focus:border-transparent"
-                    placeholder="Enter email address"
+                    onChange={(e) => setNewStaff(prev => ({ ...prev, email: e.target.value }))}
+                    className="w-full px-4 py-2 border border-[#b09d94] rounded-full focus:ring-2 focus:ring-[#ED695A] outline-none"
+                    placeholder="Email address"
                   />
                 </div>
-                
+
                 <div>
-                  <label className="block text-sm font-semibold text-[#78533F] mb-2 flex items-center gap-2">
-                    <Shield className="w-4 h-4 text-[#78533F]" />
-                    Role
-                  </label>
+                  <label className="block text-sm font-semibold text-[#78533F] mb-2">Role</label>
                   <select
                     value={newStaff.role}
-                    onChange={(e) => handleInputChange('role', e.target.value)}
-                    className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-sm focus:ring-2 focus:ring-[#ED695A] focus:border-transparent"
+                    onChange={(e) => setNewStaff(prev => ({ ...prev, role: e.target.value as StaffRole }))}
+                    className="w-full px-4 py-2 border border-[#b09d94] rounded-full focus:ring-2 focus:ring-[#ED695A] outline-none"
                   >
                     <option value="Staff">Staff</option>
                     <option value="Manager">Manager</option>
                     <option value="Admin">Admin</option>
                   </select>
                 </div>
-                
+
                 <div>
-                  <label className="block text-sm font-semibold text-[#78533F] mb-2 flex items-center gap-2">
-                    <Key className="w-4 h-4 text-[#78533F]" />
-                    Password
-                  </label>
+                  <label className="block text-sm font-semibold text-[#78533F] mb-2">Password</label>
                   <div className="flex gap-2">
                     <input
                       type="text"
                       value={newStaff.password}
-                      onChange={(e) => handleInputChange('password', e.target.value)}
-                      className="flex-1 px-3 py-2 border border-[#b09d94] rounded-full text-sm focus:ring-2 focus:ring-[#ED695A] focus:border-transparent"
-                      placeholder={editStaffId ? "Enter new password (optional)" : "Enter password or generate"}
+                      onChange={(e) => setNewStaff(prev => ({ ...prev, password: e.target.value }))}
+                      placeholder={editStaffId ? "Leave blank to keep current" : "Generate or type"}
+                      className="flex-1 px-4 py-2 border border-[#b09d94] rounded-full focus:ring-2 focus:ring-[#ED695A] outline-none"
                     />
-                    <button
-                      type="button"
-                      onClick={generatePassword}
-                      className="px-3 py-2 bg-[#78533F] text-white rounded-full font-semibold hover:bg-[#634331] transition"
-                    >
-                      <RefreshCw className="w-4 h-4" />
-                    </button>
+                    {!editStaffId && (
+                      <button
+                        type="button"
+                        onClick={generatePassword}
+                        className="px-4 bg-[#78533F] text-white rounded-full hover:bg-[#634331]"
+                      >
+                        <RefreshCw className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-semibold text-[#78533F] mb-2">Status</label>
                   <select
                     value={newStaff.status}
-                    onChange={(e) => handleInputChange('status', e.target.value)}
-                    className="w-full px-3 py-2 border border-[#b09d94] rounded-full text-sm focus:ring-2 focus:ring-[#ED695A] focus:border-transparent"
+                    onChange={(e) => setNewStaff(prev => ({ ...prev, status: e.target.value as StaffStatus }))}
+                    className="w-full px-4 py-2 border border-[#b09d94 rounded-full focus:ring-2 focus:ring-[#ED695A] outline-none"
                   >
                     <option value="active">Active</option>
                     <option value="inactive">Inactive</option>
                   </select>
                 </div>
               </div>
-              
-              <div className="flex justify-end gap-3 mt-6">
+
+              <div className="flex justify-end gap-3 pt-4">
                 <button
                   onClick={() => {
                     setShowModal(false);
                     setEditStaffId(null);
                     setNewStaff({ name: '', email: '', role: 'Staff', password: '', status: 'active' });
                   }}
-                  className="px-4 py-2 text-[#78533F] bg-gray-200 rounded-full font-semibold hover:bg-gray-300 transition"
+                  className="px-5 py-2 text-[#78533F] bg-gray-200 rounded-full hover:bg-gray-300"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleAddStaff}
-                  className="px-4 py-2 bg-[#ED695A] text-white rounded-full font-semibold hover:bg-[#f09c87ce] transition flex items-center gap-2"
+                  className="px-6 py-2 bg-[#ED695A] text-white rounded-full font-semibold hover:bg-[#d45a4e] flex items-center gap-2"
                 >
                   <Plus className="w-4 h-4" />
-                  {editStaffId ? 'Update Staff' : 'Add Staff Member'}
+                  {editStaffId ? 'Update' : 'Add Staff'}
                 </button>
               </div>
             </div>
