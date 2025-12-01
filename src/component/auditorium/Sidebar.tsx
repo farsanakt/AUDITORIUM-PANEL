@@ -7,8 +7,7 @@ import { JSX } from "react/jsx-runtime";
 import { useSelector } from "react-redux";
 import { RootState } from "../../redux/store";
 import { fetchAuditoriumUserdetails } from "../../api/userApi";
-
-import toast from "react-hot-toast";
+import { toast } from 'react-toastify'
 
 interface MenuItem {
   title: string;
