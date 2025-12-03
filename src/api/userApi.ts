@@ -249,6 +249,12 @@ export const fetchAllExistingVouchers=async()=>{
 
 }
 
+export const getAllEnquiries=async()=>{
+
+  return await api.get('/allenquires')
+
+}
+
 export const updateStaff=async(staffid:string,data:any)=>{
 
  return await api.put(`/updatestaff/${staffid}`,data)

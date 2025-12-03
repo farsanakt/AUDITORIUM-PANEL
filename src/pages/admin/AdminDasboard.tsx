@@ -87,7 +87,7 @@ const AdminDashboard: React.FC = () => {
     { path: '/admin/allusers', label: 'All Users', icon: Users, count: stats.totalUsers || 0, roles: ['superadmin'] },
     { path: '/admin/allvendors', label: 'All Vendors', icon: Users, count: stats.totalVendors || 0, roles: ['superadmin', 'vendormanager'] },
     { path: '/admin/allauditoriumbookings', label: 'All Auditorium Bookings', icon: Calendar, count: stats.totalBookings || 0, roles: ['superadmin', 'venuemanager'] },
-    { path: '/admin/enquiries', label: 'All Enquiries', icon: Mail, count: stats.totalEnquiries || 0, roles: ['superadmin', 'vendormanager'] },
+    { path: '/admin/alladminenquiry', label: 'All Enquiries', icon: Mail, count: stats.totalEnquiries || 0, roles: ['superadmin', 'vendormanager'] },
     { path: '/admin/finances', label: 'Total Amount', icon: DollarSign, count: stats.totalAmount ? `₹${stats.totalAmount.toLocaleString()}` : '₹0', roles: ['superadmin'] },
     { path: '/admin/allvouchers', label: 'All Vouchers', icon: Ticket, count: stats.totalVouchers || 0, roles: ['superadmin'] },
     { path: '/admin/adminstaff', label: 'Staff', icon: Users, count: 0, roles: ['superadmin'] },

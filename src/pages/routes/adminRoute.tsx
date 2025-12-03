@@ -13,6 +13,7 @@ import AdminSubscriptionManager from "../admin/Subscription"
 import { useSelector } from "react-redux"
 import AdminStaffLogin from "../admin/stafflogin"
 import AdminItemsManagement from "../admin/AdminItems"
+import AllEnquiries from "../admin/Enquires"
 
 
 const AdminRoute = () => {
@@ -34,6 +35,7 @@ const AdminRoute = () => {
         <Route path='/allauditoriumbookings' element={<BookingsManagement/>}/>
         <Route path='/stafflogin' element={<AdminStaffLogin/>}/>
         <Route path="/items" element={<AdminItemsManagement/>}/>
+        <Route path="/alladminenquiry" element={<AllEnquiries/>}/>
         <Route path='/subscriptionmanagement' element={<AdminSubscriptionManager/>}/>
 
           <Route
