@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { RootState } from '../../redux/store';
 import { toast } from 'react-toastify';
-import { Home, Users, Building, DollarSign, Mail, Ticket, Calendar } from 'lucide-react';
+import { Home, Users, Building, DollarSign, Mail, Ticket, Calendar, Lock } from 'lucide-react';
 import Header from '../../component/user/Header';
 import { findCount } from '../../api/userApi';
 
@@ -30,7 +30,6 @@ const dummyRecentActivity: RecentActivity[] = [
   { id: '3', type: 'Vendor Updated', name: 'Elite Events', date: '2025-09-12' },
 ];
 
-// Fallback data in case API fails
 const fallbackStats: DashboardStats = {
   totalVendors: 5,
   totalAuditoriums: 6,
@@ -49,6 +48,8 @@ const AdminDashboard: React.FC = () => {
   
   const navigate = useNavigate();
 
+  const userRole = currentUser?.role?.toLowerCase() || '';
+
   const fetchDashboardStats = async () => {
     try {
       setIsLoading(true);
@@ -64,7 +65,6 @@ const AdminDashboard: React.FC = () => {
         totalVouchers: Number(backendData.totalVouchers) || 0,
         totalBookings: Number(backendData.totalBookings) || 0,
       };
-      console.log('Mapped stats:', dashboardStats);
       setStats(dashboardStats);
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Error fetching dashboard stats';
@@ -78,72 +78,90 @@ const AdminDashboard: React.FC = () => {
   };
 
   useEffect(() => {
-    console.log('Fetching stats on mount or currentUser change');
     fetchDashboardStats();
   }, []);
 
-  const navItems: { path: string; label: string; icon: React.ComponentType<{ size?: number; className?: string }>; count: string | number }[] = [
-    { path: '/admin/allaudilist', label: 'All Auditoriums', icon: Building, count: stats.totalAuditoriums || 0 },
-    { path: '/admin/allusers', label: 'All Users', icon: Users, count: stats.totalUsers || 0 },
-    { path: '/admin/allvendors', label: 'All Vendors', icon: Users, count: stats.totalVendors || 0 },
-    { path: '/admin/allauditoriumbookings', label: 'All Auditorium Bookings', icon: Calendar, count: stats.totalBookings || 0 },
-    { path: '/admin/enquiries', label: 'All Enquiries', icon: Mail, count: stats.totalEnquiries || 0 },
-    { path: '/admin/finances', label: 'Total Amount', icon: DollarSign, count: stats.totalAmount ? `₹${stats.totalAmount.toLocaleString()}` : '₹0' },
-    { path: '/admin/allvouchers', label: 'All Vouchers', icon: Ticket, count: stats.totalVouchers || 0 },
-    { path: '/admin/adminstaff', label: 'Staff', icon: Users, count: 0 },
-    { path: '/admin/items', label: 'Others', icon: Home, count: 0 },
-    { path: '/admin/subscriptionmanagement', label: 'Subscription', icon: Home, count: 0 },
+  // Define navigation items with access control
+  const navItems = [
+    { path: '/admin/allaudilist', label: 'All Auditoriums', icon: Building, count: stats.totalAuditoriums || 0, roles: ['superadmin', 'venuemanager'] },
+    { path: '/admin/allusers', label: 'All Users', icon: Users, count: stats.totalUsers || 0, roles: ['superadmin'] },
+    { path: '/admin/allvendors', label: 'All Vendors', icon: Users, count: stats.totalVendors || 0, roles: ['superadmin', 'vendormanager'] },
+    { path: '/admin/allauditoriumbookings', label: 'All Auditorium Bookings', icon: Calendar, count: stats.totalBookings || 0, roles: ['superadmin', 'venuemanager'] },
+    { path: '/admin/enquiries', label: 'All Enquiries', icon: Mail, count: stats.totalEnquiries || 0, roles: ['superadmin', 'vendormanager'] },
+    { path: '/admin/finances', label: 'Total Amount', icon: DollarSign, count: stats.totalAmount ? `₹${stats.totalAmount.toLocaleString()}` : '₹0', roles: ['superadmin'] },
+    { path: '/admin/allvouchers', label: 'All Vouchers', icon: Ticket, count: stats.totalVouchers || 0, roles: ['superadmin'] },
+    { path: '/admin/adminstaff', label: 'Staff', icon: Users, count: 0, roles: ['superadmin'] },
+    { path: '/admin/items', label: 'Others', icon: Home, count: 0, roles: ['superadmin'] },
+    { path: '/admin/subscriptionmanagement', label: 'Subscription', icon: Home, count: 0, roles: ['superadmin'] },
   ];
+
+  const hasAccess = (allowedRoles: string[]) => {
+    return allowedRoles.includes('superadmin') && userRole === 'superadmin' ||
+           allowedRoles.includes(userRole);
+  };
 
   return (
     <div className="min-h-screen bg-[#FDF8F1] flex flex-col">
       <Header />
-      <main className="flex-1 p-4">
-        <div className="w-full max-w-6xl mx-auto my-8">
-          <h2 className="text-lg md:text-2xl font-bold text-[#78533F] font-serif mb-6">
-            Admin Dashboard
+      <main className="flex-1 p-4 sm:p-6 lg:p-8">
+        <div className="w-full max-w-7xl mx-auto">
+          <h2 className="text-2xl sm:text-3xl font-bold text-[#78533F] font-serif mb-8 text-center sm:text-left">
+            {userRole === 'superadmin' ? 'Super Admin' : userRole === 'venuemanager' ? 'Venue Manager' : 'Vendor Manager'} Dashboard
           </h2>
 
           {isLoading ? (
-            <p className="text-[#78533F] font-serif text-center">Loading dashboard...</p>
+            <div className="flex justify-center items-center h-64">
+              <p className="text-[#78533F] font-serif text-lg">Loading dashboard...</p>
+            </div>
           ) : error ? (
-            <p className="text-[#ED695A] font-serif text-center">{error} (Using fallback data)</p>
+            <div className="text-center py-8">
+              <p className="text-[#ED695A] font-serif text-lg">{error}</p>
+              <p className="text-sm text-gray-600 mt-2">Showing fallback data</p>
+            </div>
           ) : (
-            <div className="space-y-8">
-              {/* Navigation Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {navItems.map((item) => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const canAccess = userRole === 'superadmin' || item.roles.includes(userRole);
+                const isRestricted = !canAccess;
+
+                return (
                   <button
                     key={item.path}
-                    onClick={() => navigate(item.path)}
-                    className="bg-white p-6 rounded-xl shadow-md border border-[#b09d94] hover:bg-[#FDF8F1] transition-colors text-left"
+                    onClick={() => canAccess && navigate(item.path)}
+                    disabled={isRestricted}
+                    className={`
+                      relative bg-white p-6 rounded-xl shadow-md border 
+                      ${isRestricted 
+                        ? 'border-gray-300 opacity-70 cursor-not-allowed hover:bg-white' 
+                        : 'border-[#b09d94] hover:bg-[#FDF8F1] cursor-pointer'
+                      } 
+                      transition-all duration-200 text-left flex flex-col justify-between
+                      min-h-[120px]
+                    `}
                   >
-                    <div className="flex items-center space-x-3">
-                      <item.icon size={24} className="text-[#ED695A]" />
-                      <div>
-                        <h3 className="text-sm font-semibold text-[#78533F] font-serif">{item.label}</h3>
-                        <p className="text-xl font-bold text-[#ED695A] mt-1">{item.count}</p>
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center space-x-3 flex-1">
+                        <Icon size={28} className={isRestricted ? 'text-gray-400' : 'text-[#ED695A]'} />
+                        <div>
+                          <h3 className={`font-semibold font-serif text-sm sm:text-base ${isRestricted ? 'text-gray-500' : 'text-[#78533F]'}`}>
+                            {item.label}
+                          </h3>
+                          <p className={`text-xl sm:text-2xl font-bold mt-2 ${isRestricted ? 'text-gray-400' : 'text-[#ED695A]'}`}>
+                            {item.count}
+                          </p>
+                        </div>
                       </div>
+                      {isRestricted && (
+                        <Lock size={20} className="text-gray-400 absolute top-3 right-3" />
+                      )}
                     </div>
+                    {isRestricted && (
+                      <p className="text-xs text-gray-500 mt-3 font-medium">Access Restricted</p>
+                    )}
                   </button>
-                ))}
-              </div>
-
-              {/* Recent Activity */}
-              {/* <div className="bg-white p-6 rounded-xl shadow-md border border-[#b09d94]">
-                <h3 className="text-sm font-semibold text-[#78533F] font-serif mb-4">Recent Activity</h3>
-                <div className="space-y-4">
-                  {dummyRecentActivity.map((activity) => (
-                    <div key={activity.id} className="flex items-center justify-between border-b border-[#b09d94] pb-2">
-                      <div>
-                        <p className="text-sm text-[#78533F] font-medium font-serif">{activity.type}</p>
-                        <p className="text-sm text-gray-600">{activity.name}</p>
-                      </div>
-                      <p className="text-sm text-gray-600">{activity.date}</p>
-                    </div>
-                  ))}
-                </div>
-              </div> */}
+                );
+              })}
             </div>
           )}
         </div>
