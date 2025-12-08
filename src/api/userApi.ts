@@ -177,21 +177,27 @@ export const getAllAuditoriums=async()=>{
 
 }
 
-export const acceptAuditorium=async(id:string)=>{
+export const acceptAuditorium=async(id:string,userId:string)=>{
   
-  return await api.post(`/acceptauditorium/${id}`)
+  return await api.post(`/acceptauditorium/${id}`,{userId})
 
 }
 
-export const acceptVendor=async(id:string)=>{
+export const acceptVendor=async(id:string,userId:string)=>{
   
-  return await api.post(`/acceptvendor/${id}`)
+  return await api.post(`/acceptvendor/${id}`,{userId})
 
 }
 
 export const activateVoucher=async(id:string)=>{
   
   return await api.post(`/acceptvoucher/${id}`)
+
+}
+
+export const adminLogout=async(id:string)=>{
+
+  return await api.post(`/adminlogout/${id}`)
 
 }
 

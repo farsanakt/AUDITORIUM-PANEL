@@ -78,6 +78,7 @@ const AdminDashboard: React.FC = () => {
   };
 
   useEffect(() => {
+    console.log(currentUser,'itha')
     fetchDashboardStats();
   }, []);
 

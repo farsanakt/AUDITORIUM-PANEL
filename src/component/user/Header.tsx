@@ -6,6 +6,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { logout } from "../../redux/slices/authSlice";
 import { User } from "lucide-react";
 import { toast } from "react-toastify";
+import { adminLogout } from "../../api/userApi";
 
 interface HeaderProps {
   onLoginClick?: () => void;
@@ -24,9 +25,13 @@ const Header: React.FC<HeaderProps> = () => {
     setMenuOpen(false);
   };
 
-  const handleLogout = () => {
-    dispatch(logout());
+  const handleLogout = async() => {
+    dispatch(logout())
     navigate("/");
+    if(currentUser.role =="admin"|| "staff"|| "superadmin"|| "vendormanager"|| "venuemanager"){
+      await adminLogout(currentUser.id)
+    }
+    
     setMenuOpen(false);
   };
 

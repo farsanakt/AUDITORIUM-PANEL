@@ -6,12 +6,16 @@ import Header from '../../component/user/Header';
 import { addAdminStaff, deleteAdminStaff, fetchAllAdminStaff, updateAdminStaff } from '../../api/userApi';
 import 'react-toastify/dist/ReactToastify.css';
 
+// Updated interface to include isLogged, lastLogin, and lastLogout
 interface AdminStaff {
   staffid: string;
   name: string;
   email: string;
   role: string;
   isActive: boolean;
+  isLogged: boolean;        // New field
+  lastLogin: string | null; // New field (ISO string or null)
+  lastLogout: string | null; // New field (ISO string or null)
 }
 
 interface StaffForm {
@@ -48,7 +52,7 @@ const StaffList: React.FC = () => {
       if (response) {
         setStaff(response.data);
       } else {
-        toast.error(  'Failed to fetch staff');
+        toast.error('Failed to fetch staff');
       }
     } catch (error) {
       toast.error('Error fetching staff');
@@ -56,37 +60,37 @@ const StaffList: React.FC = () => {
     }
   };
 
+  // ... (all your existing handlers remain unchanged: handleEdit, handleUpdate, handleDelete, etc.)
+
   const handleEdit = (staffMember: AdminStaff) => {
     setEditingId(staffMember.staffid);
     setEditForm({ ...staffMember });
   };
 
- const handleUpdate = async (e: FormEvent) => {
-  e.preventDefault();
+  const handleUpdate = async (e: FormEvent) => {
+    e.preventDefault();
 
-  if (!editForm || !editForm.staffid) {
-    toast.error("Invalid staff data");
-    return;
-  }
-
-  try {
-   
-    const response = await updateAdminStaff(editForm.staffid, editForm);
-
-    
-    if (response.data.success) {
-      toast.success(response.data.message || "Staff updated successfully");
-      setEditingId(null);
-      setEditForm(null);
-      fetchStaff()
-    } else {
-      toast.error(response.data.xmessage || "Failed to update staff");
+    if (!editForm || !editForm.staffid) {
+      toast.error("Invalid staff data");
+      return;
     }
-  } catch (error: any) {
-    console.error("Error updating staff:", error);
-    toast.error("Something went wrong while updating staff");
-  }
-};
+
+    try {
+      const response = await updateAdminStaff(editForm.staffid, editForm);
+
+      if (response.data.success) {
+        toast.success(response.data.message || "Staff updated successfully");
+        setEditingId(null);
+        setEditForm(null);
+        fetchStaff();
+      } else {
+        toast.error(response.data.xmessage || "Failed to update staff");
+      }
+    } catch (error: any) {
+      console.error("Error updating staff:", error);
+      toast.error("Something went wrong while updating staff");
+    }
+  };
 
   const handleDelete = async (staffid: string) => {
     const result = await Swal.fire({
@@ -101,8 +105,8 @@ const StaffList: React.FC = () => {
 
     if (result.isConfirmed) {
       try {
-        const response=await deleteAdminStaff(staffid)
-        const result = await response.data;
+        const response = await deleteAdminStaff(staffid);
+        const result = response.data;
         if (result.success) {
           toast.success('Staff deleted successfully');
           fetchStaff();
@@ -152,35 +156,33 @@ const StaffList: React.FC = () => {
   };
 
   const handleAddStaff = async (e: FormEvent) => {
-  e.preventDefault();
-  try {
-    const response = await addAdminStaff(formData);
+    e.preventDefault();
+    try {
+      const response = await addAdminStaff(formData);
+      const result = response.data;
 
-    // Axios automatically wraps response inside .data
-    const result = response.data;
-
-    if (result.success) {
-      toast.success(result.message || 'Staff added successfully');
-      setFormData({
-        staffid: '',
-        name: '',
-        email: '',
-        password: '',
-        role: 'admin',
-        isActive: true,
-      });
-      setIsModalOpen(false);
-      fetchStaff(); // Refresh the staff list
-    } else {
-      toast.error(result.message || 'Failed to add staff');
+      if (result.success) {
+        toast.success(result.message || 'Staff added successfully');
+        setFormData({
+          staffid: '',
+          name: '',
+          email: '',
+          password: '',
+          role: 'admin',
+          isActive: true,
+        });
+        setIsModalOpen(false);
+        fetchStaff();
+      } else {
+        toast.error(result.message || 'Failed to add staff');
+      }
+    } catch (error: any) {
+      toast.error(
+        error.response?.data?.message || 'Error adding staff'
+      );
+      console.error('Error adding staff:', error);
     }
-  } catch (error: any) {
-    toast.error(
-      error.response?.data?.message || 'Error adding staff'
-    );
-    console.error('Error adding staff:', error);
-  }
-};
+  };
 
   const openModal = () => {
     setIsModalOpen(true);
@@ -191,12 +193,33 @@ const StaffList: React.FC = () => {
     setFormData({ staffid: '', name: '', email: '', password: '', role: 'admin', isActive: true });
   };
 
+  // Helper to format lastLogin
+  const formatLastLogin = (dateString: string | null) => {
+    if (!dateString) return 'Never';
+    return new Date(dateString).toLocaleString('en-US', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    });
+  };
+
+  // Helper to format lastLogout
+  const formatLastLogout = (dateString: string | null) => {
+    if (!dateString) return 'Never';
+    return new Date(dateString).toLocaleString('en-US', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    });
+  };
+
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-white rounded-xl shadow-lg">
+    <div className="max-w-6xl mx-auto p-6 bg-white rounded-xl shadow-lg">
       <Header />
       <ToastContainer position="top-right" autoClose={3000} />
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-[#78533F]">Staff List</h2>
+        <div>
+          <h2 className="text-2xl font-bold text-[#78533F]">Staff List</h2>
+          <p className="text-sm text-gray-600 mt-1">Total Staff: {staff.length}</p>
+        </div>
         <button
           onClick={openModal}
           className="bg-[#78533F] text-white py-2 px-4 rounded-full font-semibold hover:bg-[#634331] transition"
@@ -205,7 +228,7 @@ const StaffList: React.FC = () => {
         </button>
       </div>
 
-      {/* Modal for Adding Staff */}
+      {/* Modal remains unchanged */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-lg w-full max-w-md p-6 relative">
@@ -217,6 +240,7 @@ const StaffList: React.FC = () => {
             </button>
             <h2 className="text-2xl font-bold text-[#78533F] mb-4 text-center">Add Admin Staff</h2>
             <form onSubmit={handleAddStaff} className="space-y-4">
+              {/* ... existing form fields ... */}
               <div>
                 <label htmlFor="staffid" className="block text-sm font-medium text-[#78533F]">
                   Staff ID
@@ -303,19 +327,23 @@ const StaffList: React.FC = () => {
         </div>
       )}
 
-      {/* Staff Table */}
+      {/* Updated Table Header - Now 8 columns */}
       <div className="space-y-4">
-        <div className="grid grid-cols-5 gap-4 bg-[#f5e9e2] p-3 rounded-lg">
-          <div className="text-[#78533F] font-semibold">Name</div>
-          <div className="text-[#78533F] font-semibold">Email</div>
-          <div className="text-[#78533F] font-semibold">Role</div>
-          <div className="text-[#78533F] font-semibold">Status</div>
-          <div className="text-[#78533F] font-semibold">Actions</div>
+        <div className="grid grid-cols-8 gap-4 bg-[#f5e9e2] p-3 rounded-lg font-semibold text-[#78533F]">
+          <div>Name</div>
+          <div>Email</div>
+          <div>Role</div>
+          <div>Account Status</div>
+          <div>Online Status</div>
+          <div>Last Login</div>
+          <div>Last Logout</div>     {/* New Column */}
+          <div>Actions</div>
         </div>
+
         {staff.map((staffMember) => (
-          <div key={staffMember.staffid} className="p-3 bg-white rounded-lg shadow-sm">
+          <div key={staffMember.staffid} className="p-3 bg-white rounded-lg shadow-sm border border-gray-100">
             {editingId === staffMember.staffid ? (
-              <form onSubmit={handleUpdate} className="grid grid-cols-5 gap-4">
+              <form onSubmit={handleUpdate} className="grid grid-cols-8 gap-4 items-center">
                 <div>
                   <input
                     type="text"
@@ -362,6 +390,19 @@ const StaffList: React.FC = () => {
                     <option value="false">Inactive</option>
                   </select>
                 </div>
+                <div>
+                  <span className={`inline-block px-3 py-1 rounded-full text-white text-xs font-semibold ${
+                    editForm?.isLogged ? 'bg-green-500' : 'bg-red-500'
+                  }`}>
+                    {editForm?.isLogged ? 'Online' : 'Offline'}
+                  </span>
+                </div>
+                <div className="text-sm text-gray-600">
+                  {formatLastLogin(editForm?.lastLogin)}
+                </div>
+                <div className="text-sm text-gray-600">
+                  {formatLastLogout(editForm?.lastLogout)} {/* New */}
+                </div>
                 <div className="flex space-x-2">
                   <button
                     type="submit"
@@ -379,21 +420,34 @@ const StaffList: React.FC = () => {
                 </div>
               </form>
             ) : (
-              <div className="grid grid-cols-5 gap-4">
+              <div className="grid grid-cols-8 gap-4 items-center">
                 <div className="text-[#78533F] py-2">{staffMember.name}</div>
                 <div className="text-[#78533F] py-2">{staffMember.email}</div>
                 <div className="text-[#78533F] py-2">{staffMember.role}</div>
                 <div>
                   <button
                     onClick={() => handleToggleActive(staffMember.staffid)}
-                    className={`px-4 py-2 rounded-full font-semibold ${
+                    className={`px-4 py-2 rounded-full font-semibold transition ${
                       staffMember.isActive
                         ? 'bg-[#78533F] text-white hover:bg-[#634331]'
                         : 'bg-[#ED695A] text-white hover:bg-[#d45a4e]'
-                    } transition`}
+                    }`}
                   >
                     {staffMember.isActive ? 'Active' : 'Inactive'}
                   </button>
+                </div>
+                <div>
+                  <span className={`inline-block px-4 py-2 rounded-full text-white text-sm font-semibold ${
+                    staffMember.isLogged ? 'bg-green-500' : 'bg-red-500'
+                  }`}>
+                    {staffMember.isLogged ? 'Online' : 'Offline'}
+                  </span>
+                </div>
+                <div className="text-sm text-gray-600">
+                  {formatLastLogin(staffMember.lastLogin)}
+                </div>
+                <div className="text-sm text-gray-600">
+                  {formatLastLogout(staffMember.lastLogout)} {/* New */}
                 </div>
                 <div className="flex space-x-2">
                   <button
