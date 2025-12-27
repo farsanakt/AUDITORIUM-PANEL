@@ -321,7 +321,7 @@ const VenuePage: React.FC = () => {
                         <td className="py-2 px-3 sm:px-4">
                           {getFormattedPrice(auditorium.advAmnt)}
                         </td>
-                        <td className="py-2 px-3 sm:px-4">
+                        <td className="py-2 px-3 sm:px-0">
                           <button
                             className="px-5 py-2 bg-gradient-to-r from-[#8B4513] to-[#D2691E] text-white rounded-full shadow-md hover:from-[#A0522D] hover:to-[#FF8C00] hover:shadow-lg transition-all duration-300 text-sm sm:text-base font-semibold tracking-wide"
                             onClick={() =>
@@ -332,7 +332,7 @@ const VenuePage: React.FC = () => {
                               )
                             }
                           >
-                            Book Now
+                            View Details & Book Now
                           </button>
                         </td>
                       </tr>

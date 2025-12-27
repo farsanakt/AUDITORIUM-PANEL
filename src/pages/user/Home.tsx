@@ -6,6 +6,7 @@ import bgImg from "../../assets/Rectangle 50.png"
 import pjct from "../../assets/image 16.png"
 import pjct1 from "../../assets/Rectangle 30.png"
 import { useNavigate } from "react-router-dom"
+import { useSelector } from "react-redux"
 import { existingVenues, fetchAllExistingOffer, fetchAllExistingVouchers, fetchAllVendors, getItems } from "../../api/userApi"
 
 
@@ -122,6 +123,9 @@ const HomePage: React.FC = () => {
   const [selectedVoucher, setSelectedVoucher] = useState<Voucher | null>(null)
   const [toast, setToast] = useState<{ message: string; type: string } | null>(null)
   const navigate = useNavigate()
+
+  const { currentUser } = useSelector((state: any) => state.auth);
+  const displayName = currentUser?.email ? currentUser.email.split('@')[0] : '';
 
   // Dynamic data for dropdowns
   const [districts, setDistricts] = useState<string[]>([])
@@ -524,7 +528,7 @@ const HomePage: React.FC = () => {
     if (vendors.length === 0) return null
 
     return (
-      <section key={type} id={sectionId} className="py-12 sm:py-16 lg:py-20 bg-gradient-to-b">
+      <section key={type} id={sectionId} className="py-12 sm:py-16 lg:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-left mb-12 sm:mb-16">
             <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#5B4336] mb-4">
@@ -780,14 +784,29 @@ const HomePage: React.FC = () => {
 
         <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/20 w-full h-full pointer-events-none"></div>
 
+        {/* Header */}
         <div className="absolute top-0 left-0 right-0 z-50">
           <Header />
         </div>
 
-        <div className="relative z-10 h-full flex flex-col lg:flex-row items-center justify-between px-4 sm:px-6 md:px-8 lg:px-12 xl:px-20 py-8 pt-20 sm:pt-24">
+        {/* Welcome Message - Top Center (only if logged in) */}
+        {currentUser && (
+          <div className="absolute top-20 left-1/2 transform -translate-x-1/2 z-40 text-center">
+            <div
+              className={`text-xl sm:text-xl md:text-xl font-medium text-[#9c7c5d] transition-all duration-1000 delay-600 ${
+                isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
+              }`}
+            >
+              Welcome back, {displayName}!
+            </div>
+          </div>
+        )}
+
+        {/* Main Hero Content */}
+        <div className="relative z-10 h-full flex flex-col lg:flex-row items-center justify-between px-4 sm:px-6 md:px-8 lg:px-12 xl:px-20 py-8 pt-32 sm:pt-36">
           <div className="w-full lg:w-1/2 flex flex-col justify-center text-left space-y-4 sm:space-y-6 lg:space-y-8 mb-8 lg:mb-0">
             <h1
-              className={`text-4xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-light text-amber-900 leading-tight transition-all duration-1000 ${
+              className={`text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-6xl font-light text-amber-900 leading-tight transition-all duration-1000 ${
                 isVisible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-10"
               }`}
             >
@@ -822,143 +841,170 @@ const HomePage: React.FC = () => {
               isVisible ? "opacity-100 translate-x-0" : "opacity-0 translate-x-10"
             }`}
           >
-            <div className="w-full max-w-sm sm:max-w-md space-y-3 sm:space-y-4">
-              <div className="flex flex-col sm:hidden space-y-3">
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
-                  <select
-                    name="district"
-                    value={formData.district}
-                    onChange={handleInputChange}
-                    disabled={loadingDropdowns}
-                    className="w-full h-10 pl-10 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
-                  >
-                    <option value="">Select District</option>
-                    {districts.map((district) => (
-                      <option key={district} value={district}>{district}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
-                  <select
-                    name="place"
-                    value={formData.place}
-                    onChange={handleInputChange}
-                    disabled={!formData.district || loadingDropdowns}
-                    className="w-full h-10 pl-10 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
-                  >
-                    <option value="">Select Place (Taluk)</option>
-                    {formData.district &&
-                      placesByDistrict[formData.district]?.map((place) => (
-                        <option key={place} value={place}>{place}</option>
-                      ))}
-                  </select>
-                </div>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
-                  <input
-                    type="date"
-                    name="date"
-                    value={formData.date}
-                    onChange={handleInputChange}
-                    min={new Date().toISOString().split("T")[0]}
-                    className="w-full h-10 pl-10 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
-                  />
-                </div>
-                <div className="relative">
-                  <Flag className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
-                  <select
-                    name="event"
-                    value={formData.event}
-                    onChange={handleInputChange}
-                    disabled={loadingDropdowns}
-                    className="w-full h-10 pl-10 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
-                  >
-                    <option value="">Select Event</option>
-                    {eventTypes.map((event) => (
-                      <option key={event} value={event}>{event}</option>
-                    ))}
-                  </select>
-                </div>
-                <button
-                  onClick={handleSubmit}
-                  disabled={loadingDropdowns}
-                  className="h-10 px-4 w-full bg-[#9c7c5d] text-white rounded-md font-medium hover:bg-[#8b6b4a] transition duration-300 flex items-center justify-center gap-2 text-sm disabled:opacity-50"
-                >
-                  <span>Find Venues</span>
-                  <Search className="w-4 h-4" />
-                </button>
-              </div>
+           <div className="w-full max-w-sm sm:max-w-md space-y-3 sm:space-y-4">
 
-              <div className="hidden sm:grid grid-cols-2 gap-3 sm:gap-4">
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4 sm:w-5 sm:h-5" />
-                  <select
-                    name="district"
-                    value={formData.district}
-                    onChange={handleInputChange}
-                    disabled={loadingDropdowns}
-                    className="w-full h-10 sm:h-12 pl-10 sm:pl-12 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
-                  >
-                    <option value="">Select District</option>
-                    {districts.map((district) => (
-                      <option key={district} value={district}>{district}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4 sm:w-5 sm:h-5" />
-                  <select
-                    name="place"
-                    value={formData.place}
-                    onChange={handleInputChange}
-                    disabled={!formData.district || loadingDropdowns}
-                    className="w-full h-10 sm:h-12 pl-10 sm:pl-12 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
-                  >
-                    <option value="">Select Place (Taluk)</option>
-                    {formData.district &&
-                      placesByDistrict[formData.district]?.map((place) => (
-                        <option key={place} value={place}>{place}</option>
-                      ))}
-                  </select>
-                </div>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4 sm:w-5 sm:h-5" />
-                  <input
-                    type="date"
-                    name="date"
-                    value={formData.date}
-                    onChange={handleInputChange}
-                    min={new Date().toISOString().split("T")[0]}
-                    className="w-full h-10 sm:h-12 pl-10 sm:pl-12 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
-                  />
-                </div>
-                <div className="relative">
-                  <Flag className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4 sm:w-5 sm:h-5" />
-                  <select
-                    name="event"
-                    value={formData.event}
-                    onChange={handleInputChange}
-                    disabled={loadingDropdowns}
-                    className="w-full h-10 sm:h-12 pl-10 sm:pl-12 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
-                  >
-                    <option value="">Select Event</option>
-                    {eventTypes.map((event) => (
-                      <option key={event} value={event}>{event}</option>
-                    ))}
-                  </select>
-                </div>
-                <button
-                  onClick={handleSubmit}
-                  disabled={loadingDropdowns}
-                  className="h-10 sm:h-12 px-4 w-full col-span-2 bg-[#9c7c5d] text-white rounded-md font-medium hover:bg-[#8b6b4a] transition duration-300 flex items-center justify-center gap-2 text-sm disabled:opacity-50"
-                >
-                  <span>Find Venues</span>
-                  <Search className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
+  {/* ---------- MOBILE VIEW ---------- */}
+  <div className="flex flex-col sm:hidden space-y-3">
+
+    <div className="relative">
+      <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
+      <select
+        name="district"
+        value={formData.district}
+        onChange={handleInputChange}
+        disabled={loadingDropdowns}
+        className="w-full h-10 pl-10 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+      >
+        <option value="">Select District</option>
+        {districts.map((district) => (
+          <option key={district} value={district}>{district}</option>
+        ))}
+      </select>
+    </div>
+
+    <div className="relative">
+      <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
+      <select
+        name="place"
+        value={formData.place}
+        onChange={handleInputChange}
+        disabled={!formData.district || loadingDropdowns}
+        className="w-full h-10 pl-10 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+      >
+        <option value="">Select Place (Taluk)</option>
+        {formData.district &&
+          placesByDistrict[formData.district]?.map((place) => (
+            <option key={place} value={place}>{place}</option>
+          ))}
+      </select>
+    </div>
+
+    {/* DATE FIELD (UPDATED) */}
+    <div className="relative">
+      <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
+      <input
+        type="text"
+        name="date"
+        value={formData.date}
+        placeholder="Select your venue date"
+        onFocus={(e) => (e.target.type = "date")}
+        onBlur={(e) => {
+          if (!e.target.value) e.target.type = "text"
+        }}
+        onChange={handleInputChange}
+        min={new Date().toISOString().split("T")[0]}
+        className="w-full h-10 pl-10 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+      />
+    </div>
+
+    <div className="relative">
+      <Flag className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
+      <select
+        name="event"
+        value={formData.event}
+        onChange={handleInputChange}
+        disabled={loadingDropdowns}
+        className="w-full h-10 pl-10 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+      >
+        <option value="">Select Event</option>
+        {eventTypes.map((event) => (
+          <option key={event} value={event}>{event}</option>
+        ))}
+      </select>
+    </div>
+
+    <button
+      onClick={handleSubmit}
+      disabled={loadingDropdowns}
+      className="h-10 px-4 w-full bg-[#9c7c5d] text-white rounded-md font-medium hover:bg-[#8b6b4a] transition duration-300 flex items-center justify-center gap-2 text-sm disabled:opacity-50"
+    >
+      <span>Find Venues</span>
+      <Search className="w-4 h-4" />
+    </button>
+  </div>
+
+  {/* ---------- DESKTOP VIEW ---------- */}
+  <div className="hidden sm:grid grid-cols-2 gap-3 sm:gap-4">
+
+    <div className="relative">
+      <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4 sm:w-5 sm:h-5" />
+      <select
+        name="district"
+        value={formData.district}
+        onChange={handleInputChange}
+        disabled={loadingDropdowns}
+        className="w-full h-10 sm:h-12 pl-10 sm:pl-12 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+      >
+        <option value="">Select District</option>
+        {districts.map((district) => (
+          <option key={district} value={district}>{district}</option>
+        ))}
+      </select>
+    </div>
+
+    <div className="relative">
+      <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4 sm:w-5 sm:h-5" />
+      <select
+        name="place"
+        value={formData.place}
+        onChange={handleInputChange}
+        disabled={!formData.district || loadingDropdowns}
+        className="w-full h-10 sm:h-12 pl-10 sm:pl-12 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+      >
+        <option value="">Select Place (Taluk)</option>
+        {formData.district &&
+          placesByDistrict[formData.district]?.map((place) => (
+            <option key={place} value={place}>{place}</option>
+          ))}
+      </select>
+    </div>
+
+    {/* DATE FIELD (UPDATED) */}
+    <div className="relative">
+      <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4 sm:w-5 sm:h-5" />
+      <input
+        type="text"
+        name="date"
+        value={formData.date}
+        placeholder="Select your venue date"
+        onFocus={(e) => (e.target.type = "date")}
+        onBlur={(e) => {
+          if (!e.target.value) e.target.type = "text"
+        }}
+        onChange={handleInputChange}
+        min={new Date().toISOString().split("T")[0]}
+        className="w-full h-10 sm:h-12 pl-10 sm:pl-12 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+      />
+    </div>
+
+    <div className="relative">
+      <Flag className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4 sm:w-5 sm:h-5" />
+      <select
+        name="event"
+        value={formData.event}
+        onChange={handleInputChange}
+        disabled={loadingDropdowns}
+        className="w-full h-10 sm:h-12 pl-10 sm:pl-12 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+      >
+        <option value="">Select Event</option>
+        {eventTypes.map((event) => (
+          <option key={event} value={event}>{event}</option>
+        ))}
+      </select>
+    </div>
+
+    <button
+      onClick={handleSubmit}
+      disabled={loadingDropdowns}
+      className="h-10 sm:h-12 px-4 w-full col-span-2 bg-[#9c7c5d] text-white rounded-md font-medium hover:bg-[#8b6b4a] transition duration-300 flex items-center justify-center gap-2 text-sm disabled:opacity-50"
+    >
+      <span>Find Venues</span>
+      <Search className="w-4 h-4" />
+    </button>
+
+  </div>
+</div>
+
 
             <div
               className={`text-[#9c7c5d] text-xs sm:text-sm font-medium space-y-1 transition-all duration-1000 delay-800 cursor-pointer ${
@@ -1191,7 +1237,7 @@ const HomePage: React.FC = () => {
 
       {isModalOpen && selectedVoucher && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg max-w-md w-full">
+          <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
             <h2 className="text-xl font-bold mb-4 text-[#5B4336]">Terms and Conditions</h2>
             <p className="mb-2 text-gray-700">
               <strong>Voucher Code:</strong> {selectedVoucher.voucherCode}
@@ -1217,7 +1263,7 @@ const HomePage: React.FC = () => {
             </p>
             <button
               onClick={() => setIsModalOpen(false)}
-              className="mt-4 bg-[#9c7c5d] text-white px-4 py-2 rounded-md font-medium hover:bg-[#8b6b4a] transition duration-300"
+              className="mt-4 bg-[#9c7c5d] text-white px-4 py-2 rounded-md font-medium hover:bg-[#8b6b4a] transition duration-300 w-full sm:w-auto"
             >
               Close
             </button>

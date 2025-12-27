@@ -767,7 +767,7 @@ export default function VenueManagement() {
 
                 {/* ----- Locations ----- */}
                 <div className="sm:col-span-2">
-                  <label className="block font-semibold mb-1">Locations *</label>
+                  <label className="block font-semibold mb-1">Select your prefered locations *</label>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 max-h-32 overflow-y-auto border p-3 rounded-lg bg-gray-50">
                     {availableLocations.map((loc) => (
                       <label key={loc} className="flex items-center space-x-2">
@@ -917,18 +917,54 @@ export default function VenueManagement() {
 
                 {/* ----- Images ----- */}
                 <div className="sm:col-span-2">
-                  <label className="block font-semibold mb-1">Upload Images (min 4) *</label>
-                  <input type="file" multiple accept="image/*" onChange={handleImageUpload} className="w-full" />
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {selectedImages.map((file, i) => (
-                      <div key={i} className="w-20 h-20 border rounded overflow-hidden relative">
-                        <img src={URL.createObjectURL(file)} alt="" className="w-full h-full object-cover" />
-                        <button onClick={() => removeImage(i, true)} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1"><X size={12} /></button>
-                      </div>
-                    ))}
-                  </div>
-                  {errors.images && <p className="text-red-500 text-xs">{errors.images}</p>}
-                </div>
+  <label className="block font-semibold mb-2">
+    Upload Images (min 4) *
+  </label>
+
+  {/* Rectangle Upload Box */}
+  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-400 rounded-lg cursor-pointer hover:border-gray-600 transition">
+    <div className="flex flex-col items-center justify-center text-gray-500">
+      <p className="text-sm font-medium">Click to upload images</p>
+      <p className="text-xs mt-1">PNG, JPG, JPEG (Multiple allowed)</p>
+    </div>
+
+    {/* Hidden Input */}
+    <input
+      type="file"
+      multiple
+      accept="image/*"
+      onChange={handleImageUpload}
+      className="hidden"
+    />
+  </label>
+
+  {/* Preview Images */}
+  <div className="flex flex-wrap gap-2 mt-3">
+    {selectedImages.map((file, i) => (
+      <div
+        key={i}
+        className="w-20 h-20 border rounded overflow-hidden relative"
+      >
+        <img
+          src={URL.createObjectURL(file)}
+          alt=""
+          className="w-full h-full object-cover"
+        />
+        <button
+          onClick={() => removeImage(i, true)}
+          className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1"
+        >
+          <X size={12} />
+        </button>
+      </div>
+    ))}
+  </div>
+
+  {errors.images && (
+    <p className="text-red-500 text-xs mt-1">{errors.images}</p>
+  )}
+</div>
+
               </div>
             </div>
             <div className="border-t px-6 py-4 flex justify-end gap-3 bg-gray-50">
@@ -994,7 +1030,7 @@ export default function VenueManagement() {
 
                 {/* ----- Locations ----- */}
                 <div className="sm:col-span-2">
-                  <label className="block font-semibold mb-1">Locations *</label>
+                  <label className="block font-semibold mb-1">Select your prefered locations *</label>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 max-h-32 overflow-y-auto border p-3 rounded-lg bg-gray-50">
                     {availableLocations.map((loc) => (
                       <label key={loc} className="flex items-center space-x-2">
@@ -1156,19 +1192,51 @@ export default function VenueManagement() {
                 </div>
 
                 {/* ----- Add More Images ----- */}
-                <div className="sm:col-span-2">
-                  <label className="block font-semibold mb-1">Add More Images</label>
-                  <input type="file" multiple accept="image/*" onChange={handleEditImageUpload} className="w-full" />
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {editImages.map((file, i) => (
-                      <div key={i} className="w-20 h-20 border rounded overflow-hidden relative">
-                        <img src={URL.createObjectURL(file)} alt="" className="w-full h-full object-cover" />
-                        <button onClick={() => removeImage(i, false)} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1"><X size={12} /></button>
-                      </div>
-                    ))}
-                  </div>
-                  {errors.images && <p className="text-red-500 text-xs">{errors.images}</p>}
-                </div>
+              <div className="sm:col-span-2">
+  <label className="block font-semibold mb-1">Add More Images</label>
+
+  {/* Rectangle upload box */}
+  <label className="flex items-center justify-center w-full h-28 border-2 border-dashed border-gray-400 rounded-lg cursor-pointer hover:border-gray-600 transition">
+    <span className="text-sm text-gray-500">
+      Click to choose images
+    </span>
+
+    {/* Hidden file input (same logic) */}
+    <input
+      type="file"
+      multiple
+      accept="image/*"
+      onChange={handleEditImageUpload}
+      className="hidden"
+    />
+  </label>
+
+  <div className="flex flex-wrap gap-2 mt-2">
+    {editImages.map((file, i) => (
+      <div
+        key={i}
+        className="w-20 h-20 border rounded overflow-hidden relative"
+      >
+        <img
+          src={URL.createObjectURL(file)}
+          alt=""
+          className="w-full h-full object-cover"
+        />
+        <button
+          onClick={() => removeImage(i, false)}
+          className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1"
+        >
+          <X size={12} />
+        </button>
+      </div>
+    ))}
+  </div>
+
+  {errors.images && (
+    <p className="text-red-500 text-xs">{errors.images}</p>
+  )}
+</div>
+
               </div>
             </div>
             <div className="border-t px-6 py-4 flex justify-end gap-3 bg-gray-50">

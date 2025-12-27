@@ -138,125 +138,125 @@ const AllAuditoriumBookings: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#FDF8F1] flex flex-col">
       <Header />
-      <main className="flex-1 p-4 max-w-7xl mx-auto">
-        <div className="bg-white p-6 rounded-lg shadow-sm mb-6 border border-[#b09d94]">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
-            <h2 className="text-xl font-semibold text-[#78533F] font-serif">Auditorium Bookings ({filteredBookings.length})</h2>
-            <div className="relative w-full sm:w-64">
+      <main className="flex-1 p-4 lg:p-8 w-full">
+        <div className="bg-white p-8 rounded-xl shadow-lg mb-8 border border-[#b09d94]">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-6">
+            <h2 className="text-2xl lg:text-3xl font-bold text-[#78533F] font-serif">Auditorium Bookings ({filteredBookings.length})</h2>
+            <div className="relative w-full sm:w-80 lg:w-96">
               <input
                 type="text"
                 placeholder="Search by email, venue, event, or status..."
-                className="w-full pl-10 pr-4 py-2 border border-[#b09d94] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ED695A] text-sm placeholder-gray-400"
+                className="w-full pl-12 pr-6 py-3 border-2 border-[#b09d94] rounded-full focus:outline-none focus:ring-4 focus:ring-[#ED695A]/20 text-base placeholder-gray-500 transition-all duration-300"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
-              <Search className="absolute left-3 top-2.5 text-gray-400" size={16} />
+              <Search className="absolute left-4 top-3.5 text-[#78533F]" size={20} />
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-[#b09d94]">
+        <div className="bg-white rounded-xl shadow-lg border border-[#b09d94]">
           {currentBookings.length === 0 ? (
-            <div className="py-12 text-center">
-              <p className="text-gray-600 font-serif text-lg">No bookings found</p>
+            <div className="py-16 text-center">
+              <p className="text-gray-600 font-serif text-xl">No bookings found</p>
             </div>
           ) : (
             currentBookings.map((booking) => (
               <div
                 key={booking._id}
-                className="p-4 hover:bg-[#FDF8F1] transition-colors border-b border-[#b09d94]/20 last:border-b-0"
+                className="p-6 hover:bg-[#FDF8F1] transition-all duration-300 border-b border-[#b09d94]/30 last:border-b-0"
               >
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
                   <div
                     className="flex items-center cursor-pointer flex-1 min-w-0"
                     onClick={() => toggleBookingExpand(booking._id)}
                   >
-                    <div className="mr-3 flex-shrink-0">
+                    <div className="mr-4 flex-shrink-0">
                       {expandedBooking === booking._id ? (
-                        <ChevronDown size={16} className="text-gray-400" />
+                        <ChevronDown size={20} className="text-[#78533F]" />
                       ) : (
-                        <ChevronRight size={16} className="text-gray-400" />
+                        <ChevronRight size={20} className="text-[#78533F]" />
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <h3 className="font-semibold text-lg text-[#78533F] font-serif truncate">{booking.venueName}</h3>
-                      <div className="flex items-center text-gray-600 mt-1 space-x-3">
-                        <span className="text-sm truncate">{booking.userEmail}</span>
-                        <span className={`text-xs font-medium px-2 py-1 rounded-full ${getStatusBadgeClass(booking.status)}`}>
+                      <h3 className="font-bold text-xl text-[#78533F] font-serif truncate">{booking.venueName}</h3>
+                      <div className="flex items-center text-gray-600 mt-2 space-x-4">
+                        <span className="text-base truncate">{booking.userEmail}</span>
+                        <span className={`text-sm font-semibold px-3 py-1.5 rounded-full ${getStatusBadgeClass(booking.status)}`}>
                           {capitalize(booking.status)}
                         </span>
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-3 flex-shrink-0">
-                    <div className="text-sm text-gray-600">
+                  <div className="flex items-center space-x-4 flex-shrink-0">
+                    <div className="text-base text-gray-600 font-medium">
                       Booked: {formatDate(getDateFromObjectId(booking._id))}
                     </div>
                     {booking.status.toLowerCase() !== 'cancelled' && (
                       <button
                         onClick={() => cancelBooking(booking._id, booking.userEmail)}
-                        className="p-2 rounded-lg hover:bg-red-50 text-red-600"
+                        className="p-3 rounded-full hover:bg-red-50 text-red-600 transition-all duration-200 hover:scale-105 shadow-sm"
                         title="Cancel Booking"
                       >
-                        <Trash size={16} />
+                        <Trash size={18} />
                       </button>
                     )}
                   </div>
                 </div>
                 {expandedBooking === booking._id && (
-                  <div className="mt-4 pl-8 border-l-2 border-[#ED695A]/20">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="mt-6 pl-10 border-l-4 border-[#ED695A]/30">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                       <div>
-                        <p className="text-sm font-medium text-[#78533F] font-serif">User Email</p>
-                        <p className="text-sm text-gray-600">{booking.userEmail}</p>
+                        <p className="text-base font-semibold text-[#78533F] font-serif">User Email</p>
+                        <p className="text-base text-gray-600 mt-1">{booking.userEmail}</p>
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-[#78533F] font-serif">Venue</p>
-                        <p className="text-sm text-gray-600">{booking.venueName}</p>
+                        <p className="text-base font-semibold text-[#78533F] font-serif">Venue</p>
+                        <p className="text-base text-gray-600 mt-1">{booking.venueName}</p>
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-[#78533F] font-serif">Event Type</p>
-                        <p className="text-sm text-gray-600">{capitalize(booking.eventType)}</p>
+                        <p className="text-base font-semibold text-[#78533F] font-serif">Event Type</p>
+                        <p className="text-base text-gray-600 mt-1">{capitalize(booking.eventType)}</p>
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-[#78533F] font-serif">Status</p>
-                        <p className={`text-sm font-medium px-2 py-1 rounded-full inline-block ${getStatusBadgeClass(booking.status)}`}>
+                        <p className="text-base font-semibold text-[#78533F] font-serif">Status</p>
+                        <p className={`text-base font-semibold px-3 py-1.5 rounded-full inline-block mt-1 ${getStatusBadgeClass(booking.status)}`}>
                           {capitalize(booking.status)}
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-[#78533F] font-serif">Payment Status</p>
-                        <p className={`text-sm font-medium px-2 py-1 rounded-full inline-block ${getStatusBadgeClass(booking.paymentStatus)}`}>
+                        <p className="text-base font-semibold text-[#78533F] font-serif">Payment Status</p>
+                        <p className={`text-base font-semibold px-3 py-1.5 rounded-full inline-block mt-1 ${getStatusBadgeClass(booking.paymentStatus)}`}>
                           {capitalize(booking.paymentStatus)}
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-[#78533F] font-serif">Event Date</p>
-                        <p className="text-sm text-gray-600">{formatDate(booking.bookeddate)}</p>
+                        <p className="text-base font-semibold text-[#78533F] font-serif">Event Date</p>
+                        <p className="text-base text-gray-600 mt-1">{formatDate(booking.bookeddate)}</p>
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-[#78533F] font-serif">Time Slot</p>
-                        <p className="text-sm text-gray-600">{capitalize(booking.timeSlot)}</p>
+                        <p className="text-base font-semibold text-[#78533F] font-serif">Time Slot</p>
+                        <p className="text-base text-gray-600 mt-1">{capitalize(booking.timeSlot)}</p>
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-[#78533F] font-serif">Total Amount</p>
-                        <p className="text-sm text-gray-600">{formatCurrency(booking.totalAmount)}</p>
+                        <p className="text-base font-semibold text-[#78533F] font-serif">Total Amount</p>
+                        <p className="text-base text-gray-600 mt-1">{formatCurrency(booking.totalAmount)}</p>
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-[#78533F] font-serif">Paid Amount</p>
-                        <p className="text-sm text-gray-600">{formatCurrency(booking.paidAmount)}</p>
+                        <p className="text-base font-semibold text-[#78533F] font-serif">Paid Amount</p>
+                        <p className="text-base text-gray-600 mt-1">{formatCurrency(booking.paidAmount)}</p>
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-[#78533F] font-serif">Balance Amount</p>
-                        <p className="text-sm text-gray-600">{formatCurrency(booking.balanceAmount)}</p>
+                        <p className="text-base font-semibold text-[#78533F] font-serif">Balance Amount</p>
+                        <p className="text-base text-gray-600 mt-1">{formatCurrency(booking.balanceAmount)}</p>
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-[#78533F] font-serif">Address</p>
-                        <p className="text-sm text-gray-600">{booking.address}</p>
+                        <p className="text-base font-semibold text-[#78533F] font-serif">Address</p>
+                        <p className="text-base text-gray-600 mt-1">{booking.address}</p>
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-[#78533F] font-serif">Booking Date</p>
-                        <p className="text-sm text-gray-600">{formatDate(getDateFromObjectId(booking._id))}</p>
+                        <p className="text-base font-semibold text-[#78533F] font-serif">Booking Date</p>
+                        <p className="text-base text-gray-600 mt-1">{formatDate(getDateFromObjectId(booking._id))}</p>
                       </div>
                     </div>
                   </div>
@@ -267,11 +267,11 @@ const AllAuditoriumBookings: React.FC = () => {
         </div>
 
         {totalPages > 1 && (
-          <div className="mt-6 flex justify-center space-x-2">
+          <div className="mt-8 flex justify-center space-x-3">
             <button
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage === 1}
-              className="px-4 py-2 border border-[#b09d94] rounded-lg text-sm font-medium text-[#78533F] disabled:opacity-50 hover:bg-[#FDF8F1]"
+              className="px-6 py-3 border-2 border-[#b09d94] rounded-full text-base font-semibold text-[#78533F] disabled:opacity-50 hover:bg-[#FDF8F1] transition-all duration-200 shadow-sm"
             >
               Previous
             </button>
@@ -279,11 +279,11 @@ const AllAuditoriumBookings: React.FC = () => {
               <button
                 key={page}
                 onClick={() => handlePageChange(page)}
-                className={`px-4 py-2 border border-[#b09d94] rounded-lg text-sm font-medium ${
+                className={`px-6 py-3 border-2 border-[#b09d94] rounded-full text-base font-semibold ${
                   currentPage === page
-                    ? 'bg-[#78533F] text-white'
-                    : 'text-[#78533F] hover:bg-[#FDF8F1]'
-                }`}
+                    ? 'bg-[#78533F] text-white shadow-md'
+                    : 'text-[#78533F] hover:bg-[#FDF8F1] hover:shadow-sm'
+                } transition-all duration-200`}
               >
                 {page}
               </button>
@@ -291,7 +291,7 @@ const AllAuditoriumBookings: React.FC = () => {
             <button
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
-              className="px-4 py-2 border border-[#b09d94] rounded-lg text-sm font-medium text-[#78533F] disabled:opacity-50 hover:bg-[#FDF8F1]"
+              className="px-6 py-3 border-2 border-[#b09d94] rounded-full text-base font-semibold text-[#78533F] disabled:opacity-50 hover:bg-[#FDF8F1] transition-all duration-200 shadow-sm"
             >
               Next
             </button>

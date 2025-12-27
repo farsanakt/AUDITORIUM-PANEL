@@ -15,6 +15,7 @@ interface DashboardStats {
   totalEnquiries: number;
   totalVouchers: number;
   totalBookings: number;
+  totalStaff:number;
 }
 
 interface RecentActivity {
@@ -38,6 +39,7 @@ const fallbackStats: DashboardStats = {
   totalEnquiries: 0,
   totalVouchers: 0,
   totalBookings: 0,
+  totalStaff:0
 };
 
 const AdminDashboard: React.FC = () => {
@@ -64,6 +66,7 @@ const AdminDashboard: React.FC = () => {
         totalEnquiries: Number(backendData.totalEnquiries) || 0,
         totalVouchers: Number(backendData.totalVouchers) || 0,
         totalBookings: Number(backendData.totalBookings) || 0,
+        totalStaff:Number(backendData.totalstaff) || 0
       };
       setStats(dashboardStats);
     } catch (error: unknown) {
@@ -85,15 +88,15 @@ const AdminDashboard: React.FC = () => {
   // Define navigation items with access control
   const navItems = [
     { path: '/admin/allaudilist', label: 'All Auditoriums', icon: Building, count: stats.totalAuditoriums || 0, roles: ['superadmin', 'venuemanager'] },
-    { path: '/admin/allusers', label: 'All Users', icon: Users, count: stats.totalUsers || 0, roles: ['superadmin'] },
-    { path: '/admin/allvendors', label: 'All Vendors', icon: Users, count: stats.totalVendors || 0, roles: ['superadmin', 'vendormanager'] },
     { path: '/admin/allauditoriumbookings', label: 'All Auditorium Bookings', icon: Calendar, count: stats.totalBookings || 0, roles: ['superadmin', 'venuemanager'] },
-    { path: '/admin/alladminenquiry', label: 'All Enquiries', icon: Mail, count: stats.totalEnquiries || 0, roles: ['superadmin', 'vendormanager'] },
+    { path: '/admin/allvendors', label: 'All Vendors', icon: Users, count: stats.totalVendors || 0, roles: ['superadmin', 'vendormanager'] },
+    { path: '/admin/alladminenquiry', label: 'All Vendor Enquiries', icon: Mail, count: stats.totalEnquiries || 0, roles: ['superadmin', 'vendormanager'] },
+    { path: '/admin/allusers', label: 'All Customers', icon: Users, count: stats.totalUsers || 0, roles: ['superadmin'] },
     { path: '/admin/finances', label: 'Total Amount', icon: DollarSign, count: stats.totalAmount ? `₹${stats.totalAmount.toLocaleString()}` : '₹0', roles: ['superadmin'] },
     { path: '/admin/allvouchers', label: 'All Vouchers', icon: Ticket, count: stats.totalVouchers || 0, roles: ['superadmin'] },
-    { path: '/admin/adminstaff', label: 'Staff', icon: Users, count: 0, roles: ['superadmin'] },
-    { path: '/admin/items', label: 'Others', icon: Home, count: 0, roles: ['superadmin'] },
-    { path: '/admin/subscriptionmanagement', label: 'Subscription', icon: Home, count: 0, roles: ['superadmin'] },
+    { path: '/admin/adminstaff', label: 'Staff', icon: Users, count:stats.totalStaff|| 0, roles: ['superadmin'] },
+    { path: '/admin/items', label: 'Others', icon: Home,  roles: ['superadmin'] },
+    { path: '/admin/subscriptionmanagement', label: 'Subscription', icon: Home, roles: ['superadmin'] },
   ];
 
   const hasAccess = (allowedRoles: string[]) => {
