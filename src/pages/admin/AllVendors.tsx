@@ -2,9 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import { Check, X, Eye } from 'lucide-react';
 import Header from '../../component/user/Header';
-import { acceptVendor, fetchAllVendorUsers, rejectVendor } from '../../api/userApi';
+import { acceptVendor, existingUserSubscription, fetchAllVendorUsers, rejectVendor } from '../../api/userApi';
 import { useSelector } from 'react-redux';
-import { RootState } from '../../redux/store';
+import { RootState } from '../../redux/store'
+
 
 interface Vendor {
   _id: string;
@@ -21,12 +22,28 @@ interface Vendor {
   acceptedBy?: string; // New field - who accepted this vendor
 }
 
+interface Subscription {
+  user: {
+    id: string;
+  };
+  status: string;
+  subscription: {
+    duration: number;
+    durationUnits: string;
+  };
+  subscriptionDates: {
+    endDate: string;
+  };
+}
+
 const VendorsList: React.FC = () => {
   const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [showExpiring, setShowExpiring] = useState<boolean>(false);
 
   const { currentUser } = useSelector((state: RootState) => state.auth);
 
@@ -44,8 +61,44 @@ const VendorsList: React.FC = () => {
     }
   };
 
+  const fetchAllUserSubscriptions = async () => {
+  try {
+    console.log('Fetching all user subscriptions...'); 
+    const response = await existingUserSubscription();
+    console.log('Subscriptions response:', response);
+    setSubscriptions(response.data?.data || []); 
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error fetching subscriptions';
+    console.error('Full error in fetchAllUserSubscriptions:', error); 
+    toast.error(errorMessage); 
+    setSubscriptions([]); 
+  }
+};
+
+  const getVendorSubscription = (vendorId: string) => {
+    const sub = subscriptions.find((sub: Subscription) => sub.user.id === vendorId && sub.status === 'active');
+    if (!sub) return null;
+    const endDate = new Date(sub.subscriptionDates.endDate);
+    if (endDate <= new Date()) return null;
+    return sub;
+  };
+
+  const isExpiring = (vendorId: string) => {
+    const sub = getVendorSubscription(vendorId);
+    if (!sub) return false;
+    const endDate = new Date(sub.subscriptionDates.endDate);
+    const thirtyDaysFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    return endDate <= thirtyDaysFromNow;
+  };
+
+  const filteredVendors = vendors.filter((vendor) => {
+    if (!showExpiring) return true;
+    return isExpiring(vendor._id);
+  });
+
   useEffect(() => {
     fetchVendors();
+    fetchAllUserSubscriptions();
   }, []);
 
   const handleAccept = async (id: string) => {
@@ -88,6 +141,13 @@ const VendorsList: React.FC = () => {
     });
   };
 
+  const getSubscriptionDuration = (vendorId: string) => {
+    const sub = getVendorSubscription(vendorId);
+    if (!sub) return 'No Active Subscription';
+    const { duration, durationUnits } = sub.subscription;
+    return `${duration} ${durationUnits}${duration > 1 ? 's' : ''}`;
+  };
+
   return (
     <div className="min-h-screen bg-[#FDF8F1] flex flex-col">
       <Header />
@@ -98,12 +158,27 @@ const VendorsList: React.FC = () => {
             All Vendors
           </h2>
 
+          {/* Filter */}
+          <div className="mb-4 flex flex-col sm:flex-row gap-4 justify-between items-center">
+            <label className="flex items-center gap-2 text-[#78533F] font-medium">
+              <input
+                type="checkbox"
+                checked={showExpiring}
+                onChange={(e) => setShowExpiring(e.target.checked)}
+                className="rounded"
+              />
+              Show Expiring Subscriptions Only
+            </label>
+          </div>
+
           {isLoading ? (
             <p className="text-center text-[#78533F] text-lg py-12">Loading vendors...</p>
           ) : error ? (
             <p className="text-center text-[#ED695A] text-lg py-12">{error}</p>
-          ) : vendors.length === 0 ? (
-            <p className="text-center text-gray-500 text-lg py-12">No vendors found.</p>
+          ) : filteredVendors.length === 0 ? (
+            <p className="text-center text-gray-500 text-lg py-12">
+              {showExpiring ? 'No expiring subscriptions found.' : 'No vendors found.'}
+            </p>
           ) : (
             <div className="overflow-x-auto rounded-xl shadow-lg border border-[#b09d94]">
               <table className="min-w-full bg-white">
@@ -114,6 +189,7 @@ const VendorsList: React.FC = () => {
                     <th className="p-4 text-left hidden sm:table-cell">Email</th>
                     <th className="p-4 text-left hidden md:table-cell">Phone</th>
                     <th className="p-4 text-left hidden lg:table-cell">Address</th>
+                    <th className="p-4 text-left hidden lg:table-cell">Subscription Duration</th>
                     <th className="p-4 text-center">Verified</th>
                     <th className="p-4 text-left hidden xl:table-cell">Accepted By</th>
                     <th className="p-4 text-center">Blocked</th>
@@ -121,7 +197,7 @@ const VendorsList: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {vendors.map((vendor) => (
+                  {filteredVendors.map((vendor) => (
                     <tr
                       key={vendor._id}
                       className="border-b border-[#b09d94]/30 hover:bg-[#FDF8F1] transition-colors"
@@ -131,6 +207,9 @@ const VendorsList: React.FC = () => {
                       <td className="p-4 text-gray-600 hidden sm:table-cell">{vendor.email}</td>
                       <td className="p-4 text-gray-600 hidden md:table-cell">{vendor.phone}</td>
                       <td className="p-4 text-gray-600 hidden lg:table-cell">{vendor.address}</td>
+                      <td className="p-4 text-gray-600 hidden lg:table-cell">
+                        {getSubscriptionDuration(vendor._id)}
+                      </td>
 
                       <td className="p-4 text-center">
                         {vendor.isVerified ? (

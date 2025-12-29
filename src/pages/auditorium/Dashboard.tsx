@@ -69,7 +69,7 @@ const DashboardOverview = () => {
       const response = await fetchAuditoriumUserdetails(currentUser?.id);
       if (response.data) {
         setAuditoriumName(response.data.auditoriumName || "");
-        setIsVerified(response.data.isVerified || false);
+        setIsVerified(response.data.isVerified );
       }
     } catch (error) {
       console.error("Error fetching user data:", error);

@@ -45,7 +45,7 @@ const UserProfile: React.FC = () => {
     {
       icon: Calendar,
       label: 'My Bookings',
-      onClick: () => navigate(`/details?email=${encodeURIComponent(userData?.email || '')}`),
+      onClick: () => navigate(`/userbookings?email=${encodeURIComponent(userData?.email || '')}`),
       color: 'text-[#ED695A]',
     },
     {

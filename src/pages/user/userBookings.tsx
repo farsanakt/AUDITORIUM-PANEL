@@ -54,7 +54,8 @@ const Bookings: React.FC = () => {
   };
 
   const handleCertificateClick = (booking: Booking) => {
-    navigate(`/certificate?email=${encodeURIComponent(booking.userEmail)}&bookingId=${booking._id}`);
+    // ${currentUser?.email}
+    navigate(`/details/${(booking.userEmail)}`);
   };
 
   return (

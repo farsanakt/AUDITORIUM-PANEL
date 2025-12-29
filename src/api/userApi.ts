@@ -656,6 +656,18 @@ export const createSubscriptionPlan=async(planeData:any)=>{
 }
 
 
+export const takeSubscription=async(data:any)=>{
+
+  return await api.post('/takesubscription',data)
+
+}
+
+export const existingUserSubscription=async()=>{
+
+  return await api.get('/fetchallexistingusersub')
+
+}
+
 
 
 

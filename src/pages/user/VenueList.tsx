@@ -235,9 +235,9 @@ const VenuePage: React.FC = () => {
               beachfront wedding, choosing the right venue is the first step
               in bringing your dream to life.
             </p>
-            <button className="bg-[#6e3d2b] text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full shadow-md hover:bg-[#5a2f20] transition text-xs sm:text-sm md:text-base">
+            {/* <button className="bg-[#6e3d2b] text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full shadow-md hover:bg-[#5a2f20] transition text-xs sm:text-sm md:text-base">
               View Details
-            </button>
+            </button> */}
           </div>
         </div>
       </section>
