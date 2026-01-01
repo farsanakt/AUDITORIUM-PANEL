@@ -73,7 +73,7 @@ const Sidebar: React.FC = () => {
     setActiveItem(path);
 
     if (title === "Subscription") {
-      navigate(`${path}?role=vendor`);
+      navigate(`${path}?role=vendorside`);
     } else if (path !== "#") {
       navigate(path);
     }

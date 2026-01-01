@@ -2,12 +2,16 @@
 
 import React, { useState, useEffect } from "react"
 import { Check, ChevronLeft, ChevronRight } from "lucide-react"
-import { existingUserSubscription, fetchAdminPlans, takeSubscription } from "../../api/userApi"
+import {
+  existingUserSubscription,
+  fetchAdminPlans,
+  takeSubscription,
+} from "../../api/userApi"
 import Header from "../../component/user/Header"
 import { useSelector } from "react-redux"
 import { RootState } from "../../redux/store"
-import { toast } from 'react-toastify'
-
+import { toast } from "react-toastify"
+import { useSearchParams } from "react-router-dom"
 
 interface Plan {
   _id: string
@@ -20,7 +24,6 @@ interface Plan {
   userType: string
 }
 
-
 interface User {
   id: string
   email: string
@@ -31,104 +34,128 @@ const SubscriptionPlans: React.FC = () => {
   const [plans, setPlans] = useState<Plan[]>([])
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [paymentMethod, setPaymentMethod] = useState<"credit_card" | "paypal" | null>(null)
+  const [paymentMethod, setPaymentMethod] = useState<
+    "credit_card" | "paypal" | null
+  >(null)
   const [isLoading, setIsLoading] = useState(false)
   const [currentIndex, setCurrentIndex] = useState(0)
   const [hasActiveSubscription, setHasActiveSubscription] = useState(false)
   const [existingSubscription, setExistingSubscription] = useState<any>(null)
-  const [activePlanName, setActivePlanName] = useState('')
-  const [activePlanEndDate, setActivePlanEndDate] = useState('')
-  const { currentUser } = useSelector((state: RootState) => state.auth);
-  
- 
-  
+  const [activePlanName, setActivePlanName] = useState("")
+  const [activePlanEndDate, setActivePlanEndDate] = useState("")
+  const { currentUser } = useSelector((state: RootState) => state.auth)
+
+  const [searchParams] = useSearchParams()
+  const role = searchParams.get("role") // vendor | auditorium | both | null
 
   const calculateEndDate = (
-  startDate: Date,
-  duration: number,
-  unit: string
-): Date => {
-  const endDate = new Date(startDate)
+    startDate: Date,
+    duration: number,
+    unit: string
+  ): Date => {
+    const endDate = new Date(startDate)
 
-  switch (unit.toLowerCase()) {
-    case "day":
-    case "days":
-      endDate.setDate(endDate.getDate() + duration)
-      break
-    case "month":
-    case "months":
-      endDate.setMonth(endDate.getMonth() + duration)
-      break
-    case "year":
-    case "years":
-      endDate.setFullYear(endDate.getFullYear() + duration)
-      break
-    default:
-      endDate.setMonth(endDate.getMonth() + duration)
+    switch (unit.toLowerCase()) {
+      case "day":
+      case "days":
+        endDate.setDate(endDate.getDate() + duration)
+        break
+      case "month":
+      case "months":
+        endDate.setMonth(endDate.getMonth() + duration)
+        break
+      case "year":
+      case "years":
+        endDate.setFullYear(endDate.getFullYear() + duration)
+        break
+      default:
+        endDate.setMonth(endDate.getMonth() + duration)
+    }
+
+    return endDate
   }
 
-  return endDate
-}
+  const existingsubscription = async () => {
+    const response = await existingUserSubscription()
 
-
-
-
-const existingsubscription=async()=>{
-
-  const response=await existingUserSubscription()
-
-
-  console.log(response.data.data,'dataaa')
-  if (response?.data?.data && currentUser?.id) {
-    const sub = response.data.data.find((s: any) => s.user.id === currentUser.id && s.status === 'active')
-    if (sub) {
-      const endDate = new Date(sub.subscriptionDates.endDate)
-      if (endDate > new Date()) {
-        setExistingSubscription(sub)
-        setHasActiveSubscription(true)
-        setActivePlanName(sub.subscription.planName)
-        setActivePlanEndDate(endDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }))
+    if (response?.data?.data && currentUser?.id) {
+      const sub = response.data.data.find(
+        (s: any) => s.user.id === currentUser.id && s.status === "active"
+      )
+      if (sub) {
+        const endDate = new Date(sub.subscriptionDates.endDate)
+        if (endDate > new Date()) {
+          setExistingSubscription(sub)
+          setHasActiveSubscription(true)
+          setActivePlanName(sub.subscription.planName)
+          setActivePlanEndDate(
+            endDate.toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })
+          )
+        } else {
+          setHasActiveSubscription(false)
+          setExistingSubscription(null)
+          setActivePlanName("")
+          setActivePlanEndDate("")
+        }
       } else {
         setHasActiveSubscription(false)
         setExistingSubscription(null)
-        setActivePlanName('')
-        setActivePlanEndDate('')
+        setActivePlanName("")
+        setActivePlanEndDate("")
       }
     } else {
       setHasActiveSubscription(false)
       setExistingSubscription(null)
-      setActivePlanName('')
-      setActivePlanEndDate('')
+      setActivePlanName("")
+      setActivePlanEndDate("")
     }
-  } else {
-    setHasActiveSubscription(false)
-    setExistingSubscription(null)
-    setActivePlanName('')
-    setActivePlanEndDate('')
   }
-}
- 
-  useEffect(() => {
 
+  useEffect(() => {
     existingsubscription()
+
     const fetchPlans = async () => {
       try {
         const response = await fetchAdminPlans()
         if (!response || !response.data.success) {
           throw new Error("Failed to fetch plans")
         }
-        const data: Plan[] = response.data.data 
-        console.log(data, "Fetched plans")
-        setPlans(data)
+
+        const data: Plan[] = response.data.data
+
+        let filteredPlans = data
+
+        if (role === "vendorside") {
+          filteredPlans = data.filter(
+            (plan) => plan.userType === "vendorside"
+          )
+        } else if (role === "auditoriumside") {
+          filteredPlans = data.filter(
+            (plan) => plan.userType === "auditoriumside"
+          )
+        } else if (role === "both") {
+          filteredPlans = data.filter(
+            (plan) =>
+              plan.userType === "vendorside" ||
+              plan.userType === "auditoriumside"
+          )
+        }
+
+        setPlans(filteredPlans)
       } catch (error) {
         console.error("Error fetching plans:", error)
       }
     }
+
     fetchPlans()
   }, [])
 
-  const formatPrice = (priceInCents: number): string => {
-    return (priceInCents).toFixed(2) 
+  const formatPrice = (price: number): string => {
+    return price.toFixed(2)
   }
 
   const handleSelectPlan = (plan: Plan): void => {
@@ -136,76 +163,76 @@ const existingsubscription=async()=>{
     setIsModalOpen(true)
   }
 
+  const handlePayment = async () => {
+    if (!selectedPlan || !paymentMethod) return
 
-const handlePayment = async () => {
-  if (!selectedPlan || !paymentMethod) return
-
-  if (!currentUser) {
-    toast.error("User not authenticated. Please login again.")
-    return
-  }
-
-  setIsLoading(true)
-
-  try {
-    const startDate = new Date()
-    const endDate = calculateEndDate(
-      startDate,
-      selectedPlan.duration,
-      selectedPlan.durationUnits
-    )
-
-    const subscriptionPayload = {
-      user: {
-        id: currentUser.id,
-        email: currentUser.email,
-        
-      },
-      subscription: {
-        planId: selectedPlan._id,
-        planName: selectedPlan.planName,
-        price: selectedPlan.price,
-        duration: selectedPlan.duration,
-        durationUnits: selectedPlan.durationUnits,
-        features: selectedPlan.features,
-        userType: selectedPlan.userType,
-      },
-      payment: {
-        method: paymentMethod,
-        status: "success",
-      },
-      subscriptionDates: {
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
-      },
-      status: "active",
-      createdAt: new Date().toISOString(),
+    if (!currentUser) {
+      toast.error("User not authenticated. Please login again.")
+      return
     }
 
-    const response = await takeSubscription(subscriptionPayload)
+    setIsLoading(true)
 
-    if (response?.data?.success) {
-      toast.success(response.data.message || "Subscription activated successfully 🎉")
-
-      setIsModalOpen(false)
-      setPaymentMethod(null)
-      setSelectedPlan(null)
-      await existingsubscription()
-    } else {
-      toast.error(
-        response?.data?.message || "Subscription failed. Please try again."
+    try {
+      const startDate = new Date()
+      const endDate = calculateEndDate(
+        startDate,
+        selectedPlan.duration,
+        selectedPlan.durationUnits
       )
-    }
-  } catch (error: any) {
-    toast.error(
-      error?.response?.data?.message ||
-        "Something went wrong. Please try again later."
-    )
-  } finally {
-    setIsLoading(false)
-  }
-}
 
+      const subscriptionPayload = {
+        user: {
+          id: currentUser.id,
+          email: currentUser.email,
+        },
+        subscription: {
+          planId: selectedPlan._id,
+          planName: selectedPlan.planName,
+          price: selectedPlan.price,
+          duration: selectedPlan.duration,
+          durationUnits: selectedPlan.durationUnits,
+          features: selectedPlan.features,
+          userType: selectedPlan.userType,
+        },
+        payment: {
+          method: paymentMethod,
+          status: "success",
+        },
+        subscriptionDates: {
+          startDate: startDate.toISOString(),
+          endDate: endDate.toISOString(),
+        },
+        status: "active",
+        createdAt: new Date().toISOString(),
+      }
+
+      const response = await takeSubscription(subscriptionPayload)
+
+      if (response?.data?.success) {
+        toast.success(
+          response.data.message ||
+            "Subscription activated successfully 🎉"
+        )
+        setIsModalOpen(false)
+        setPaymentMethod(null)
+        setSelectedPlan(null)
+        await existingsubscription()
+      } else {
+        toast.error(
+          response?.data?.message ||
+            "Subscription failed. Please try again."
+        )
+      }
+    } catch (error: any) {
+      toast.error(
+        error?.response?.data?.message ||
+          "Something went wrong. Please try again later."
+      )
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const cardsPerPage = 3
   const totalPages = Math.ceil(plans.length / cardsPerPage)
@@ -218,11 +245,13 @@ const handlePayment = async () => {
     setCurrentIndex((prev) => Math.max(prev - 1, 0))
   }
 
-
-  const visiblePlans = plans.slice(currentIndex * cardsPerPage, (currentIndex + 1) * cardsPerPage)
+  const visiblePlans = plans.slice(
+    currentIndex * cardsPerPage,
+    (currentIndex + 1) * cardsPerPage
+  )
 
   return (
-    <div className="min-h-screen bg-[#FDF8F1] py-8 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-[#FDF8F1] py-8 px-4 sm:px-6 lg:px-8">
       {/* <Header/> */}
       <div className="max-w-7xl mx-auto">
         {/* Header Section */}

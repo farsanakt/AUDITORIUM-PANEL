@@ -135,7 +135,7 @@ const Sidebar: React.FC = () => {
     setActiveItem(item.path);
 
     if (item.title === "Subscription") {
-      navigate(`${item.path}?role=auditorium`);
+      navigate(`${item.path}?role=auditoriumside`);
     } else {
       navigate(item.path);
     }

@@ -900,7 +900,7 @@ const handleSignup = async () => {
               <div className="p-4 sm:p-6 h-full flex flex-col justify-between">
                 <div className="text-center">
                   <div className="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-2">
-                    <span className="text-[#ED695A] text-xl font-bold font-serif">TK</span>
+                    {/* <span className="text-[#ED695A] text-xl font-bold font-serif">TK</span> */}
                   </div>
                   <h2 className="text-[#78533F] text-lg md:text-2xl font-bold mb-1 font-serif">Join as an Auditorium Owner</h2>
                   <div className="w-16 h-1 bg-[#ED695A] mx-auto mb-1"></div>
