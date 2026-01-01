@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { toast } from 'react-toastify';
-import { Check, X } from 'lucide-react';
+import { Check, X, Eye } from 'lucide-react';
 import Header from '../../component/user/Header';
-import { getAllAuditoriums, acceptAuditorium, rejectAuditorium } from '../../api/userApi';
+import { getAllAuditoriums, acceptAuditorium, rejectAuditorium, existingUserSubscription} from '../../api/userApi';
 import { RootState } from '../../redux/store';
 import { useSelector } from 'react-redux';
 
@@ -23,32 +23,112 @@ interface Auditorium {
   acceptedBy?: string;
 }
 
+interface Subscription {
+  user: {
+    id: string;
+  };
+  status: string;
+  subscription: {
+    duration: number;
+    durationUnits: string;
+  };
+  subscriptionDates: {
+    endDate: string;
+  };
+}
+
 const AuditoriumList: React.FC = () => {
   const [auditoriums, setAuditoriums] = useState<Auditorium[]>([]);
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedAuditorium, setSelectedAuditorium] = useState<Auditorium | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [showExpiring, setShowExpiring] = useState<boolean>(false);
+  const hasFetchedSubscriptions = useRef<boolean>(false); // Prevent multiple calls
 
   const { currentUser } = useSelector((state: RootState) => state.auth);
 
   const fetchAuditoriums = async () => {
     try {
+      console.log('Fetching auditoriums...');
       setIsLoading(true);
       const response = await getAllAuditoriums();
-      setAuditoriums(response.data);
+      console.log('Auditoriums response:', response);
+      setAuditoriums(response.data || []);
+      setError(null);
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Error fetching auditoriums';
+      console.error('Error in fetchAuditoriums:', error);
       setError(errorMessage);
       toast.error(errorMessage);
+      setAuditoriums([]);
     } finally {
       setIsLoading(false);
     }
   };
 
+  const fetchAllUserSubscriptions = async () => {
+    if (hasFetchedSubscriptions.current) {
+      console.log('Subscriptions already fetched, skipping...');
+      return;
+    }
+    hasFetchedSubscriptions.current = true;
+
+    try {
+      console.log('Fetching all user subscriptions...');
+      const response = await existingUserSubscription();
+      console.log('Subscriptions response:', response);
+      setSubscriptions(response.data?.data || []);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error fetching subscriptions';
+      console.error('Full error in fetchAllUserSubscriptions:', error);
+      // Only show toast once, not on every render
+      toast.error(`Subscriptions fetch failed: ${errorMessage}. Auditoriums still loading normally.`, {
+        toastId: 'subscriptions-error' // Prevent duplicate toasts
+      });
+      setSubscriptions([]);
+    }
+  };
+
+  const getAuditoriumSubscription = (auditoriumId: string) => {
+    const sub = subscriptions.find((sub: Subscription) => sub.user.id === auditoriumId && sub.status === 'active');
+    if (!sub) return null;
+    const endDate = new Date(sub.subscriptionDates.endDate);
+    if (endDate <= new Date()) return null;
+    return sub;
+  };
+
+  const isExpiring = (auditoriumId: string) => {
+    const sub = getAuditoriumSubscription(auditoriumId);
+    if (!sub) return false;
+    const endDate = new Date(sub.subscriptionDates.endDate);
+    const thirtyDaysFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    return endDate <= thirtyDaysFromNow;
+  };
+
+  const filteredAuditoriums = auditoriums.filter((aud) => {
+    if (!showExpiring) return true;
+    return isExpiring(aud._id);
+  });
+
+  const getSubscriptionDuration = (auditoriumId: string) => {
+    const sub = getAuditoriumSubscription(auditoriumId);
+    if (!sub) return 'No Active Subscription';
+    const { duration, durationUnits } = sub.subscription;
+    return `${duration} ${durationUnits}${duration > 1 ? 's' : ''}`;
+  };
+
   useEffect(() => {
     fetchAuditoriums();
   }, []);
+
+  // Separate effect for subscriptions to run after auditoriums
+  useEffect(() => {
+    if (!isLoading && auditoriums.length >= 0) { // Run after auditoriums fetch completes
+      fetchAllUserSubscriptions();
+    }
+  }, [isLoading, auditoriums.length]); // Depend on loading state
 
   const handleAccept = async (id: string) => {
     try {
@@ -100,39 +180,44 @@ const AuditoriumList: React.FC = () => {
             All Auditoriums
           </h2>
 
+          {/* Filter */}
+          <div className="mb-4 flex flex-col sm:flex-row gap-4 justify-between items-center">
+            <label className="flex items-center gap-2 text-[#78533F] font-medium">
+              <input
+                type="checkbox"
+                checked={showExpiring}
+                onChange={(e) => setShowExpiring(e.target.checked)}
+                className="rounded"
+              />
+              Show Expiring Subscriptions Only
+            </label>
+          </div>
+
           {isLoading ? (
             <p className="text-center text-[#78533F] text-lg py-12">Loading auditoriums...</p>
           ) : error ? (
             <p className="text-center text-[#ED695A] text-lg py-12">{error}</p>
-          ) : auditoriums.length === 0 ? (
-            <p className="text-center text-gray-500 text-lg py-12">No auditoriums found.</p>
+          ) : filteredAuditoriums.length === 0 ? (
+            <p className="text-center text-gray-500 text-lg py-12">
+              {showExpiring ? 'No expiring subscriptions found.' : 'No auditoriums found.'}
+            </p>
           ) : (
             <div className="overflow-x-auto rounded-xl shadow-lg border border-[#b09d94]">
               <table className="min-w-full bg-white">
                 <thead>
                   <tr className="bg-[#FDF8F1] text-[#78533F] text-sm md:text-base font-semibold">
-                    <th className="p-4 text-left">Auditorium Name</th>
-                    <th className="p-4 text-left">Owner</th>
-                    <th className="p-4 text-left hidden sm:table-cell">Email</th>
-                    <th className="p-4 text-left hidden md:table-cell">Phone</th>
-                    <th className="p-4 text-left hidden lg:table-cell">District</th>
-                    <th className="p-4 text-center">Verified</th>
-                    <th className="p-4 text-left hidden xl:table-cell">Accepted By</th> {/* Only shows on large screens */}
-                    <th className="p-4 text-center">Blocked</th>
-                    <th className="p-4 text-center">Actions</th>
+                    <th className="p-4 text-left">Auditorium Name</th><th className="p-4 text-left">Owner</th><th className="p-4 text-left hidden sm:table-cell">Email</th><th className="p-4 text-left hidden md:table-cell">Phone</th><th className="p-4 text-left hidden lg:table-cell">District</th><th className="p-4 text-left hidden lg:table-cell">Subscription Duration</th><th className="p-4 text-center">Verified</th><th className="p-4 text-left hidden xl:table-cell">Accepted By</th><th className="p-4 text-center">Blocked</th><th className="p-4 text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {auditoriums.map((aud) => (
+                  {filteredAuditoriums.map((aud) => (
                     <tr
                       key={aud._id}
                       className="border-b border-[#b09d94]/30 hover:bg-[#FDF8F1] transition-colors"
                     >
-                      <td className="p-4 font-medium text-gray-800">{aud.auditoriumName}</td>
-                      <td className="p-4 text-gray-700">{aud.ownerName}</td>
-                      <td className="p-4 text-gray-600 hidden sm:table-cell">{aud.email}</td>
-                      <td className="p-4 text-gray-600 hidden md:table-cell">{aud.phone}</td>
-                      <td className="p-4 text-gray-600 hidden lg:table-cell">{aud.district}</td>
+                      <td className="p-4 font-medium text-gray-800">{aud.auditoriumName}</td><td className="p-4 text-gray-700">{aud.ownerName}</td><td className="p-4 text-gray-600 hidden sm:table-cell">{aud.email}</td><td className="p-4 text-gray-600 hidden md:table-cell">{aud.phone}</td><td className="p-4 text-gray-600 hidden lg:table-cell">{aud.district}</td><td className="p-4 text-gray-600 hidden lg:table-cell">
+                        {getSubscriptionDuration(aud._id)}
+                      </td>
 
                       <td className="p-4 text-center">
                         {aud.isVerified ? (
@@ -162,24 +247,34 @@ const AuditoriumList: React.FC = () => {
                       </td>
 
                       <td className="p-4">
-                        {!aud.isVerified && (
-                          <div className="flex flex-col sm:flex-row gap-2 justify-center">
-                            <button
-                              onClick={() => handleAccept(aud._id)}
-                              className="flex items-center justify-center gap-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition"
-                            >
-                              <Check size={16} /> Accept
-                              <span>Accept</span>
-                            </button>
-                            <button
-                              onClick={() => handleReject(aud._id)}
-                              className="flex items-center justify-center gap-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition"
-                            >
-                              <X size={16} />
-                              <span>Reject</span>
-                            </button>
-                          </div>
-                        )}
+                        <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                          <button
+                            onClick={() => openDetails(aud)}
+                            className="flex items-center justify-center gap-1 bg-[#ED695A] hover:bg-[#d65a4f] text-white px-4 py-2 rounded-lg text-sm font-medium transition"
+                          >
+                            <Eye size={16} />
+                            Details
+                          </button>
+
+                          {!aud.isVerified && (
+                            <>
+                              <button
+                                onClick={() => handleAccept(aud._id)}
+                                className="flex items-center justify-center gap-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition"
+                              >
+                                <Check size={16} />
+                                Accept
+                              </button>
+                              <button
+                                onClick={() => handleReject(aud._id)}
+                                className="flex items-center justify-center gap-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition"
+                              >
+                                <X size={16} />
+                                Reject
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}

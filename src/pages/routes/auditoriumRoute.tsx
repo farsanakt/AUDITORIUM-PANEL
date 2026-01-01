@@ -17,6 +17,7 @@ import Offer from "../auditorium/Offer";
 
 import MarriageCertificateTemplate from "../auditorium/Certificate";
 import { useSelector } from "react-redux";
+import SubscriptionPlans from "../vendor/vendorSubscription";
 
 
 function AuditoriumRoute() {
@@ -36,6 +37,7 @@ function AuditoriumRoute() {
         <Route path='/details' element={<DetailsForm/>}/>
         <Route path='payment' element={<PaymentDetails/>}/>
         <Route path='Bookingconfirmation' element={<BookingConfirmation/>}/>
+         <Route path='/subscription' element={<SubscriptionPlans/>}/>
         
         <Route path='/staff' element={<ProtectedRoute><StaffManagementUI/></ProtectedRoute>}/>
         <Route path='/invoice' element={<InvoicePanel/>}/>

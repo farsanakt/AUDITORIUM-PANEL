@@ -15,11 +15,8 @@ const Sidebar: React.FC = () => {
   const [vendorData, setVendorData] = useState<any>(null);
 
   const getUsernameFromEmail = (email: string | undefined): string => {
-    if (!email || !email.includes("@")) {
-      return "Guest";
-    }
-    const username = email.split("@")[0];
-    return username || "Guest";
+    if (!email || !email.includes("@")) return "Guest";
+    return email.split("@")[0];
   };
 
   const currentVendor = async () => {
@@ -42,6 +39,7 @@ const Sidebar: React.FC = () => {
       "/vendor/subscription",
       "#",
     ];
+
     if (validPaths.includes(location.pathname)) {
       setActiveItem(location.pathname);
     } else {
@@ -49,7 +47,6 @@ const Sidebar: React.FC = () => {
     }
   }, [location.pathname]);
 
-  // Base menu items
   const baseMenuItems = [
     { title: "Dashboard", path: "/vendor/dashboard" },
     { title: "Vendor Enquires", path: "/vendor/vendorenquires" },
@@ -57,7 +54,6 @@ const Sidebar: React.FC = () => {
     { title: "Voucher", path: "/vendor/vouchers" },
     { title: "Settings", path: "#" },
   ];
-
 
   const menuItems = vendorData?.isVerified
     ? [
@@ -72,13 +68,24 @@ const Sidebar: React.FC = () => {
     navigate("/login");
   };
 
+  // ✅ NEW: unified navigation handler
+  const handleNavigation = (path: string, title: string) => {
+    setActiveItem(path);
+
+    if (title === "Subscription") {
+      navigate(`${path}?role=vendor`);
+    } else if (path !== "#") {
+      navigate(path);
+    }
+  };
+
   return (
     <div className="w-64 h-screen bg-[#FDF8F1] text-[#825F4C] p-5 fixed top-20 shadow-lg flex flex-col z-20">
-      {/* User Info Section */}
+      {/* User Info */}
       <div className="flex items-center mb-8 border-b border-gray-200 pb-4">
         <FaUserCircle className="w-12 h-12 text-[#825F4C] mr-3" />
         <div>
-          <p className="font-semibold text-lg text-[#825F4C]">
+          <p className="font-semibold text-lg">
             {getUsernameFromEmail(currentUser?.email)}
           </p>
           <span className="text-sm text-[#ED695A]">
@@ -87,31 +94,30 @@ const Sidebar: React.FC = () => {
         </div>
       </div>
 
-      {/* Navigation Menu */}
+      {/* Menu */}
       <nav className="flex-1">
         <ul className="space-y-2">
           {menuItems.map((item) => (
             <li key={item.path}>
-              <a
-                href={item.path}
+              <button
+                onClick={() => handleNavigation(item.path, item.title)}
                 className={`
-                  block px-4 py-2 rounded-xl transition-all duration-200
+                  w-full text-left px-4 py-2 rounded-xl transition-all duration-200
                   ${
                     activeItem === item.path
                       ? "bg-[#ED695A] text-white shadow-md"
                       : "text-[#825F4C] hover:bg-gray-100 hover:text-[#2C5F73]"
                   }
                 `}
-                onClick={() => setActiveItem(item.path)}
               >
                 {item.title}
-              </a>
+              </button>
             </li>
           ))}
         </ul>
       </nav>
 
-      {/* Logout Button */}
+      {/* Logout */}
       <div className="mt-8">
         <button
           onClick={handleLogout}
