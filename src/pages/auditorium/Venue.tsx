@@ -538,17 +538,41 @@ export default function VenueManagement() {
   };
 
   const addCustomTimeSlot = (isNew = true): void => {
-    const slot = isNew ? customTimeSlot : customTimeSlotEdit;
-    if (!slot.label || !slot.startTime || !slot.endTime) return;
-    const newSlot: TimeSlot = { id: `custom-${Date.now()}`, ...slot };
-    if (isNew) {
-      setNewVenue((prev) => ({ ...prev, timeSlots: [...(prev.timeSlots || []), newSlot] }));
-      setCustomTimeSlot({ label: "", startTime: "", endTime: "" });
-    } else if (selectedVenue) {
-      setSelectedVenue((prev) => prev ? { ...prev, timeSlots: [...(prev.timeSlots || []), newSlot] } : null);
-      setCustomTimeSlotEdit({ label: "", startTime: "", endTime: "" });
-    }
+  const slot = isNew ? customTimeSlot : customTimeSlotEdit;
+
+  if (!slot.label || !slot.startTime || !slot.endTime) return;
+
+  // 🔑 Generate ID from label
+  const generatedId = slot.label
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, "-"); // "Morning Slot" → "morning-slot"
+
+  const newSlot: TimeSlot = {
+    id: generatedId,
+    label: generatedId, // ✅ id and label SAME
+    startTime: slot.startTime,
+    endTime: slot.endTime,
   };
+
+  if (isNew) {
+    setNewVenue((prev) => ({
+      ...prev,
+      timeSlots: [...(prev.timeSlots || []), newSlot],
+    }));
+
+    setCustomTimeSlot({ label: "", startTime: "", endTime: "" });
+  } else if (selectedVenue) {
+    setSelectedVenue((prev) =>
+      prev
+        ? { ...prev, timeSlots: [...(prev.timeSlots || []), newSlot] }
+        : null
+    );
+
+    setCustomTimeSlotEdit({ label: "", startTime: "", endTime: "" });
+  }
+};
+
 
   const removeCustomTimeSlot = (id: string, isNew = true): void => {
     if (isNew) setNewVenue((prev) => ({ ...prev, timeSlots: prev.timeSlots?.filter((s) => s.id !== id) || [] }));
