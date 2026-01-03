@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Header from "../../component/user/Header";
 import { useSelector } from "react-redux";
 import type { RootState } from "../../redux/store";
@@ -45,6 +45,7 @@ const DashboardOverview = () => {
   const [showModal, setShowModal] = useState<boolean>(false);
   const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
   const [isVerified, setIsVerified] = useState<boolean>(false);
+
   const { currentUser } = useSelector((state: RootState) => state.auth);
 
   const fetchAllVenues = async () => {
@@ -53,7 +54,6 @@ const DashboardOverview = () => {
         const response = await existingAllVenues(currentUser.id);
         if (response.data) {
           setVenues(response.data);
-          // Set default venue to the only venue if exactly one exists
           if (response.data.length === 1) {
             setSelectedVenue(response.data[0]._id);
           }
@@ -69,7 +69,7 @@ const DashboardOverview = () => {
       const response = await fetchAuditoriumUserdetails(currentUser?.id);
       if (response.data) {
         setAuditoriumName(response.data.auditoriumName || "");
-        setIsVerified(response.data.isVerified );
+        setIsVerified(response.data.isVerified);
       }
     } catch (error) {
       console.error("Error fetching user data:", error);
@@ -99,15 +99,8 @@ const DashboardOverview = () => {
     fetchAllUpcomingEvents();
   }, [currentUser]);
 
-  useEffect(() => {}, [upcomingEvents]);
-
-  useEffect(() => {
-    if (upcomingEvents.length > 0) {
-    }
-  }, [upcomingEvents]);
-
   const allVenues = [
-    ...(venues.length > 1 ? [{ id: "All Venues", name: "All-Venues" }] : []),
+    ...(venues.length > 1 ? [{ id: "All Venues", name: "All Venues" }] : []),
     ...venues.map((venue) => ({ id: venue._id, name: venue.name })),
   ];
 
@@ -118,27 +111,22 @@ const DashboardOverview = () => {
           const eventDate = event.bookeddate || event.eventDate || event.date;
           return isTodayOrFuture(eventDate);
         })
-        .map((event, index) => {
-          return {
-            id: event._id || `fallback-${index}`,
-            name: event.eventName || event.name || event.venueName || `Event ${index + 1}`,
-            client: event.userEmail || event.clientEmail || event.client || "Unknown Client",
-            date: formatDate(event.bookeddate || event.eventDate || event.date),
-            status: event.status ? event.status.charAt(0).toUpperCase() + event.status.slice(1) : "Unknown",
-            venueId: event.venueId || event.venue_id || null,
-            rawDate: event.bookeddate || event.eventDate || event.date,
-            timeSlot: event.timeSlot || "N/A",
-            totalAmount: event.totalAmount || "N/A",
-            paidAmount: event.paidAmount || "N/A",
-            balanceAmount: event.balanceAmount || "N/A",
-            address: event.address || "N/A",
-          };
-        })
-        .sort((a, b) => {
-          const dateA = new Date(a.rawDate || 0);
-          const dateB = new Date(b.rawDate || 0);
-          return dateA.getTime() - dateB.getTime();
-        });
+        .map((event, index) => ({
+          id: event._id || `fallback-${index}`,
+          name: event.eventName || event.name || event.venueName || `Event ${index + 1}`,
+          client: event.userEmail || event.clientEmail || event.client || "Unknown Client",
+          date: formatDate(event.bookeddate || event.eventDate || event.date),
+          status: event.status ? event.status.charAt(0).toUpperCase() + event.status.slice(1) : "Unknown",
+          venueId: event.venueId || event.venue_id || null,
+          rawDate: event.bookeddate || event.eventDate || event.date,
+          timeSlot: event.timeSlot || "N/A",
+          totalAmount: event.totalAmount || "N/A",
+          paidAmount: event.paidAmount || "N/A",
+          balanceAmount: event.balanceAmount || "N/A",
+          address: event.address || "N/A",
+        }))
+        .sort((a, b) => new Date(a.rawDate || 0).getTime() - new Date(b.rawDate || 0).getTime());
+
       return allEvents;
     } else {
       const filteredEvents = upcomingEvents
@@ -147,50 +135,50 @@ const DashboardOverview = () => {
           const eventDate = event.bookeddate || event.eventDate || event.date;
           return eventVenueId === selectedVenue && isTodayOrFuture(eventDate);
         })
-        .map((event, index) => {
-          return {
-            id: event._id || `fallback-${index}`,
-            name: event.eventName || event.name || event.venueName || `Event ${index + 1}`,
-            client: event.userEmail || event.clientEmail || event.client || "Unknown Client",
-            date: formatDate(event.bookeddate || event.eventDate || event.date),
-            status: event.status ? event.status.charAt(0).toUpperCase() + event.status.slice(1) : "Unknown",
-            venueId: event.venueId || event.venue_id || null,
-            rawDate: event.bookeddate || event.eventDate || event.date,
-            timeSlot: event.timeSlot || "N/A",
-            totalAmount: event.totalAmount || "N/A",
-            paidAmount: event.paidAmount || "N/A",
-            balanceAmount: event.balanceAmount || "N/A",
-            address: event.address || "N/A",
-          };
-        })
-        .sort((a, b) => {
-          const dateA = new Date(a.rawDate || 0);
-          const dateB = new Date(b.rawDate || 0);
-          return dateA.getTime() - dateB.getTime();
-        });
+        .map((event, index) => ({
+          id: event._id || `fallback-${index}`,
+          name: event.eventName || event.name || event.venueName || `Event ${index + 1}`,
+          client: event.userEmail || event.clientEmail || event.client || "Unknown Client",
+          date: formatDate(event.bookeddate || event.eventDate || event.date),
+          status: event.status ? event.status.charAt(0).toUpperCase() + event.status.slice(1) : "Unknown",
+          venueId: event.venueId || event.venue_id || null,
+          rawDate: event.bookeddate || event.eventDate || event.date,
+          timeSlot: event.timeSlot || "N/A",
+          totalAmount: event.totalAmount || "N/A",
+          paidAmount: event.paidAmount || "N/A",
+          balanceAmount: event.balanceAmount || "N/A",
+          address: event.address || "N/A",
+        }))
+        .sort((a, b) => new Date(a.rawDate || 0).getTime() - new Date(b.rawDate || 0).getTime());
+
       return filteredEvents;
     }
   };
 
-  useEffect(() => {
-    setShowAllEvents(false);
-  }, [selectedVenue]);
+  // Fixed: Use useMemo to ensure currentVenueData reacts to changes
+  const currentVenueData = useMemo(() => {
+    const filteredEvents = getFilteredEvents();
 
-  const currentVenueData = {
-    name:
-      selectedVenue === "All Venues"
-        ? "All-Venues"
-        : venues.find((v) => v._id === selectedVenue)?.name || "Unknown Venue",
-    totalBookings: selectedVenue === "All Venues" ? 0 : 0,
-    earnings: selectedVenue === "All Venues" ? { monthly: 0, yearly: 0 } : { monthly: 0, yearly: 0 },
-    upcomingEvents: getFilteredEvents(),
-  };
+    return {
+      name:
+        selectedVenue === "All Venues"
+          ? "All Venues"
+          : venues.find((v) => v._id === selectedVenue)?.name || "Unknown Venue",
+      totalBookings: 0, // Placeholder - can be updated later
+      earnings: { monthly: 0, yearly: 0 }, // Placeholder
+      upcomingEvents: filteredEvents,
+    };
+  }, [selectedVenue, upcomingEvents, venues]);
 
   const eventsToDisplay = showAllEvents
     ? currentVenueData.upcomingEvents
     : currentVenueData.upcomingEvents.slice(0, 4);
 
   const hasMoreEvents = currentVenueData.upcomingEvents.length > 4;
+
+  useEffect(() => {
+    setShowAllEvents(false);
+  }, [selectedVenue]);
 
   const handleEventClick = (event: any) => {
     setSelectedEvent(event);
@@ -212,7 +200,9 @@ const DashboardOverview = () => {
               Welcome to the Auditorium{" "}
               <br />
               <br />
-              <span className="text-3xl bg-[#ED695A] text-white px-1 rounded">{auditoriumName.toUpperCase() || "N/A"}</span>
+              <span className="text-3xl bg-[#ED695A] text-white px-1 rounded">
+                {auditoriumName.toUpperCase() || "N/A"}
+              </span>
             </h2>
             <p className={`text-sm font-medium mt-2 ${isVerified ? 'text-green-600' : 'text-red-600'}`}>
               {isVerified ? 'Verified Successfully' : 'Not Verified - Please verify your auditorium'}
@@ -231,9 +221,7 @@ const DashboardOverview = () => {
               <select
                 id="venue-select"
                 value={selectedVenue}
-                onChange={(e) => {
-                  setSelectedVenue(e.target.value);
-                }}
+                onChange={(e) => setSelectedVenue(e.target.value)}
                 className="block w-full max-w-xs px-4 py-3 pr-10 text-base border border-gray-300 rounded-lg bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-[#ED695A] focus:border-[#ED695A] transition-colors duration-200"
               >
                 {allVenues.map((venue) => (
@@ -262,37 +250,22 @@ const DashboardOverview = () => {
             </p>
           </div>
 
+          {/* Stats Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+            {/* ... (your existing 4 stat cards remain unchanged) */}
             <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-gray-500 text-sm font-medium">Total Bookings</h3>
                 <span className="p-2 bg-[#ED695A] bg-opacity-10 rounded-lg">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5 text-[#ED695A]"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                    />
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#ED695A]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
                 </span>
               </div>
               <div className="flex items-end space-x-2">
                 <h2 className="text-2xl sm:text-3xl font-bold text-gray-800">{currentVenueData.totalBookings}</h2>
                 <span className="text-green-500 text-sm font-medium flex items-center">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
                   </svg>
                   +12%
@@ -305,19 +278,8 @@ const DashboardOverview = () => {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-gray-500 text-sm font-medium">Monthly Earnings</h3>
                 <span className="p-2 bg-blue-100 rounded-lg">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5 text-blue-500"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </span>
               </div>
@@ -326,13 +288,7 @@ const DashboardOverview = () => {
                   ₹{currentVenueData.earnings.monthly.toLocaleString()}
                 </h2>
                 <span className="text-green-500 text-sm font-medium flex items-center">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
                   </svg>
                   +8.5%
@@ -345,19 +301,8 @@ const DashboardOverview = () => {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-gray-500 text-sm font-medium">Yearly Revenue</h3>
                 <span className="p-2 bg-purple-100 rounded-lg">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5 text-purple-500"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                    />
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                   </svg>
                 </span>
               </div>
@@ -366,13 +311,7 @@ const DashboardOverview = () => {
                   ₹{currentVenueData.earnings.yearly.toLocaleString()}
                 </h2>
                 <span className="text-green-500 text-sm font-medium flex items-center">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
                   </svg>
                   +21%
@@ -385,19 +324,8 @@ const DashboardOverview = () => {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-gray-500 text-sm font-medium">Upcoming Events</h3>
                 <span className="p-2 bg-amber-100 rounded-lg">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5 text-amber-500"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </span>
               </div>
@@ -410,6 +338,7 @@ const DashboardOverview = () => {
             </div>
           </div>
 
+          {/* Upcoming Events Section */}
           <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-8">
             <div className="border-b border-gray-200">
               <div className="flex">
@@ -439,19 +368,8 @@ const DashboardOverview = () => {
                       >
                         <div className="flex items-center space-x-4">
                           <div className="w-12 h-12 rounded-lg bg-[#ED695A] bg-opacity-10 flex items-center justify-center">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="h-6 w-6 text-[#ED695A]"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                              />
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#ED695A]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
                           </div>
                           <div>
@@ -466,7 +384,7 @@ const DashboardOverview = () => {
                         <div className="mt-2 sm:mt-0 sm:text-right">
                           <div className="font-medium text-gray-800">{event.date}</div>
                           <span
-                            className={`inline-block px-2 py-1 text-xs rounded-full ${
+                            className={`inline-block px-2 py-1 text-xs rounded-full mt-1 ${
                               event.status.toLowerCase() === "pending"
                                 ? "bg-amber-100 text-amber-800"
                                 : event.status.toLowerCase() === "approved"
@@ -482,34 +400,23 @@ const DashboardOverview = () => {
                       </div>
                     ))}
 
+                    {/* Fixed: Show More / Show Less button with better text visibility */}
                     {hasMoreEvents && (
                       <div className="pt-4 border-t border-gray-100">
                         <button
                           onClick={() => setShowAllEvents(!showAllEvents)}
-                          className="w-full sm:w-auto mx-auto flex items-center justify-center px-6 py-3 text-sm font-medium text-[#ED695A] bg-[#ED695A] bg-opacity-10 hover:bg-opacity-20 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#ED695A] focus:ring-opacity-50"
+                          className="w-full sm:w-auto mx-auto flex items-center justify-center px-6 py-3 text-sm font-semibold text-white bg-[#ED695A] hover:bg-[#d45a4b] rounded-lg transition-colors duration-200 shadow-sm hover:shadow focus:outline-none focus:ring-2 focus:ring-[#ED695A] focus:ring-opacity-50"
                         >
                           {showAllEvents ? (
                             <>
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="h-4 w-4 mr-2"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                              >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
                               </svg>
                               Show Less
                             </>
                           ) : (
                             <>
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="h-4 w-4 mr-2"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                              >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                               </svg>
                               Show More ({currentVenueData.upcomingEvents.length - 4} more events)
@@ -522,19 +429,8 @@ const DashboardOverview = () => {
                 ) : (
                   <div className="text-center py-8">
                     <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-8 w-8 text-gray-400"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                        />
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
                     </div>
                     <p className="text-gray-500 font-medium">No upcoming events</p>
@@ -545,6 +441,7 @@ const DashboardOverview = () => {
             )}
           </div>
 
+          {/* Modal */}
           {showModal && selectedEvent && (
             <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
               <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -563,18 +460,10 @@ const DashboardOverview = () => {
                   </div>
                   <div className="space-y-4">
                     <div className="bg-gray-50 p-4 rounded-lg">
-                      <p className="text-gray-700">
-                        <strong>Event Name:</strong> {selectedEvent.name}
-                      </p>
-                      <p className="text-gray-700">
-                        <strong>Client:</strong> {selectedEvent.client}
-                      </p>
-                      <p className="text-gray-700">
-                        <strong>Date:</strong> {selectedEvent.date}
-                      </p>
-                      <p className="text-gray-700">
-                        <strong>Time Slot:</strong> {selectedEvent.timeSlot}
-                      </p>
+                      <p className="text-gray-700"><strong>Event Name:</strong> {selectedEvent.name}</p>
+                      <p className="text-gray-700"><strong>Client:</strong> {selectedEvent.client}</p>
+                      <p className="text-gray-700"><strong>Date:</strong> {selectedEvent.date}</p>
+                      <p className="text-gray-700"><strong>Time Slot:</strong> {selectedEvent.timeSlot}</p>
                       <p className="text-gray-700">
                         <strong>Venue:</strong>{" "}
                         {venues.find((v) => v._id === selectedEvent.venueId)?.name || "Unknown Venue"}
@@ -595,18 +484,10 @@ const DashboardOverview = () => {
                           {selectedEvent.status}
                         </span>
                       </p>
-                      <p className="text-gray-700">
-                        <strong>Total Amount:</strong> ₹{selectedEvent.totalAmount}
-                      </p>
-                      <p className="text-gray-700">
-                        <strong>Paid Amount:</strong> ₹{selectedEvent.paidAmount}
-                      </p>
-                      <p className="text-gray-700">
-                        <strong>Balance Amount:</strong> ₹{selectedEvent.balanceAmount}
-                      </p>
-                      <p className="text-gray-700">
-                        <strong>Address:</strong> {selectedEvent.address}
-                      </p>
+                      <p className="text-gray-700"><strong>Total Amount:</strong> ₹{selectedEvent.totalAmount}</p>
+                      <p className="text-gray-700"><strong>Paid Amount:</strong> ₹{selectedEvent.paidAmount}</p>
+                      <p className="text-gray-700"><strong>Balance Amount:</strong> ₹{selectedEvent.balanceAmount}</p>
+                      <p className="text-gray-700"><strong>Address:</strong> {selectedEvent.address}</p>
                     </div>
                     <button
                       onClick={closeModal}
