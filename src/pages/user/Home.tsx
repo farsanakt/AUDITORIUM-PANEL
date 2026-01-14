@@ -8,7 +8,7 @@ import pjct1 from "../../assets/Rectangle 30.png"
 import { useNavigate } from "react-router-dom"
 import { useSelector } from "react-redux"
 import { existingVenues, fetchAllExistingOffer, fetchAllExistingVouchers, fetchAllVendors, getItems } from "../../api/userApi"
-
+import LocationAutocomplete from "../../component/LocationAutocomplete/LocationAutocomplete" 
 
 const Toast = ({ message, type = "error", onClose }: { message: string; type?: string; onClose: () => void }) => {
   useEffect(() => {
@@ -87,20 +87,6 @@ interface Project {
   category: string
 }
 
-// New: API Response Interfaces for JSON data
-interface ApiDistrict {
-  id: number
-  state_id: number
-  name: string
-  country_id: number
-}
-
-interface ApiSubDistrict {
-  id: number
-  district_id: number
-  name: string
-}
-
 const HomePage: React.FC = () => {
   const [isVisible, setIsVisible] = useState<boolean>(false)
   const [formData, setFormData] = useState({
@@ -108,6 +94,7 @@ const HomePage: React.FC = () => {
     place: "",
     date: "",
     event: "",
+    location: "",
   })
   const [venues, setVenues] = useState<Venue[]>([])
   const [vendorsByType, setVendorsByType] = useState<Record<string, Artist[]>>({})
@@ -127,17 +114,12 @@ const HomePage: React.FC = () => {
   const { currentUser } = useSelector((state: any) => state.auth);
   const displayName = currentUser?.email ? currentUser.email.split('@')[0] : '';
 
-  // Dynamic data for dropdowns
-  const [districts, setDistricts] = useState<string[]>([])
-  const [placesByDistrict, setPlacesByDistrict] = useState<Record<string, string[]>>({})
   const [eventTypes, setEventTypes] = useState<string[]>([])
   const [loadingDropdowns, setLoadingDropdowns] = useState<boolean>(true)
-  const [allApiData, setAllApiData] = useState<{ districts: ApiDistrict[]; subdistricts: ApiSubDistrict[] } | null>(null)
 
   const venuesRef = useRef<HTMLDivElement>(null)
   const vendorRefs = useRef<Record<string, HTMLDivElement | null>>({})
 
-  // Updated: fetchALLExitingItems - Only extracts events
   const fetchALLExitingItems = async () => {
     try {
       const response = await getItems('hi')
@@ -150,67 +132,6 @@ const HomePage: React.FC = () => {
     } catch (error) {
       console.error("Error fetching admin items:", error)
     }
-  }
-
-  // New: Fetch complete Kerala districts and subdistricts (taluks) from free JSON API
-  const fetchDistrictsAndPlaces = async () => {
-    try {
-      const response = await fetch('https://raw.githubusercontent.com/shauryashahi/Indian-State-City-db-json/master/db.json')
-      if (!response.ok) throw new Error('Failed to fetch API data')
-      const data = await response.json()
-      
-      // Filter for Kerala (state_id: 16 for Kerala)
-      const keralaDistricts = data.districts.filter((d: ApiDistrict) => d.state_id === 16)
-      const districtNames = keralaDistricts.map((d: ApiDistrict) => d.name).sort()
-      setDistricts(districtNames)
-
-      
-      setAllApiData({ districts: keralaDistricts as ApiDistrict[], subdistricts: data.subdistricts as ApiSubDistrict[] })
-
-      console.log("Fetched Kerala districts:", districtNames)
-    } catch (error) {
-      console.error("Error fetching districts API:", error)
-      
-      const fallbackDistricts = [
-        "Alappuzha", "Ernakulam", "Idukki", "Kannur", "Kasaragod", "Kollam", "Kottayam",
-        "Kozhikode", "Malappuram", "Palakkad", "Pathanamthitta", "Thiruvananthapuram",
-        "Thrissur", "Wayanad"
-      ].sort()
-      setDistricts(fallbackDistricts)
-    }
-  }
-
-  
-  const getPlacesForDistrict = (districtName: string) => {
-    if (!allApiData) return []
-
-    const district = allApiData.districts.find(d => d.name === districtName)
-    if (!district) return []
-
-    const taluks = allApiData.subdistricts
-      .filter((sd: ApiSubDistrict) => sd.district_id === district.id)
-      .map((sd: ApiSubDistrict) => sd.name)
-      .sort()
-
-    return taluks
-  }
-
-  // Fallback: Complete hardcoded taluks map (from official sources like Wikipedia)
-  const fallbackPlacesByDistrict: Record<string, string[]> = {
-    "Alappuzha": ["Ambalappuzha", "Chengannur", "Cherthala", "Karukachal", "Kayamkulam", "Mavelikkara"],
-    "Ernakulam": ["Aluva", "Kothamangalam", "Kochi", "Kunnathunad", "Muvattupuzha", "Paravur"],
-    "Idukki": ["Devikulam", "Idukki", "Peermade", "Thodupuzha", "Udumbanchola"],
-    "Kannur": ["Irikkur", "Kannur", "Koothuparamba", "Payyannur", "Taliparamba", "Thalassery"],
-    "Kasaragod": ["Kasaragod", "Hosdurg", "Manjeshwaram", "Vellarikundu"],
-    "Kollam": ["Karunagappally", "Kollam", "Kottarakkara", "Kunnathur", "Pathanapuram"],
-    "Kottayam": ["Changanassery", "Kanjirappally", "Kottayam", "Meenachil", "Vaikom"],
-    "Kozhikode": ["Kozhikode", "Kunnamangalam", "Thamarassery", "Vadakara"],
-    "Malappuram": ["Kondotty", "Nilambur", "Perinthalmanna", "Ponnani", "Tirur", "Tirurangadi"], // Your example
-    "Palakkad": ["Chittur", "Mannarkkad", "Ottappalam", "Palakkad", "Shoranur"],
-    "Pathanamthitta": ["Adoor", "Kozhencherry", "Mallappally", "Ranni"],
-    "Thiruvananthapuram": ["Chirayinkeezhu", "Nedumangad", "Neyyattinkara", "Thiruvananthapuram", "Varkala"],
-    "Thrissur": ["Chavakkad", "Kodungallur", "Mukundapuram", "Talappilly", "Thrissur"],
-    "Wayanad": ["Mananthavady", "Sulthanbathery", "Vythiri"]
   }
 
   const projects: Project[] = [
@@ -387,39 +308,14 @@ const HomePage: React.FC = () => {
     fetchVenues()
   }, [offers, vouchers])
 
-  // Updated: Load dynamic dropdown data on mount
   useEffect(() => {
     const loadDropdownData = async () => {
       setLoadingDropdowns(true)
-      await Promise.all([fetchDistrictsAndPlaces(), fetchALLExitingItems()])
+      await fetchALLExitingItems()
       setLoadingDropdowns(false)
     }
     loadDropdownData()
   }, [])
-
-  // Updated: Fetch/update places when district changes
-  useEffect(() => {
-    if (formData.district) {
-      setLoadingDropdowns(true)
-      let taluks: string[] = []
-
-      // Try API first
-      if (allApiData) {
-        taluks = getPlacesForDistrict(formData.district)
-      }
-
-      // If API empty, use fallback
-      if (taluks.length === 0) {
-        taluks = fallbackPlacesByDistrict[formData.district] || []
-      }
-
-      setPlacesByDistrict(prev => ({ ...prev, [formData.district]: taluks }))
-      console.log(`Fetched taluks for ${formData.district}:`, taluks)
-
-      setLoadingDropdowns(false)
-      setFormData(prev => ({ ...prev, place: "" })) // Reset place
-    }
-  }, [formData.district, allApiData])
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -433,15 +329,28 @@ const HomePage: React.FC = () => {
     setFormData((prev) => ({
       ...prev,
       [name]: value,
-      ...(name === "district" ? { place: "" } : {}),
     }))
+  }
+
+  const handleLocationSelect = (location: LocationResult) => {
+    const parts = location.displayName.split(',').map(p => p.trim());
+    if (parts.length < 3 || parts[2] !== "Kerala") {
+      setToast({ message: "Please select a location in Kerala.", type: "error" });
+      return;
+    }
+    setFormData(prev => ({
+      ...prev,
+      location: location.displayName,
+      place: parts[0],
+      district: parts[1]
+    }));
   }
 
   const handleSubmit = () => {
     console.log("Form submitted:", formData)
     const { district, place, date, event } = formData
     if (!district || !place || !date || !event) {
-      setToast({ message: "Please fill in all fields: district, place, date, and event.", type: "error" })
+      setToast({ message: "Please fill in all fields: location, date, and event.", type: "error" })
       return
     }
     navigate(
@@ -846,38 +755,11 @@ const HomePage: React.FC = () => {
   {/* ---------- MOBILE VIEW ---------- */}
   <div className="flex flex-col sm:hidden space-y-3">
 
-    <div className="relative">
-      <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
-      <select
-        name="district"
-        value={formData.district}
-        onChange={handleInputChange}
-        disabled={loadingDropdowns}
-        className="w-full h-10 pl-10 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
-      >
-        <option value="">Select District</option>
-        {districts.map((district) => (
-          <option key={district} value={district}>{district}</option>
-        ))}
-      </select>
-    </div>
-
-    <div className="relative">
-      <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
-      <select
-        name="place"
-        value={formData.place}
-        onChange={handleInputChange}
-        disabled={!formData.district || loadingDropdowns}
-        className="w-full h-10 pl-10 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
-      >
-        <option value="">Select Place (Taluk)</option>
-        {formData.district &&
-          placesByDistrict[formData.district]?.map((place) => (
-            <option key={place} value={place}>{place}</option>
-          ))}
-      </select>
-    </div>
+    <LocationAutocomplete
+      value={formData.location}
+      placeholder="Enter your location"
+      onSelect={handleLocationSelect}
+    />
 
     {/* DATE FIELD (UPDATED) */}
     <div className="relative">
@@ -926,37 +808,12 @@ const HomePage: React.FC = () => {
   {/* ---------- DESKTOP VIEW ---------- */}
   <div className="hidden sm:grid grid-cols-2 gap-3 sm:gap-4">
 
-    <div className="relative">
-      <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4 sm:w-5 sm:h-5" />
-      <select
-        name="district"
-        value={formData.district}
-        onChange={handleInputChange}
-        disabled={loadingDropdowns}
-        className="w-full h-10 sm:h-12 pl-10 sm:pl-12 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
-      >
-        <option value="">Select District</option>
-        {districts.map((district) => (
-          <option key={district} value={district}>{district}</option>
-        ))}
-      </select>
-    </div>
-
-    <div className="relative">
-      <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4 sm:w-5 sm:h-5" />
-      <select
-        name="place"
-        value={formData.place}
-        onChange={handleInputChange}
-        disabled={!formData.district || loadingDropdowns}
-        className="w-full h-10 sm:h-12 pl-10 sm:pl-12 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
-      >
-        <option value="">Select Place (Taluk)</option>
-        {formData.district &&
-          placesByDistrict[formData.district]?.map((place) => (
-            <option key={place} value={place}>{place}</option>
-          ))}
-      </select>
+    <div className="col-span-2">
+      <LocationAutocomplete
+        value={formData.location}
+        placeholder="Enter your location"
+        onSelect={handleLocationSelect}
+      />
     </div>
 
     {/* DATE FIELD (UPDATED) */}

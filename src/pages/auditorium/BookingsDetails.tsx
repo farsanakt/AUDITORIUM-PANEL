@@ -31,7 +31,7 @@ interface BookingFormData {
 export default function BookingConfirmation() {
   const navigate = useNavigate()
 
-  // Initialize form state
+
   const [formData, setFormData] = useState<BookingFormData>({
     name: "",
     address: "",
