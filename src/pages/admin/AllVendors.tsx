@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
-import { Check, X, Eye } from 'lucide-react';
+import { Check, X, Eye, ArrowLeft } from 'lucide-react';
 import Header from '../../component/user/Header';
 import { acceptVendor, existingUserSubscription, fetchAllVendorUsers, rejectVendor } from '../../api/userApi';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../redux/store'
-
+import { useNavigate } from 'react-router-dom';
 
 interface Vendor {
   _id: string;
@@ -44,8 +44,11 @@ const VendorsList: React.FC = () => {
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [showExpiring, setShowExpiring] = useState<boolean>(false);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const itemsPerPage = 5;
 
   const { currentUser } = useSelector((state: RootState) => state.auth);
+  const navigate = useNavigate();
 
   const fetchVendors = async () => {
     try {
@@ -63,13 +66,10 @@ const VendorsList: React.FC = () => {
 
   const fetchAllUserSubscriptions = async () => {
   try {
-    console.log('Fetching all user subscriptions...'); 
     const response = await existingUserSubscription();
-    console.log('Subscriptions response:', response);
     setSubscriptions(response.data?.data || []); 
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error fetching subscriptions';
-    console.error('Full error in fetchAllUserSubscriptions:', error); 
     toast.error(errorMessage); 
     setSubscriptions([]); 
   }
@@ -96,10 +96,21 @@ const VendorsList: React.FC = () => {
     return isExpiring(vendor._id);
   });
 
+  const getSubscriptionDuration = (vendorId: string) => {
+    const sub = getVendorSubscription(vendorId);
+    if (!sub) return 'No Active Subscription';
+    const { duration, durationUnits } = sub.subscription;
+    return `${duration} ${durationUnits}${duration > 1 ? 's' : ''}`;
+  };
+
   useEffect(() => {
     fetchVendors();
     fetchAllUserSubscriptions();
   }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [showExpiring, vendors]);
 
   const handleAccept = async (id: string) => {
     try {
@@ -141,12 +152,15 @@ const VendorsList: React.FC = () => {
     });
   };
 
-  const getSubscriptionDuration = (vendorId: string) => {
-    const sub = getVendorSubscription(vendorId);
-    if (!sub) return 'No Active Subscription';
-    const { duration, durationUnits } = sub.subscription;
-    return `${duration} ${durationUnits}${duration > 1 ? 's' : ''}`;
-  };
+  const indexOfLast = currentPage * itemsPerPage;
+  const indexOfFirst = indexOfLast - itemsPerPage;
+  const currentVendors = filteredVendors.slice(indexOfFirst, indexOfLast);
+  const totalPages = Math.ceil(filteredVendors.length / itemsPerPage);
+
+  const pageNumbers = [];
+  for (let i = 1; i <= totalPages; i++) {
+    pageNumbers.push(i);
+  }
 
   return (
     <div className="min-h-screen bg-[#FDF8F1] flex flex-col">
@@ -154,6 +168,15 @@ const VendorsList: React.FC = () => {
 
       <main className="flex-1 p-4 md:p-8">
         <div className="w-full max-w-7xl mx-auto">
+          <div className="flex items-center mb-4">
+            <button
+              onClick={() => navigate(-1)}
+              className="flex items-center gap-2 text-[#78533F] hover:text-[#ED695A] transition"
+            >
+              <ArrowLeft size={24} />
+              Back
+            </button>
+          </div>
           <h2 className="text-2xl md:text-3xl font-bold text-[#78533F] font-serif mb-8 text-center md:text-left">
             All Vendors
           </h2>
@@ -181,37 +204,41 @@ const VendorsList: React.FC = () => {
             </p>
           ) : (
             <div className="overflow-x-auto rounded-xl shadow-lg border border-[#b09d94]">
-              <table className="min-w-full bg-white">
+              <table className="w-full bg-white">
                 <thead>
                   <tr className="bg-[#FDF8F1] text-[#78533F] text-sm md:text-base font-semibold">
-                    <th className="p-4 text-left">Vendor Name</th>
-                    <th className="p-4 text-left">Type</th>
-                    <th className="p-4 text-left hidden sm:table-cell">Email</th>
-                    <th className="p-4 text-left hidden md:table-cell">Phone</th>
-                    <th className="p-4 text-left hidden lg:table-cell">Address</th>
-                    <th className="p-4 text-left hidden lg:table-cell">Subscription Duration</th>
-                    <th className="p-4 text-center">Verified</th>
-                    <th className="p-4 text-left hidden xl:table-cell">Accepted By</th>
-                    <th className="p-4 text-center">Blocked</th>
-                    <th className="p-4 text-center">Actions</th>
+                    <th className="px-6 py-4 text-left">Vendor Name</th>
+                    <th className="px-6 py-4 text-left">Type</th>
+                    <th className="px-6 py-4 text-left hidden sm:table-cell">Email</th>
+                    <th className="px-6 py-4 text-left hidden md:table-cell">Phone</th>
+                    <th className="px-6 py-4 text-left hidden lg:table-cell">Address</th>
+                    <th className="px-6 py-4 text-left hidden lg:table-cell">Subscription Duration</th>
+                    <th className="px-6 py-4 text-left hidden lg:table-cell">Validity To</th>
+                    <th className="px-6 py-4 text-center">Verified</th>
+                    <th className="px-6 py-4 text-left hidden xl:table-cell">Accepted By</th>
+                    <th className="px-6 py-4 text-center">Blocked</th>
+                    <th className="px-6 py-4 text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredVendors.map((vendor) => (
+                  {currentVendors.map((vendor) => (
                     <tr
                       key={vendor._id}
                       className="border-b border-[#b09d94]/30 hover:bg-[#FDF8F1] transition-colors"
                     >
-                      <td className="p-4 font-medium text-gray-800">{vendor.name}</td>
-                      <td className="p-4 text-gray-700 capitalize">{vendor.vendortype}</td>
-                      <td className="p-4 text-gray-600 hidden sm:table-cell">{vendor.email}</td>
-                      <td className="p-4 text-gray-600 hidden md:table-cell">{vendor.phone}</td>
-                      <td className="p-4 text-gray-600 hidden lg:table-cell">{vendor.address}</td>
-                      <td className="p-4 text-gray-600 hidden lg:table-cell">
+                      <td className="px-6 py-4 font-medium text-gray-800">{vendor.name}</td>
+                      <td className="px-6 py-4 text-gray-700 capitalize">{vendor.vendortype}</td>
+                      <td className="px-6 py-4 text-gray-600 hidden sm:table-cell">{vendor.email}</td>
+                      <td className="px-6 py-4 text-gray-600 hidden md:table-cell">{vendor.phone}</td>
+                      <td className="px-6 py-4 text-gray-600 hidden lg:table-cell">{vendor.address}</td>
+                      <td className={`px-6 py-4 hidden lg:table-cell ${isExpiring(vendor._id) ? 'text-red-600 font-bold' : 'text-gray-600'}`}>
                         {getSubscriptionDuration(vendor._id)}
                       </td>
+                      <td className={`px-6 py-4 hidden lg:table-cell ${isExpiring(vendor._id) ? 'text-red-600 font-bold' : 'text-gray-600'}`}>
+                        {getVendorSubscription(vendor._id) ? formatDate(getVendorSubscription(vendor._id)!.subscriptionDates.endDate) : 'N/A'}
+                      </td>
 
-                      <td className="p-4 text-center">
+                      <td className="px-6 py-4 text-center">
                         {vendor.isVerified ? (
                           <span className="text-green-600 font-bold">Yes</span>
                         ) : (
@@ -220,7 +247,7 @@ const VendorsList: React.FC = () => {
                       </td>
 
                       {/* Accepted By — Only shown when isVerified === true */}
-                      <td className="p-4 hidden xl:table-cell">
+                      <td className="px-6 py-4 hidden xl:table-cell">
                         {vendor.isVerified && vendor.acceptedBy ? (
                           <span className="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-amber-100 text-[#78533F] border border-amber-300">
                             {vendor.acceptedBy}
@@ -230,7 +257,7 @@ const VendorsList: React.FC = () => {
                         )}
                       </td>
 
-                      <td className="p-4 text-center">
+                      <td className="px-6 py-4 text-center">
                         {vendor.isBlocked ? (
                           <span className="text-red-600 font-medium">Yes</span>
                         ) : (
@@ -238,7 +265,7 @@ const VendorsList: React.FC = () => {
                         )}
                       </td>
 
-                      <td className="p-4">
+                      <td className="px-6 py-4">
                         <div className="flex flex-col sm:flex-row gap-2 justify-center">
                           <button
                             onClick={() => openDetails(vendor)}
@@ -272,6 +299,34 @@ const VendorsList: React.FC = () => {
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+
+          {totalPages > 1 && (
+            <div className="flex justify-center mt-4 gap-2">
+              <button
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((prev) => prev - 1)}
+                className="px-4 py-2 bg-[#ED695A] text-white rounded-lg disabled:opacity-50"
+              >
+                Prev
+              </button>
+              {pageNumbers.map((num) => (
+                <button
+                  key={num}
+                  onClick={() => setCurrentPage(num)}
+                  className={`px-4 py-2 rounded-lg ${currentPage === num ? 'bg-[#78533F] text-white' : 'bg-gray-200 text-gray-800'}`}
+                >
+                  {num}
+                </button>
+              ))}
+              <button
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage((prev) => prev + 1)}
+                className="px-4 py-2 bg-[#ED695A] text-white rounded-lg disabled:opacity-50"
+              >
+                Next
+              </button>
             </div>
           )}
         </div>

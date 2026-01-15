@@ -49,7 +49,7 @@ const Sidebar: React.FC = () => {
 
   const baseMenuItems = [
     { title: "Dashboard", path: "/vendor/dashboard" },
-    { title: "Vendor Enquires", path: "/vendor/vendorenquires" },
+    { title: "Enquires", path: "/vendor/vendorenquires" },
     { title: "Vendor", path: "/vendor/addvendor" },
     { title: "Voucher", path: "/vendor/vouchers" },
     { title: "Settings", path: "#" },

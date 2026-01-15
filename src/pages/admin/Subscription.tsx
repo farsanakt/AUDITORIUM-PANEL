@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { ArrowLeft, X } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
 import { createSubscriptionPlan, deleteSubscriptionPlan, fetchAdminPlans, updateSubscriptionPlan } from '../../api/userApi';
 import Header from '../../component/user/Header';
+import { useNavigate } from 'react-router-dom';
 
 interface SubscriptionPlan {
   _id?: string;
@@ -43,6 +44,7 @@ const AdminSubscriptionManager: React.FC = () => {
   const [newFeature, setNewFeature] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+    const navigate = useNavigate();
 
   useEffect(() => {
     fetchUserPlans();
@@ -190,6 +192,13 @@ const AdminSubscriptionManager: React.FC = () => {
   return (
     <div className="min-h-screen from-slate-50 via-white to-gray-50 py-6 px-4 sm:px-6 lg:px-8">
       <Header/>
+      <button
+              onClick={() => navigate(-1)}
+              className="flex items-center gap-2 text-[#78533F] hover:text-[#ED695A] transition"
+            >
+              <ArrowLeft size={24} />
+              Back
+            </button>
       <div className="max-w-7xl mx-auto">
         <h1 className="text-2xl sm:text-3xl md:text-4xl  font-bold text-center text-[#78533F] mb-8 sm:mb-12">
           Subscription Plans Management

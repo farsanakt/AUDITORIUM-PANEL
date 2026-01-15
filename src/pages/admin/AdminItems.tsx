@@ -160,6 +160,7 @@ const AdminItemsManagement: React.FC = () => {
   return (
     <div className="min-h-screen flex items-center justify-center px-2 sm:px-4 py-4">
       <Header />
+      
       <div className="bg-white rounded-xl shadow-lg w-full max-w-5xl overflow-hidden">
         <div className="p-4 sm:p-6">
           <h2 className="text-2xl font-bold text-[#78533F] mb-4 text-center">

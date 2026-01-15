@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { Check, X, Eye } from 'lucide-react';
+import { Check, X, Eye, ArrowLeft } from 'lucide-react';
 import Header from '../../component/user/Header';
 import {  activateVoucher, deactivateVoucher, fetchAllExistingVouchers } from '../../api/userApi'; // Assume these API functions exist
 
@@ -28,6 +28,8 @@ const VoucherList: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedVoucher, setSelectedVoucher] = useState<Voucher | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const itemsPerPage = 5;
 
   const navigate = useNavigate();
 
@@ -83,12 +85,37 @@ const VoucherList: React.FC = () => {
     return new Date(date).toLocaleString();
   };
 
+  const isExpiring = (validTo: string) => {
+    const endDate = new Date(validTo);
+    const thirtyDaysFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    return endDate <= thirtyDaysFromNow && endDate > new Date();
+  };
+
+  const indexOfLast = currentPage * itemsPerPage;
+  const indexOfFirst = indexOfLast - itemsPerPage;
+  const currentVouchers = vouchers.slice(indexOfFirst, indexOfLast);
+  const totalPages = Math.ceil(vouchers.length / itemsPerPage);
+
+  const pageNumbers = [];
+  for (let i = 1; i <= totalPages; i++) {
+    pageNumbers.push(i);
+  }
+
   return (
     <div className="min-h-screen bg-[#FDF8F1] flex flex-col">
       <Header />
-      <main className="flex-1 p-4">
-        <div className="w-full max-w-6xl mx-auto my-8">
-          <h2 className="text-lg md:text-2xl font-bold text-[#78533F] font-serif mb-6">
+      <main className="flex-1 p-4 md:p-8">
+        <div className="w-full max-w-7xl mx-auto">
+          <div className="flex items-center mb-4">
+            <button
+              onClick={() => navigate(-1)}
+              className="flex items-center gap-2 text-[#78533F] hover:text-[#ED695A] transition"
+            >
+              <ArrowLeft size={24} />
+              Back
+            </button>
+          </div>
+          <h2 className="text-2xl md:text-3xl font-bold text-[#78533F] font-serif mb-8 text-center md:text-left">
             All Vouchers
           </h2>
 
@@ -97,37 +124,37 @@ const VoucherList: React.FC = () => {
           ) : error ? (
             <p className="text-[#ED695A] font-serif text-center">{error}</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full bg-white border border-[#b09d94] rounded-xl shadow-md">
+            <div className="overflow-x-auto rounded-xl shadow-lg border border-[#b09d94]">
+              <table className="w-full bg-white">
                 <thead>
                   <tr className="bg-[#FDF8F1] text-left text-sm font-semibold text-[#78533F]">
-                    <th className="p-4">Voucher Code</th>
-                    <th className="p-4">Discount Type</th>
-                    <th className="p-4 hidden md:table-cell">Discount Value</th>
-                    <th className="p-4 hidden lg:table-cell">Auditorium Name</th>
-                    <th className="p-4">Valid From</th>
-                    <th className="p-4">Valid To</th>
-                    <th className="p-4">Accept</th>
-                    <th className="p-4">Actions</th>
+                    <th className="px-6 py-4">Voucher Code</th>
+                    <th className="px-6 py-4">Discount Type</th>
+                    <th className="px-6 py-4 hidden md:table-cell">Discount Value</th>
+                    <th className="px-6 py-4 hidden lg:table-cell">Auditorium Name</th>
+                    <th className="px-6 py-4">Valid From</th>
+                    <th className="px-6 py-4">Valid To</th>
+                    <th className="px-6 py-4">Accept</th>
+                    <th className="px-6 py-4">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {vouchers.map((voucher) => (
-                    <tr key={voucher._id} className="border-b border-[#b09d94] hover:bg-[#FDF8F1]">
-                      <td className="p-4">{voucher.voucherCode}</td>
-                      <td className="p-4">{voucher.discountType}</td>
-                      <td className="p-4 hidden md:table-cell">{voucher.discountValue}</td>
-                      <td className="p-4 hidden lg:table-cell">{voucher.audiName}</td>
-                      <td className="p-4">{formatDate(voucher.validFrom)}</td>
-                      <td className="p-4">{formatDate(voucher.validTo)}</td>
-                      <td className="p-4">
+                  {currentVouchers.map((voucher) => (
+                    <tr key={voucher._id} className="border-b border-[#b09d94]/30 hover:bg-[#FDF8F1] transition-colors">
+                      <td className="px-6 py-4">{voucher.voucherCode}</td>
+                      <td className="px-6 py-4">{voucher.discountType}</td>
+                      <td className="px-6 py-4 hidden md:table-cell">{voucher.discountValue}</td>
+                      <td className="px-6 py-4 hidden lg:table-cell">{voucher.audiName}</td>
+                      <td className="px-6 py-4">{formatDate(voucher.validFrom)}</td>
+                      <td className={`px-6 py-4 ${isExpiring(voucher.validTo) ? 'text-red-600 font-bold' : ''}`}>{formatDate(voucher.validTo)}</td>
+                      <td className="px-6 py-4">
                         {voucher.isVeriffed? (
                           <span className="text-green-600">Yes</span>
                         ) : (
                           <span className="text-red-600">No</span>
                         )}
                       </td>
-                      <td className="p-4 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+                      <td className="px-6 py-4 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
                         <button
                           onClick={() => openDetails(voucher)}
                           className="bg-[#ED695A] text-white px-3 py-1 rounded-md flex items-center space-x-1 hover:bg-[#d65a4f] transition-colors"
@@ -166,6 +193,34 @@ const VoucherList: React.FC = () => {
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+
+          {totalPages > 1 && (
+            <div className="flex justify-center mt-4 gap-2">
+              <button
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((prev) => prev - 1)}
+                className="px-4 py-2 bg-[#ED695A] text-white rounded-lg disabled:opacity-50"
+              >
+                Prev
+              </button>
+              {pageNumbers.map((num) => (
+                <button
+                  key={num}
+                  onClick={() => setCurrentPage(num)}
+                  className={`px-4 py-2 rounded-lg ${currentPage === num ? 'bg-[#78533F] text-white' : 'bg-gray-200 text-gray-800'}`}
+                >
+                  {num}
+                </button>
+              ))}
+              <button
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage((prev) => prev + 1)}
+                className="px-4 py-2 bg-[#ED695A] text-white rounded-lg disabled:opacity-50"
+              >
+                Next
+              </button>
             </div>
           )}
         </div>

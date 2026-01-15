@@ -1,10 +1,11 @@
 import React, { useState, useEffect, FormEvent } from 'react';
-import { X } from 'lucide-react';
+import { ArrowLeft, X } from 'lucide-react';
 import { toast, ToastContainer } from 'react-toastify';
 import Swal from 'sweetalert2';
 import Header from '../../component/user/Header';
 import { addAdminStaff, deleteAdminStaff, fetchAllAdminStaff, updateAdminStaff } from '../../api/userApi';
 import 'react-toastify/dist/ReactToastify.css';
+import { useNavigate } from 'react-router-dom';
 
 // Updated interface to include isLogged, lastLogin, and lastLogout
 interface AdminStaff {
@@ -32,6 +33,7 @@ const StaffList: React.FC = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<AdminStaff | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+    const navigate = useNavigate();
 
   const [formData, setFormData] = useState<StaffForm>({
     staffid: '',
@@ -214,8 +216,17 @@ const StaffList: React.FC = () => {
   return (
     <div className="max-w-6xl mx-auto p-6 bg-white rounded-xl shadow-lg">
       <Header />
+      <button
+              onClick={() => navigate(-1)}
+              className="flex items-center gap-2 text-[#78533F] hover:text-[#ED695A] transition"
+            >
+              <ArrowLeft size={24} />
+              Back
+            </button>
       <ToastContainer position="top-right" autoClose={3000} />
+      
       <div className="flex justify-between items-center mb-6">
+        
         <div>
           <h2 className="text-2xl font-bold text-[#78533F]">Staff List</h2>
           <p className="text-sm text-gray-600 mt-1">Total Staff: {staff.length}</p>

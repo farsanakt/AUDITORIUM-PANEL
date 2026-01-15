@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { toast } from 'react-toastify';
-import { Check, X, Eye } from 'lucide-react';
+import { Check, X, Eye, ArrowLeft } from 'lucide-react';
 import Header from '../../component/user/Header';
 import { getAllAuditoriums, acceptAuditorium, rejectAuditorium, existingUserSubscription} from '../../api/userApi';
 import { RootState } from '../../redux/store';
 import { useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 
 interface Auditorium {
   _id: string;
@@ -45,21 +46,21 @@ const AuditoriumList: React.FC = () => {
   const [selectedAuditorium, setSelectedAuditorium] = useState<Auditorium | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [showExpiring, setShowExpiring] = useState<boolean>(false);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const itemsPerPage = 5;
   const hasFetchedSubscriptions = useRef<boolean>(false); // Prevent multiple calls
 
   const { currentUser } = useSelector((state: RootState) => state.auth);
+  const navigate = useNavigate();
 
   const fetchAuditoriums = async () => {
     try {
-      console.log('Fetching auditoriums...');
       setIsLoading(true);
       const response = await getAllAuditoriums();
-      console.log('Auditoriums response:', response);
       setAuditoriums(response.data || []);
       setError(null);
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Error fetching auditoriums';
-      console.error('Error in fetchAuditoriums:', error);
       setError(errorMessage);
       toast.error(errorMessage);
       setAuditoriums([]);
@@ -70,20 +71,15 @@ const AuditoriumList: React.FC = () => {
 
   const fetchAllUserSubscriptions = async () => {
     if (hasFetchedSubscriptions.current) {
-      console.log('Subscriptions already fetched, skipping...');
       return;
     }
     hasFetchedSubscriptions.current = true;
 
     try {
-      console.log('Fetching all user subscriptions...');
       const response = await existingUserSubscription();
-      console.log('Subscriptions response:', response);
       setSubscriptions(response.data?.data || []);
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error fetching subscriptions';
-      console.error('Full error in fetchAllUserSubscriptions:', error);
-      // Only show toast once, not on every render
       toast.error(`Subscriptions fetch failed: ${errorMessage}. Auditoriums still loading normally.`, {
         toastId: 'subscriptions-error' // Prevent duplicate toasts
       });
@@ -130,6 +126,10 @@ const AuditoriumList: React.FC = () => {
     }
   }, [isLoading, auditoriums.length]); // Depend on loading state
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [showExpiring, auditoriums]);
+
   const handleAccept = async (id: string) => {
     try {
       await acceptAuditorium(id, currentUser?.id || currentUser?.name);
@@ -170,12 +170,31 @@ const AuditoriumList: React.FC = () => {
     });
   };
 
+  const indexOfLast = currentPage * itemsPerPage;
+  const indexOfFirst = indexOfLast - itemsPerPage;
+  const currentAuditoriums = filteredAuditoriums.slice(indexOfFirst, indexOfLast);
+  const totalPages = Math.ceil(filteredAuditoriums.length / itemsPerPage);
+
+  const pageNumbers = [];
+  for (let i = 1; i <= totalPages; i++) {
+    pageNumbers.push(i);
+  }
+
   return (
     <div className="min-h-screen bg-[#FDF8F1] flex flex-col">
       <Header />
 
       <main className="flex-1 p-4 md:p-8">
         <div className="w-full max-w-7xl mx-auto">
+          <div className="flex items-center mb-4">
+            <button
+              onClick={() => navigate(-1)}
+              className="flex items-center gap-2 text-[#78533F] hover:text-[#ED695A] transition"
+            >
+              <ArrowLeft size={24} />
+              Back
+            </button>
+          </div>
           <h2 className="text-2xl md:text-3xl font-bold text-[#78533F] font-serif mb-8 text-center md:text-left">
             All Auditoriums
           </h2>
@@ -203,23 +222,41 @@ const AuditoriumList: React.FC = () => {
             </p>
           ) : (
             <div className="overflow-x-auto rounded-xl shadow-lg border border-[#b09d94]">
-              <table className="min-w-full bg-white">
+              <table className="w-full bg-white table-auto">
                 <thead>
                   <tr className="bg-[#FDF8F1] text-[#78533F] text-sm md:text-base font-semibold">
-                    <th className="p-4 text-left">Auditorium Name</th><th className="p-4 text-left">Owner</th><th className="p-4 text-left hidden sm:table-cell">Email</th><th className="p-4 text-left hidden md:table-cell">Phone</th><th className="p-4 text-left hidden lg:table-cell">District</th><th className="p-4 text-left hidden lg:table-cell">Subscription Duration</th><th className="p-4 text-center">Verified</th><th className="p-4 text-left hidden xl:table-cell">Accepted By</th><th className="p-4 text-center">Blocked</th><th className="p-4 text-center">Actions</th>
+                    <th className="px-6 py-4 text-left">Auditorium Name</th>
+                    <th className="px-6 py-4 text-left">Owner</th>
+                    <th className="px-6 py-4 text-left hidden sm:table-cell">Email</th>
+                    <th className="px-6 py-4 text-left hidden md:table-cell">Phone</th>
+                    <th className="px-6 py-4 text-left hidden lg:table-cell">District</th>
+                    <th className="px-6 py-4 text-left hidden lg:table-cell">Subscription Duration</th>
+                    <th className="px-6 py-4 text-left hidden lg:table-cell">Validity To</th>
+                    <th className="px-6 py-4 text-center">Verified</th>
+                    <th className="px-6 py-4 text-left hidden xl:table-cell">Accepted By</th>
+                    <th className="px-6 py-4 text-center">Blocked</th>
+                    <th className="px-6 py-4 text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredAuditoriums.map((aud) => (
+                  {currentAuditoriums.map((aud) => (
                     <tr
                       key={aud._id}
                       className="border-b border-[#b09d94]/30 hover:bg-[#FDF8F1] transition-colors"
                     >
-                      <td className="p-4 font-medium text-gray-800">{aud.auditoriumName}</td><td className="p-4 text-gray-700">{aud.ownerName}</td><td className="p-4 text-gray-600 hidden sm:table-cell">{aud.email}</td><td className="p-4 text-gray-600 hidden md:table-cell">{aud.phone}</td><td className="p-4 text-gray-600 hidden lg:table-cell">{aud.district}</td><td className="p-4 text-gray-600 hidden lg:table-cell">
+                      <td className="px-6 py-4 font-medium text-gray-800">{aud.auditoriumName}</td>
+                      <td className="px-6 py-4 text-gray-700">{aud.ownerName}</td>
+                      <td className="px-6 py-4 text-gray-600 hidden sm:table-cell">{aud.email}</td>
+                      <td className="px-6 py-4 text-gray-600 hidden md:table-cell">{aud.phone}</td>
+                      <td className="px-6 py-4 text-gray-600 hidden lg:table-cell">{aud.district}</td>
+                      <td className={`px-6 py-4 hidden lg:table-cell ${isExpiring(aud._id) ? 'text-red-600 font-bold' : 'text-gray-600'}`}>
                         {getSubscriptionDuration(aud._id)}
                       </td>
+                      <td className={`px-6 py-4 hidden lg:table-cell ${isExpiring(aud._id) ? 'text-red-600 font-bold' : 'text-gray-600'}`}>
+                        {getAuditoriumSubscription(aud._id) ? formatDate(getAuditoriumSubscription(aud._id)!.subscriptionDates.endDate) : 'N/A'}
+                      </td>
 
-                      <td className="p-4 text-center">
+                      <td className="px-6 py-4 text-center">
                         {aud.isVerified ? (
                           <span className="text-green-600 font-bold">Yes</span>
                         ) : (
@@ -228,7 +265,7 @@ const AuditoriumList: React.FC = () => {
                       </td>
 
                       {/* Accepted By — ONLY shown when isVerified === true */}
-                      <td className="p-4 hidden xl:table-cell">
+                      <td className="px-6 py-4 hidden xl:table-cell">
                         {aud.isVerified && aud.acceptedBy ? (
                           <span className="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-amber-100 text-[#78533F] border border-amber-300">
                             {aud.acceptedBy}
@@ -238,7 +275,7 @@ const AuditoriumList: React.FC = () => {
                         )}
                       </td>
 
-                      <td className="p-4 text-center">
+                      <td className="px-6 py-4 text-center">
                         {aud.isBlocked ? (
                           <span className="text-red-600 font-medium">Yes</span>
                         ) : (
@@ -246,7 +283,7 @@ const AuditoriumList: React.FC = () => {
                         )}
                       </td>
 
-                      <td className="p-4">
+                      <td className="px-6 py-4">
                         <div className="flex flex-col sm:flex-row gap-2 justify-center">
                           <button
                             onClick={() => openDetails(aud)}
@@ -280,6 +317,34 @@ const AuditoriumList: React.FC = () => {
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+
+          {totalPages > 1 && (
+            <div className="flex justify-center mt-4 gap-2">
+              <button
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((prev) => prev - 1)}
+                className="px-4 py-2 bg-[#ED695A] text-white rounded-lg disabled:opacity-50"
+              >
+                Prev
+              </button>
+              {pageNumbers.map((num) => (
+                <button
+                  key={num}
+                  onClick={() => setCurrentPage(num)}
+                  className={`px-4 py-2 rounded-lg ${currentPage === num ? 'bg-[#78533F] text-white' : 'bg-gray-200 text-gray-800'}`}
+                >
+                  {num}
+                </button>
+              ))}
+              <button
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage((prev) => prev + 1)}
+                className="px-4 py-2 bg-[#ED695A] text-white rounded-lg disabled:opacity-50"
+              >
+                Next
+              </button>
             </div>
           )}
         </div>

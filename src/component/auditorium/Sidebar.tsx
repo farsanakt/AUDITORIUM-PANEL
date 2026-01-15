@@ -94,15 +94,15 @@ const Sidebar: React.FC = () => {
       ),
       restrictedForStaff: true,
     },
-    {
-      title: "Support",
-      path: "/support",
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m-5.656 5.656L5.636 18.364M12 2.25v2.25m0 13.5v2.25M2.25 12h2.25m13.5 0h2.25" />
-        </svg>
-      ),
-    },
+    // {
+    //   title: "Support",
+    //   path: "/support",
+    //   icon: (
+    //     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    //       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m-5.656 5.656L5.636 18.364M12 2.25v2.25m0 13.5v2.25M2.25 12h2.25m13.5 0h2.25" />
+    //     </svg>
+    //   ),
+    // },
   ];
 
   if (isVerified) {

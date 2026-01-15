@@ -1,10 +1,10 @@
-// components/admin/AllEnquiries.tsx
 import React, { useEffect, useState } from 'react';
-import { Mail, Calendar, Clock, User, Phone, MessageSquare, AlertCircle } from 'lucide-react';
+import { Mail, Calendar, Clock, User, Phone, MessageSquare, AlertCircle, ArrowLeft } from 'lucide-react';
 import { format } from 'date-fns';
 import Header from '../../component/user/Header';
 import { getAllEnquiries } from '../../api/userApi';
 import { toast } from 'react-toastify';
+import { useNavigate } from 'react-router-dom';
 
 interface Enquiry {
   _id: string;
@@ -29,6 +29,8 @@ const AllEnquiries: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalEnquiries, setTotalEnquiries] = useState(0);
 
+  const navigate = useNavigate();
+
   const totalPages = Math.ceil(totalEnquiries / ITEMS_PER_PAGE);
 
   const fetchEnquiries = async () => {
@@ -37,7 +39,6 @@ const AllEnquiries: React.FC = () => {
       const response = await getAllEnquiries();
       const data = response.data|| [];
 
-      console.log(response,'da')
       const sorted = data.sort((a: Enquiry, b: Enquiry) => 
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
@@ -45,7 +46,6 @@ const AllEnquiries: React.FC = () => {
       setEnquiries(sorted);
       setTotalEnquiries(sorted.length);
     } catch (error) {
-      console.error('Error fetching enquiries:', error);
       toast.error('Failed to load enquiries');
       setEnquiries([]);
     } finally {
@@ -73,6 +73,15 @@ const AllEnquiries: React.FC = () => {
       <Header />
       <main className="flex-1 p-4 sm:p-6 lg:p-8">
         <div className="max-w-7xl mx-auto">
+          <div className="flex items-center mb-4">
+            <button
+              onClick={() => navigate(-1)}
+              className="flex items-center gap-2 text-[#78533F] hover:text-[#ED695A] transition"
+            >
+              <ArrowLeft size={24} />
+              Back
+            </button>
+          </div>
           <div className="mb-8 text-center sm:text-left">
             <h1 className="text-2xl sm:text-3xl font-bold text-[#78533F] font-serif flex items-center justify-center sm:justify-start gap-3">
               <Mail className="text-[#ED695A]" size={32} />
@@ -201,39 +210,23 @@ const AllEnquiries: React.FC = () => {
                     <button
                       onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                       disabled={currentPage === 1}
-                      className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                        currentPage === 1
-                          ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                          : 'bg-white border border-[#b09d94] text-[#78533F] hover:bg-[#FDF8F1]'
-                      }`}
+                      className="px-4 py-2 bg-[#ED695A] text-white rounded-lg disabled:opacity-50"
                     >
-                      Previous
+                      Prev
                     </button>
-
-                    <div className="flex gap-1">
-                      {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                        <button
-                          key={page}
-                          onClick={() => setCurrentPage(page)}
-                          className={`w-10 h-10 rounded-lg font-medium transition-all ${
-                            currentPage === page
-                              ? 'bg-[#ED695A] text-white'
-                              : 'bg-white border border-[#b09d94] text-[#78533F] hover:bg-[#FDF8F1]'
-                          }`}
-                        >
-                          {page}
-                        </button>
-                      ))}
-                    </div>
-
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={`px-4 py-2 rounded-lg ${currentPage === page ? 'bg-[#78533F] text-white' : 'bg-gray-200 text-gray-800'}`}
+                      >
+                        {page}
+                      </button>
+                    ))}
                     <button
                       onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                       disabled={currentPage === totalPages}
-                      className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                        currentPage === totalPages
-                          ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                          : 'bg-white border border-[#b09d94] text-[#78533F] hover:bg-[#FDF8F1]'
-                      }`}
+                      className="px-4 py-2 bg-[#ED695A] text-white rounded-lg disabled:opacity-50"
                     >
                       Next
                     </button>

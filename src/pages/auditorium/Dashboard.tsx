@@ -1,8 +1,8 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import Header from "../../component/user/Header";
 import { useSelector } from "react-redux";
 import type { RootState } from "../../redux/store";
-import { existingAllVenues, fetchAuditoriumUserdetails, upComingEvents } from "../../api/userApi";
+import { existingAllVenues, existingUserSubscription, fetchAuditoriumUserdetails, upComingEvents } from "../../api/userApi";
 import { X } from "lucide-react";
 
 const formatDate = (dateString: string) => {
@@ -16,7 +16,6 @@ const formatDate = (dateString: string) => {
       year: "numeric",
     });
   } catch (error) {
-    console.error("Date formatting error:", error);
     return "Unknown Date";
   }
 };
@@ -30,7 +29,6 @@ const isTodayOrFuture = (dateString: string) => {
     eventDate.setHours(0, 0, 0, 0);
     return eventDate >= today;
   } catch (error) {
-    console.error("Date comparison error:", error);
     return false;
   }
 };
@@ -45,8 +43,11 @@ const DashboardOverview = () => {
   const [showModal, setShowModal] = useState<boolean>(false);
   const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
   const [isVerified, setIsVerified] = useState<boolean>(false);
+  const [subscriptions, setSubscriptions] = useState<any[]>([]);
 
   const { currentUser } = useSelector((state: RootState) => state.auth);
+
+  const hasFetchedSubscriptions = useRef(false);
 
   const fetchAllVenues = async () => {
     try {
@@ -59,8 +60,20 @@ const DashboardOverview = () => {
           }
         }
       }
+    } catch (error) {}
+  };
+
+  const fetchAllUserSubscriptions = async () => {
+    if (hasFetchedSubscriptions.current) {
+      return;
+    }
+    hasFetchedSubscriptions.current = true;
+
+    try {
+      const response = await existingUserSubscription();
+      setSubscriptions(response.data?.data || []);
     } catch (error) {
-      console.error("Error fetching venues:", error);
+      setSubscriptions([]);
     }
   };
 
@@ -71,9 +84,7 @@ const DashboardOverview = () => {
         setAuditoriumName(response.data.auditoriumName || "");
         setIsVerified(response.data.isVerified);
       }
-    } catch (error) {
-      console.error("Error fetching user data:", error);
-    }
+    } catch (error) {}
   };
 
   const fetchAllUpcomingEvents = async () => {
@@ -83,12 +94,10 @@ const DashboardOverview = () => {
         if (response.data && Array.isArray(response.data.events)) {
           setUpcomingEvents(response.data.events);
         } else {
-          console.warn("No valid events array in response:", response.data);
           setUpcomingEvents([]);
         }
       }
     } catch (error) {
-      console.error("Error fetching upcoming events:", error);
       setUpcomingEvents([]);
     }
   };
@@ -97,6 +106,7 @@ const DashboardOverview = () => {
     fetchUserData();
     fetchAllVenues();
     fetchAllUpcomingEvents();
+    fetchAllUserSubscriptions();
   }, [currentUser]);
 
   const allVenues = [
@@ -155,7 +165,6 @@ const DashboardOverview = () => {
     }
   };
 
-  // Fixed: Use useMemo to ensure currentVenueData reacts to changes
   const currentVenueData = useMemo(() => {
     const filteredEvents = getFilteredEvents();
 
@@ -164,8 +173,8 @@ const DashboardOverview = () => {
         selectedVenue === "All Venues"
           ? "All Venues"
           : venues.find((v) => v._id === selectedVenue)?.name || "Unknown Venue",
-      totalBookings: 0, // Placeholder - can be updated later
-      earnings: { monthly: 0, yearly: 0 }, // Placeholder
+      totalBookings: 0,
+      earnings: { monthly: 0, yearly: 0 },
       upcomingEvents: filteredEvents,
     };
   }, [selectedVenue, upcomingEvents, venues]);
@@ -190,27 +199,71 @@ const DashboardOverview = () => {
     setSelectedEvent(null);
   };
 
+  const currentUserSubscriptions = useMemo(() => {
+    return subscriptions.filter(sub => sub.user?.email === currentUser?.email);
+  }, [subscriptions, currentUser]);
+
+  const calculateDaysLeft = (endDate: string) => {
+    if (!endDate) return 0;
+    const end = new Date(endDate);
+    const now = new Date();
+    const diff = end.getTime() - now.getTime();
+    return Math.max(0, Math.ceil(diff / (1000 * 3600 * 24)));
+  };
+
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
       <div className="flex flex-1">
         <main className="flex-1 p-4 py-6 w-full max-w-7xl mx-auto sm:px-6 lg:px-8">
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold text-[#78533F] sm:text-3xl">
-              Welcome to the Auditorium{" "}
+          <div className="mb-6 flex flex-col md:flex-row justify-between items-start gap-6">
+            <div className="w-full md:w-auto">
+              <h2 className="text-2xl font-bold text-[#78533F] sm:text-3xl">
+                Welcome to the Auditorium{" "}
+                <br />
+                <br />
+                <span className="text-3xl bg-[#ED695A] text-white px-1 rounded">
+                  {auditoriumName.toUpperCase() || "N/A"}
+                </span>
+              </h2>
+              <p className={`text-sm font-medium mt-2 ${isVerified ? 'text-green-600' : 'text-red-600'}`}>
+                {isVerified ? 'Verified Successfully' : 'Not Verified - Please verify your auditorium'}
+              </p>
               <br />
-              <br />
-              <span className="text-3xl bg-[#ED695A] text-white px-1 rounded">
-                {auditoriumName.toUpperCase() || "N/A"}
-              </span>
-            </h2>
-            <p className={`text-sm font-medium mt-2 ${isVerified ? 'text-green-600' : 'text-red-600'}`}>
-              {isVerified ? 'Verified Successfully' : 'Not Verified - Please verify your auditorium'}
-            </p>
-            <br />
-            <p className="text-gray-600 text-sm sm:text-base mt-1">
-              Hello! Here's what's happening with your venues today.
-            </p>
+              <p className="text-gray-600 text-sm sm:text-base mt-1">
+                Hello! Here's what's happening with your venues today.
+              </p>
+            </div>
+            <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm w-full md:w-auto min-w-[250px] md:min-w-[300px]">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-gray-500 text-sm font-medium">Subscription Validity</h3>
+                <span className="p-2 bg-[#ED695A] bg-opacity-10 rounded-lg">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#ED695A]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </span>
+              </div>
+              {currentUserSubscriptions.length > 0 ? (
+                <div className="space-y-4">
+                  {currentUserSubscriptions.map((sub, index) => {
+                    const daysLeft = calculateDaysLeft(sub.subscriptionDates.endDate);
+                    return (
+                      <div key={sub._id || index} className="text-sm text-gray-700">
+                        <p><strong>Plan:</strong> {sub.subscription.planName || "N/A"}</p>
+                        <p><strong>Valid From:</strong> {formatDate(sub.subscriptionDates.startDate)}</p>
+                        <p><strong>Valid Until:</strong> {formatDate(sub.subscriptionDates.endDate)}</p>
+                        <p><strong>Status:</strong> {sub.subscriptionDates.status || "N/A"}</p>
+                        <p className={daysLeft < 2 ? "text-red-600" : ""}>
+                          <strong>Days Left:</strong> {daysLeft}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-gray-500 text-sm">No active subscriptions</p>
+              )}
+            </div>
           </div>
 
           <div className="mb-6">
@@ -250,9 +303,7 @@ const DashboardOverview = () => {
             </p>
           </div>
 
-          {/* Stats Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
-            {/* ... (your existing 4 stat cards remain unchanged) */}
             <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-gray-500 text-sm font-medium">Total Bookings</h3>
@@ -338,7 +389,6 @@ const DashboardOverview = () => {
             </div>
           </div>
 
-          {/* Upcoming Events Section */}
           <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-8">
             <div className="border-b border-gray-200">
               <div className="flex">
@@ -400,7 +450,6 @@ const DashboardOverview = () => {
                       </div>
                     ))}
 
-                    {/* Fixed: Show More / Show Less button with better text visibility */}
                     {hasMoreEvents && (
                       <div className="pt-4 border-t border-gray-100">
                         <button
@@ -441,7 +490,6 @@ const DashboardOverview = () => {
             )}
           </div>
 
-          {/* Modal */}
           {showModal && selectedEvent && (
             <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
               <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">

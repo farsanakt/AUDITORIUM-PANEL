@@ -280,7 +280,7 @@ const VenueSelector: React.FC = () => {
                     onChange={(e) => setEvent(e.target.value)}
                     className="w-full h-10 pl-10 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 font-serif"
                   >
-                    <option value="">Event</option>
+                    {/* <option value="">Event</option> */}
                     <option value="wedding">Wedding</option>
                     <option value="engagement">Engagement</option>
                     <option value="reception">Reception</option>
@@ -313,7 +313,7 @@ const VenueSelector: React.FC = () => {
                     onChange={(e) => setEvent(e.target.value)}
                     className="w-full h-12 pl-12 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 font-serif"
                   >
-                    <option value="">Event</option>
+                    
                     <option value="wedding">Wedding</option>
                     <option value="engagement">Engagement</option>
                     <option value="reception">Reception</option>
