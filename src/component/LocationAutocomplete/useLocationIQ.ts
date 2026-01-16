@@ -16,7 +16,7 @@ export const useLocationIQ = (query: string) => {
         setLoading(true);
 
         const res = await fetch(
-  `http://localhost:4000/api/locations/search?q=${encodeURIComponent(query)}`
+  `https://api.ibookingvenue.com /api/locations/search?q=${encodeURIComponent(query)}`
 );
 
 
