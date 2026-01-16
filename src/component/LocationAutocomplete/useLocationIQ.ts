@@ -14,9 +14,8 @@ export const useLocationIQ = (query: string) => {
     const timer = setTimeout(async () => {
       try {
         setLoading(true);
-
-        const res = await fetch(
-  `https://api.ibookingvenue.com /api/locations/search?q=${encodeURIComponent(query)}`
+const res = await fetch(
+  `${import.meta.env.VITE_USER_API_URL}/api/locations/search?q=${encodeURIComponent(query)}`
 );
 
 
