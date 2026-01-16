@@ -116,6 +116,10 @@ interface Venue {
   advAmnt?: string
   advamnt?: string
   offer?: Offer
+  acAdvanceAmount?: string
+  acCompleteAmount?: string
+  nonAcAdvanceAmount?: string
+  nonAcCompleteAmount?: string
 }
 
 interface Booking {
@@ -212,6 +216,15 @@ const Bookings: React.FC = () => {
     "November",
     "December",
   ]
+
+  const formatPriceShort = (amount: string | undefined) => {
+    if (!amount) return "N/A"
+    const num = Number.parseFloat(amount)
+    if (isNaN(num)) return "N/A"
+    if (num >= 1000000) return `₹${(num / 1000000).toFixed(1)}M`
+    if (num >= 1000) return `₹${Math.floor(num / 1000)}K`
+    return `₹${num.toFixed(0)}`
+  }
 
   const getFormattedPrice = (amount: string | undefined, isTotalAmount: boolean = false) => {
     if (!amount || isNaN(Number.parseFloat(amount))) {
@@ -339,8 +352,8 @@ const Bookings: React.FC = () => {
         const eventTypes = venueData.events || [];
 
 
-        const originalTotal = venueData.totalamount || ""
-        const originalAdvance = venueData.advAmnt || venueData.advamnt || ""
+        const originalTotal = venueData.acCompleteAmount || venueData.nonAcCompleteAmount || venueData.totalamount || ""
+        const originalAdvance = venueData.acAdvanceAmount || venueData.nonAcAdvanceAmount || venueData.advAmnt || venueData.advamnt || ""
 
         setOriginalAmounts({
           total: originalTotal,
@@ -375,6 +388,15 @@ const Bookings: React.FC = () => {
               ? (Number.parseFloat(originalTotal) - Number.parseFloat(originalAdvance)).toString()
               : "",
         }))
+
+        // Set default acOption based on acType
+        const acTypeLower = venueData.acType.toLowerCase()
+        if (acTypeLower !== "both") {
+          setAcOption(venueData.acType)
+        } else {
+          // Default to AC for both
+          setAcOption("AC")
+        }
       } else {
         setError("No venue data received")
       }
@@ -420,6 +442,47 @@ const Bookings: React.FC = () => {
     }
   }, [selectedDate])
 
+  useEffect(() => {
+    if (venue && acOption) {
+      let total = venue.totalamount || ""
+      let advance = venue.advAmnt || venue.advamnt || ""
+      const acTypeLower = venue.acType.toLowerCase()
+      if (acTypeLower === "both") {
+        if (acOption === "AC") {
+          total = venue.acCompleteAmount || total
+          advance = venue.acAdvanceAmount || advance
+        } else if (acOption === "Non-AC") {
+          total = venue.nonAcCompleteAmount || total
+          advance = venue.nonAcAdvanceAmount || advance
+        }
+      } else if (acTypeLower === "ac") {
+        total = venue.acCompleteAmount || total
+        advance = venue.acAdvanceAmount || advance
+      } else if (acTypeLower === "non-ac") {
+        total = venue.nonAcCompleteAmount || total
+        advance = venue.nonAcAdvanceAmount || advance
+      }
+
+      setOriginalAmounts({
+        total,
+        advance,
+      })
+
+      let finalTotal = total
+      if (appliedOffer) {
+        finalTotal = calculateDiscountedAmount(total, appliedOffer).toString()
+      }
+
+      setFormData((prev) => ({
+        ...prev,
+        totalAmount: finalTotal,
+        advanceAmount: advance,
+        paidAmount: prev.paymentType === "full" ? finalTotal : advance,
+        balanceAmount: prev.paymentType === "full" ? "0" : (Number.parseFloat(finalTotal) - Number.parseFloat(advance)).toString(),
+      }))
+    }
+  }, [acOption, venue, appliedOffer])
+
   const generateCalendarDays = () => {
     const daysInMonth = getDaysInMonth(currentDate)
     const firstDay = getFirstDayOfMonth(currentDate)
@@ -447,8 +510,8 @@ const Bookings: React.FC = () => {
     const remainingDays = 42 - days.length
     for (let day = 1; day <= remainingDays; day++) {
       days.push({
-        day,
-        date: new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, day),
+        day: '',
+        date: null,
         isCurrentMonth: false,
       })
     }
@@ -492,10 +555,10 @@ const Bookings: React.FC = () => {
 
   const getDateClassName = (date: Date | null, isCurrentMonth: boolean) => {
     const baseClass =
-      "w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center text-xs sm:text-sm md:text-base font-medium transition-all relative group"
+      "w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-16 lg:h-16 rounded-full flex flex-col items-center justify-center text-sm sm:text-base font-medium transition-all relative group"
 
     if (!isCurrentMonth || !date) {
-      return `${baseClass} text-gray-400 cursor-not-allowed`
+      return `${baseClass} text-gray-400 cursor-not-allowed bg-transparent`
     }
 
     const status = getDateStatus(date)
@@ -804,47 +867,47 @@ const Bookings: React.FC = () => {
                 </div>
               </div>
             </div>
-            <div className="grid lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
-              <div className="space-y-4 sm:space-y-6">
+            <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 lg:gap-8 lg:items-stretch">
+              <div className="flex flex-col space-y-4 sm:space-y-6 flex-1">
                 <h3 className="text-base sm:text-lg md:text-xl font-semibold text-[#78533F]">Availability Calendar</h3>
-                <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 border-2 border-[#b09d94]">
-                  <div className="flex items-center justify-between mb-4 sm:mb-6">
+                <div className="bg-white rounded-2xl shadow-lg border-2 border-[#b09d94] overflow-hidden flex-1">
+                  <div className="bg-[#ED695A] text-white p-2 sm:p-3 flex items-center justify-between">
                     <button
                       onClick={() => navigateMonth("prev")}
-                      className="p-2 hover:bg-[#FDF8F1] rounded-full transition-all transform hover:scale-105"
+                      className="p-1 hover:bg-red-600 rounded transition-all"
                     >
-                      <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 text-[#3C3A39]" />
+                      <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
                     </button>
                     <div className="flex items-center gap-2">
-                      <h2 className="text-sm sm:text-lg md:text-xl font-semibold text-[#78533F]">
+                      <h2 className="text-sm sm:text-lg md:text-xl font-semibold">
                         {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
                       </h2>
                       <div className="flex flex-col">
                         <button
                           onClick={() => navigateYear("next")}
-                          className="p-1 hover:bg-[#FDF8F1] rounded transition-all"
+                          className="p-1 hover:bg-red-600 rounded transition-all"
                           disabled={currentDate.getFullYear() >= new Date().getFullYear() + 10}
                         >
-                          <ChevronUp className="w-4 h-4 sm:w-5 sm:h-5 text-[#3C3A39]" />
+                          <ChevronUp className="w-4 h-4 sm:w-5 sm:h-5" />
                         </button>
                         <button
                           onClick={() => navigateYear("prev")}
-                          className="p-1 hover:bg-[#FDF8F1] rounded transition-all"
+                          className="p-1 hover:bg-red-600 rounded transition-all"
                           disabled={currentDate.getFullYear() <= new Date().getFullYear()}
                         >
-                          <ChevronDown className="w-4 h-4 sm:w-5 sm:h-5 text-[#3C3A39]" />
+                          <ChevronDown className="w-4 h-4 sm:w-5 sm:h-5" />
                         </button>
                       </div>
                     </div>
                     <button
                       onClick={() => navigateMonth("next")}
-                      className="p-2 hover:bg-[#FDF8F1] rounded-full transition-all transform hover:scale-105"
+                      className="p-1 hover:bg-red-600 rounded transition-all"
                     >
-                      <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 text-[#3C3A39]" />
+                      <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
                     </button>
                   </div>
-                  <div className="grid grid-cols-7 gap-1 sm:gap-2">
-                    {["S", "M", "T", "W", "T", "F", "S"].map((day, index) => (
+                  <div className="grid grid-cols-7 gap-0.5 p-1 sm:p-2">
+                    {["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"].map((day, index) => (
                       <div
                         key={index}
                         className="h-6 sm:h-8 flex items-center justify-center text-xs sm:text-sm font-medium text-[#3C3A39]"
@@ -857,62 +920,96 @@ const Bookings: React.FC = () => {
                         key={index}
                         className={getDateClassName(dateObj.date, dateObj.isCurrentMonth)}
                         onClick={() => handleDateClick(dateObj.date)}
-                        style={{ aspectRatio: "1" }}
                       >
-                        {dateObj.day || ""}
+                        <span>{dateObj.day || ""}</span>
+                        {dateObj.day && dateObj.isCurrentMonth && (
+                          <span className="text-[9px] sm:text-[10px] text-gray-600 mt-0.5">
+                            {formatPriceShort(originalAmounts.total)}
+                          </span>
+                        )}
                         {dateObj.isCurrentMonth && dateObj.date && getDateStatus(dateObj.date) !== "past" && (
                           <div className="hidden group-hover:block">{getTooltipContent(dateObj.date)}</div>
                         )}
                       </div>
                     ))}
                   </div>
-                  <div className="mt-4 p-3 sm:p-4">
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
-                      <div className="flex items-center gap-2 text-xs sm:text-sm">
-                        <div className="w-3 h-3 sm:w-4 sm:h-4 bg-green-100 border-2 border-green-400 rounded-full"></div>
-                        <span className="text-[#3C3A39]">Available</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs sm:text-sm">
-                        <div className="w-3 h-3 sm:w-4 sm:h-4 bg-yellow-400 rounded-full"></div>
-                        <span className="text-[#3C3A39]">Partial</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs sm:text-sm">
-                        <div className="w-3 h-3 sm:w-4 sm:h-4 bg-red-500 rounded-full"></div>
-                        <span className="text-[#3C3A39]">Booked</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs sm:text-sm">
-                        <div className="w-3 h-3 sm:w-4 sm:h-4 bg-gray-100 border-2 border-gray-400 rounded-full"></div>
-                        <span className="text-[#3C3A39]">Past</span>
-                      </div>
+                  <div className="p-2 border-t-2 border-[#b09d94] grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-green-100 border border-green-400 rounded-full"></div>
+                      <span className="text-[#3C3A39]">Available</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
+                      <span className="text-[#3C3A39]">Partial</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                      <span className="text-[#3C3A39]">Booked</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-gray-100 border border-gray-400 rounded-full"></div>
+                      <span className="text-[#3C3A39]">Past</span>
                     </div>
                   </div>
                 </div>
               </div>
-              <div className="space-y-4 sm:space-y-6">
+              <div className="flex flex-col space-y-4 sm:space-y-6 flex-1">
                 <h3 className="text-base sm:text-lg md:text-xl font-semibold text-[#78533F]">Booking Options</h3>
-                <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 border-2 border-[#b09d94]">
+                <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 border-2 border-[#b09d94] flex-1">
                   <div className="space-y-4 sm:space-y-6">
                     <div>
                       <label className="block text-xs sm:text-sm font-semibold text-[#78533F] flex items-center mb-2">
                         <span className="mr-2">❄️</span>AC Option
                       </label>
-                      <select
-                        value={acOption}
-                        onChange={(e) => setAcOption(e.target.value)}
-                        className="w-full p-2 sm:p-3 border-2 border-[#b09d94] text-[#3C3A39] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ED695A] focus:border-transparent transition-all text-xs sm:text-sm"
-                      >
-                        <option value="">Select AC Option</option>
-                        {venue?.acType === "both" ? (
-                          <>
-                            <option value="AC">AC</option>
-                            <option value="Non-AC">Non-AC</option>
-                          </>
-                        ) : venue?.acType ? (
-                          <option value={venue.acType}>{venue.acType}</option>
-                        ) : (
-                          <option value="">No AC option available</option>
-                        )}
-                      </select>
+                      {venue?.acType.toLowerCase() === "both" ? (
+                        <div className="space-y-2">
+                          <label className="flex items-start gap-2 p-2 border-2 border-[#b09d94] rounded-xl cursor-pointer hover:bg-[#FDF8F1] transition-all">
+                            <input
+                              type="radio"
+                              name="acOption"
+                              value="AC"
+                              checked={acOption === "AC"}
+                              onChange={(e) => setAcOption(e.target.value)}
+                              className="mt-1 text-[#ED695A] focus:ring-[#ED695A]"
+                            />
+                            <div>
+                              <span className="font-medium text-[#3C3A39]">AC</span>
+                              <p className="text-xs text-[#78533F]">
+                                Total: {venue.acCompleteAmount ? formatPriceShort(venue.acCompleteAmount) : "N/A"} | Advance: {venue.acAdvanceAmount ? formatPriceShort(venue.acAdvanceAmount) : "N/A"}
+                              </p>
+                            </div>
+                          </label>
+                          <label className="flex items-start gap-2 p-2 border-2 border-[#b09d94] rounded-xl cursor-pointer hover:bg-[#FDF8F1] transition-all">
+                            <input
+                              type="radio"
+                              name="acOption"
+                              value="Non-AC"
+                              checked={acOption === "Non-AC"}
+                              onChange={(e) => setAcOption(e.target.value)}
+                              className="mt-1 text-[#ED695A] focus:ring-[#ED695A]"
+                            />
+                            <div>
+                              <span className="font-medium text-[#3C3A39]">Non-AC</span>
+                              <p className="text-xs text-[#78533F]">
+                                Total: {venue.nonAcCompleteAmount ? formatPriceShort(venue.nonAcCompleteAmount) : "N/A"} | Advance: {venue.nonAcAdvanceAmount ? formatPriceShort(venue.nonAcAdvanceAmount) : "N/A"}
+                              </p>
+                            </div>
+                          </label>
+                        </div>
+                      ) : (
+                        <select
+                          value={acOption}
+                          onChange={(e) => setAcOption(e.target.value)}
+                          className="w-full p-2 sm:p-3 border-2 border-[#b09d94] text-[#3C3A39] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ED695A] focus:border-transparent transition-all text-xs sm:text-sm"
+                        >
+                          <option value="">Select AC Option</option>
+                          {venue?.acType ? (
+                            <option value={venue.acType}>{venue.acType}</option>
+                          ) : (
+                            <option value="">No AC option available</option>
+                          )}
+                        </select>
+                      )}
                     </div>
                     <div>
                       <label className="block text-xs sm:text-sm font-semibold text-[#78533F] flex items-center mb-2">
@@ -1366,6 +1463,7 @@ const Bookings: React.FC = () => {
                           >
                             Okay
                           </button>
+                          
                         )}
                       </div>
                     </div>

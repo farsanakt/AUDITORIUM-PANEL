@@ -45,7 +45,7 @@ const VendorsList: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [showExpiring, setShowExpiring] = useState<boolean>(false);
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const itemsPerPage = 5;
+  const itemsPerPage = 10;
 
   const { currentUser } = useSelector((state: RootState) => state.auth);
   const navigate = useNavigate();
