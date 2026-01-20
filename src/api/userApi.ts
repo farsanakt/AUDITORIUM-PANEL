@@ -9,6 +9,8 @@ const api=instance
 
 
 export const singUpRequest = async (formData: any) => {
+
+  console.log(formData,'formdata')
    
   try {
     const response = await api.post('/signup', formData)
@@ -36,6 +38,8 @@ export const AuditoriumLogin =async (email:string,password:string,loginMode:stri
 
 
 export const addVenueAPI=async(formData:FormData)=>{
+
+  console.log('njn ivde undallooo')
 
 
   console.log(formData,'kkkkkkkkkkk')

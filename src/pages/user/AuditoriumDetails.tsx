@@ -20,7 +20,7 @@ interface Auditorium {
   _id: string;
   name: string;
   address: string;
-  locations?: string[];
+  locations?: { name: string; lat: number; lon: number; district: string }[];
   pincode: string;
   phone: string;
   altPhone: string;
@@ -44,6 +44,17 @@ interface Auditorium {
   offer?: Offer;
   youtubeLink?: string;
   termsAndConditions?: string[]; // e.g., ["cfff,ddd"]
+  acAdvanceAmount?: string;
+  acCompleteAmount?: string;
+  nonAcAdvanceAmount?: string;
+  nonAcCompleteAmount?: string;
+  guestroom?: string;
+  stageSize?: string;
+  events?: string[];
+  isVerified?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  __v?: number;
 }
 
 interface PolicyCardProps {
@@ -153,7 +164,9 @@ const AuditoriumDetails: React.FC = () => {
 
       const auditoriumData = {
         ...venueResponse.data,
-        advAmnt: venueResponse.data.advAmnt || venueResponse.data.advamnt,
+        advAmnt: venueResponse.data.acAdvanceAmount || venueResponse.data.nonAcAdvanceAmount || venueResponse.data.advAmnt || venueResponse.data.advamnt,
+        totalamount: venueResponse.data.acCompleteAmount || venueResponse.data.nonAcCompleteAmount || venueResponse.data.tariff?.wedding || venueResponse.data.tariff?.reception || "0",
+        locations: venueResponse.data.locations?.map((loc: any) => loc.name) || [],
         offer: matchingOffer,
         termsAndConditions: venueResponse.data.termsAndConditions || [],
       };
@@ -180,7 +193,7 @@ const AuditoriumDetails: React.FC = () => {
   useEffect(() => {
     if (auditorium?.images?.length > 1) {
       const interval = setInterval(() => {
-        setCurrent((prev) => (prev + 1) % auditorium.images.length);
+        setCurrent((prev) => (prev + 1) % auditorium?.images.length);
       }, 3000);
       return () => clearInterval(interval);
     }
@@ -196,7 +209,8 @@ const AuditoriumDetails: React.FC = () => {
 
   const handleBooking = () => {
     const date = searchParams.get("date") || "";
-    navigate(`/bookings/${id}?date=${encodeURIComponent(date)}`);
+    const event = searchParams.get("event") || "";
+    navigate(`/bookings/${id}?date=${encodeURIComponent(date)}&event=${encodeURIComponent(event)}`);
   };
 
   const getFormattedPrice = (amount: string | undefined, offer?: Offer, isTotalAmount: boolean = false) => {
@@ -324,7 +338,7 @@ const AuditoriumDetails: React.FC = () => {
             <span className="text-xs sm:text-sm md:text-base text-[#5B4336]">
               {auditorium.address},{' '}
               {Array.isArray(auditorium.locations) && auditorium.locations.length > 0
-                ? auditorium.locations.join(", ")
+                ? auditorium.locations.map(loc => loc.name).join(", ")
                 : "City not specified"}{' '}
               {auditorium.pincode}
             </span>
@@ -394,15 +408,19 @@ const AuditoriumDetails: React.FC = () => {
               <h3 className="text-base sm:text-lg md:text-xl font-semibold text-left text-[#5B4336] mt-4 sm:mt-6 mb-3">
                 About Venue
               </h3>
-              <ExpandableText 
-                content={`${auditorium.name} is a premier event venue offering modern amenities and elegant spaces for various events.
-With a seating capacity of ${auditorium.seatingCapacity} and dining capacity of ${auditorium.diningCapacity},
-it's ideal for ${auditorium.tariff.wedding === "t" ? "weddings" : ""}
-${auditorium.tariff.wedding === "t" && auditorium.tariff.reception === "t" ? ", " : ""}
-${auditorium.tariff.reception === "t" ? "receptions" : ""}, and other celebrations.
-The venue supports ${auditorium.foodPolicy} food options and ${auditorium.decorPolicy} decoration policies.`}
-                maxLines={3}
-              />
+              <p className="text-xs sm:text-sm md:text-base text-gray-700 text-left">
+                {auditorium.name} is located at {auditorium.address}, {auditorium.district}, {auditorium.pincode}. 
+                It offers {auditorium.acType} facilities with a seating capacity of {auditorium.seatingCapacity} and dining capacity of {auditorium.diningCapacity}.
+                Available events: {auditorium.events?.join(", ") || "N/A"}.
+                Amenities include: {auditorium.amenities.join(", ")}.
+                Stage size: {auditorium.stageSize || "N/A"}.
+                Guest rooms: {auditorium.guestroom || "N/A"}.
+                Changing rooms: {auditorium.changingRooms}.
+                Parking slots: {auditorium.parkingSlots}.
+                Time slots: {auditorium.timeSlots.map(slot => slot.label).join(", ")}.
+                Created at: {new Date(auditorium.createdAt || "").toLocaleDateString()}.
+                Updated at: {new Date(auditorium.updatedAt || "").toLocaleDateString()}.
+              </p>
             </div>
             <div className="flex-shrink-0 w-full lg:w-auto">
               <button
@@ -460,9 +478,9 @@ The venue supports ${auditorium.foodPolicy} food options and ${auditorium.decorP
                 <div>
                   <h4 className="font-semibold text-sm sm:text-base md:text-lg text-[#2A2929] mb-2 text-left">Lodging</h4>
                   <ul className="list-disc list-inside space-y-1 text-left">
-                    <li>{auditorium.changingRooms ? "Rooms Available" : "No Rooms Available"}</li>
+                    <li>{auditorium.guestroom ? "Rooms Available" : "No Rooms Available"}</li>
                     <li>
-                      Number of rooms: <span className="font-semibold">{auditorium.changingRooms || "0"}</span>
+                      Number of rooms: <span className="font-semibold">{auditorium.guestroom || "0"}</span>
                     </li>
                     <li>
                       Average price: <span className="font-semibold">Contact for details</span>
@@ -501,9 +519,9 @@ The venue supports ${auditorium.foodPolicy} food options and ${auditorium.decorP
                 <div>
                   <h4 className="font-semibold text-sm sm:text-base md:text-lg text-[#2A2929] mb-2 text-left">Decoration & Food</h4>
                   <ul className="list-disc list-inside space-y-1 text-left">
-                    <li>Decoration: <span className="font-semibold">{auditorium.decorPolicy === "coustom" ? "Custom Allowed" : "Venue Provided"}</span></li>
-                    <li>Food: <span className="font-semibold">{auditorium.foodPolicy === "veg" ? "Vegetarian Only" : "Mixed Options"}</span></li>
-                    <li>Cancellation: <span className="font-semibold">{auditorium.cancellationPolicy === "partially" ? "Partially Refundable" : "Non-Refundable"}</span></li>
+                    <li>Decoration: <span className="font-semibold">{auditorium.decorPolicy}</span></li>
+                    <li>Food: <span className="font-semibold">{auditorium.foodPolicy}</span></li>
+                    <li>Cancellation: <span className="font-semibold">{auditorium.cancellationPolicy}</span></li>
                   </ul>
                 </div>
 
@@ -517,10 +535,34 @@ The venue supports ${auditorium.foodPolicy} food options and ${auditorium.decorP
                     <li>
                       Advance Amount: {getFormattedPrice(auditorium.advAmnt, undefined, false)}
                     </li>
+                    <li>
+                      AC Advance: {getFormattedPrice(auditorium.acAdvanceAmount, undefined, false)}
+                    </li>
+                    <li>
+                      AC Complete: {getFormattedPrice(auditorium.acCompleteAmount, auditorium.offer, true)}
+                    </li>
+                    <li>
+                      Non-AC Advance: {getFormattedPrice(auditorium.nonAcAdvanceAmount, undefined, false)}
+                    </li>
+                    <li>
+                      Non-AC Complete: {getFormattedPrice(auditorium.nonAcCompleteAmount, auditorium.offer, true)}
+                    </li>
+                    <li>Tariff Wedding: {getFormattedPrice(auditorium.tariff?.wedding, undefined, false)}</li>
+                    <li>Tariff Reception: {getFormattedPrice(auditorium.tariff?.reception, undefined, false)}</li>
                   </ul>
                 </div>
 
-                {/* Terms & Conditions were moved below policy cards */}
+                {/* Other Details */}
+                <div>
+                  <h4 className="font-semibold text-sm sm:text-base md:text-lg text-[#2A2929] mb-2 text-left">Other Details</h4>
+                  <ul className="list-disc list-inside space-y-1 text-left">
+                    <li>Stage Size: {auditorium.stageSize || "N/A"}</li>
+                    <li>Events: {auditorium.events?.join(", ") || "N/A"}</li>
+                    <li>Time Slots: {auditorium.timeSlots.map(slot => slot.label).join(", ")}</li>
+                    <li>Created At: {new Date(auditorium.createdAt || "").toLocaleDateString()}</li>
+                    <li>Updated At: {new Date(auditorium.updatedAt || "").toLocaleDateString()}</li>
+                  </ul>
+                </div>
               </div>
             </div>
           </div>
@@ -610,7 +652,7 @@ The venue supports ${auditorium.foodPolicy} food options and ${auditorium.decorP
                         <p className="text-gray-600 text-xs sm:text-sm md:text-base">
                           {auditorium.address},{' '}
                           {Array.isArray(auditorium.locations) && auditorium.locations.length > 0
-                            ? auditorium.locations.join(", ")
+                            ? auditorium.locations.map(loc => loc.name).join(", ")
                             : "City not specified"}{' '}
                           {auditorium.pincode}
                         </p>
@@ -623,18 +665,8 @@ The venue supports ${auditorium.foodPolicy} food options and ${auditorium.decorP
                         stroke="currentColor"
                         viewBox="0 0 24 24"
                       >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                        />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                       </svg>
                       <p className="text-gray-600 text-xs sm:text-sm md:text-base">Easily accessible by public transport</p>
                     </div>

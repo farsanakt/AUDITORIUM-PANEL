@@ -1,14 +1,25 @@
+'use client';
+
 import type React from "react"
 import { useState, useEffect, useRef } from "react"
-import { MapPin, Calendar, Flag, Search, ChevronLeft, ChevronRight, Star } from "lucide-react"
+import { MapPin, Calendar, Flag, Search, ChevronLeft, ChevronRight, Star, X } from "lucide-react"
 import Header from "../../component/user/Header"
 import bgImg from "../../assets/Rectangle 50.png"
 import pjct from "../../assets/image 16.png"
 import pjct1 from "../../assets/Rectangle 30.png"
+import dum from '../../assets/dum3.webp'
+import dumm from '../../assets/dum2.jpg'
+import dum1 from '../../assets/dum2.jpg'
+import dum2 from '../../assets/dum4.jpg'
+import dum3 from '../../assets/dum5.jpg'
+import dum4 from '../../assets/dum6.jpg'
 import { useNavigate } from "react-router-dom"
 import { useSelector } from "react-redux"
 import { existingVenues, fetchAllExistingOffer, fetchAllExistingVouchers, fetchAllVendors, getItems } from "../../api/userApi"
 import LocationAutocomplete from "../../component/LocationAutocomplete/LocationAutocomplete" 
+import Footer from "../../component/user/Footer"
+import { LocationResult } from "../../component/LocationAutocomplete/types"
+import { Project } from "../../types/project"; 
 
 const Toast = ({ message, type = "error", onClose }: { message: string; type?: string; onClose: () => void }) => {
   useEffect(() => {
@@ -80,13 +91,6 @@ interface Venue {
   voucher?: Voucher
 }
 
-interface Project {
-  id: number
-  title: string
-  image: string
-  category: string
-}
-
 const HomePage: React.FC = () => {
   const [isVisible, setIsVisible] = useState<boolean>(false)
   const [formData, setFormData] = useState({
@@ -95,6 +99,8 @@ const HomePage: React.FC = () => {
     date: "",
     event: "",
     location: "",
+    latitude: "",
+    longitude: "",
   })
   const [venues, setVenues] = useState<Venue[]>([])
   const [vendorsByType, setVendorsByType] = useState<Record<string, Artist[]>>({})
@@ -109,6 +115,10 @@ const HomePage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedVoucher, setSelectedVoucher] = useState<Voucher | null>(null)
   const [toast, setToast] = useState<{ message: string; type: string } | null>(null)
+  const [showAd, setShowAd] = useState<boolean>(false)
+  const [currentSlide, setCurrentSlide] = useState<number>(0)
+  const [adImages, setAdImages] = useState<string[]>([])
+  const [heroCurrentSlide, setHeroCurrentSlide] = useState<number>(0)
   const navigate = useNavigate()
 
   const { currentUser } = useSelector((state: any) => state.auth);
@@ -116,9 +126,16 @@ const HomePage: React.FC = () => {
 
   const [eventTypes, setEventTypes] = useState<string[]>([])
   const [loadingDropdowns, setLoadingDropdowns] = useState<boolean>(true)
+  const [projectImages, setProjectImages] = useState<Project[]>([])
 
   const venuesRef = useRef<HTMLDivElement>(null)
   const vendorRefs = useRef<Record<string, HTMLDivElement | null>>({})
+  const adTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const slideTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const heroSlideTimerRef = useRef<NodeJS.Timeout | null>(null)
+
+
+  const heroImages = [dumm,bgImg, dum1,dum3,dum4]; 
 
   const fetchALLExitingItems = async () => {
     try {
@@ -134,26 +151,40 @@ const HomePage: React.FC = () => {
     }
   }
 
-  const projects: Project[] = [
-    {
-      id: 1,
-      title: "Romantic Beach Wedding",
-      image: pjct1,
-      category: "Beach Wedding",
-    },
-    {
-      id: 2,
-      title: "Garden Party Reception",
-      image: pjct,
-      category: "Garden Wedding",
-    },
-    {
-      id: 3,
-      title: "Garden Party Reception",
-      image: pjct,
-      category: "Garden Wedding",
-    },
-  ]
+  // Fetch project images from backend
+  const fetchProjectImages = async () => {
+    try {
+      // Replace with your actual API endpoint
+      // For now, using local fallback
+      const defaultProjects: Project[] = [
+        {
+          id: 1,
+          title: "Romantic Beach Wedding",
+          image: pjct1,
+          category: "Beach Wedding",
+        },
+        {
+          id: 2,
+          title: "Garden Party Reception",
+          image: dum1,
+          category: "Garden Wedding",
+        },
+        {
+          id: 3,
+          title: "Grand Ballroom Event",
+          image: dum,
+          category: "Ballroom Wedding",
+        },
+      ]
+      setProjectImages(defaultProjects)
+    } catch (error) {
+      console.error("Error fetching project images:", error)
+    }
+  }
+
+  useEffect(() => {
+    fetchProjectImages()
+  }, [])
 
   const fetchAllOffers = async () => {
     try {
@@ -324,6 +355,45 @@ const HomePage: React.FC = () => {
     return () => clearTimeout(timer)
   }, [])
 
+  useEffect(() => {
+    
+    adTimerRef.current = setTimeout(() => {
+      setShowAd(true)
+     
+      adTimerRef.current = setInterval(() => {
+        setShowAd(true)
+        setCurrentSlide(0)
+      }, 600000) 
+    }, 10000) 
+    return () => {
+      if (adTimerRef.current) clearTimeout(adTimerRef.current)
+    }
+  }, [])
+
+  // Auto-slide carousel for projects
+  useEffect(() => {
+    if (projectImages.length > 1) {
+      slideTimerRef.current = setInterval(() => {
+        setCurrentSlide((prev) => (prev + 1) % projectImages.length)
+      }, 5000) // Change slide every 5 seconds
+      return () => {
+        if (slideTimerRef.current) clearInterval(slideTimerRef.current)
+      }
+    }
+  }, [projectImages])
+
+  // Auto-slide for hero section
+  useEffect(() => {
+    if (heroImages.length > 1) {
+      heroSlideTimerRef.current = setInterval(() => {
+        setHeroCurrentSlide((prev) => (prev + 1) % heroImages.length)
+      }, 5000) // Change every 5 seconds
+      return () => {
+        if (heroSlideTimerRef.current) clearInterval(heroSlideTimerRef.current)
+      }
+    }
+  }, [heroImages.length])
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({
@@ -342,19 +412,21 @@ const HomePage: React.FC = () => {
       ...prev,
       location: location.displayName,
       place: parts[0],
-      district: parts[1]
+      district: parts[1],
+      latitude: location.latitude ? location.latitude.toString() : "",
+      longitude: location.longitude ? location.longitude.toString() : "",
     }));
   }
 
   const handleSubmit = () => {
     console.log("Form submitted:", formData)
-    const { district, place, date, event } = formData
+    const { district, place, date, event, latitude, longitude } = formData
     if (!district || !place || !date || !event) {
       setToast({ message: "Please fill in all fields: location, date, and event.", type: "error" })
       return
     }
     navigate(
-      `/auditoriumlist?district=${encodeURIComponent(district)}&place=${encodeURIComponent(place)}&date=${encodeURIComponent(date)}&event=${encodeURIComponent(event)}`,
+      `/auditoriumlist?district=${encodeURIComponent(district)}&place=${encodeURIComponent(place)}&date=${encodeURIComponent(date)}&event=${encodeURIComponent(event)}&latitude=${encodeURIComponent(latitude)}&longitude=${encodeURIComponent(longitude)}`,
     )
   }
 
@@ -437,8 +509,8 @@ const HomePage: React.FC = () => {
     if (vendors.length === 0) return null
 
     return (
-      <section key={type} id={sectionId} className="py-12 sm:py-16 lg:py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section key={type} id={sectionId} className="py-12 sm:py-16 lg:py-20 w-full bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
           <div className="text-left mb-12 sm:mb-16">
             <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#5B4336] mb-4">
               {getSectionTitle(type)}
@@ -541,10 +613,83 @@ const HomePage: React.FC = () => {
     )
   }
 
+  const closeAd = () => {
+    setShowAd(false)
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-pink-50 to-transparent overflow-x-hidden">
+    <div className="min-h-screen bg-white overflow-x-hidden w-screen relative">
+      {/* Ad Banner Modal */}
+      {showAd && (
+        <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4 w-full">
+          <div className="relative bg-white rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden animate-fade-in">
+            {/* Close Button */}
+            <button
+              onClick={closeAd}
+              className="absolute top-4 right-4 z-10 bg-[#9c7c5d] hover:bg-[#8b6b4a] text-white rounded-full p-2 transition duration-300"
+            >
+              <X className="w-6 h-6" />
+            </button>
+
+            {/* Ad Banner with Blurred Background */}
+            <div className="relative h-60 sm:h-80 w-full overflow-hidden">
+              {/* Blurred Background Image */}
+              <div
+                className="absolute inset-0 w-full h-full bg-cover bg-center blur-sm"
+                style={{
+                  backgroundImage: `url(${bgImg})`,
+                }}
+              ></div>
+
+              {/* Dark Overlay */}
+              <div className="absolute inset-0 bg-black/30"></div>
+
+              {/* Ad Content */}
+              <div className="relative h-full flex items-center justify-center p-4">
+                {adImages.length > 0 ? (
+                  <img
+                    src={adImages[0] || "/placeholder.svg"}
+                    alt="Special Offer"
+                    className="w-full h-full object-cover rounded-lg shadow-lg"
+                  />
+                ) : (
+                  <div className="text-center text-white">
+                    <h3 className="text-3xl sm:text-4xl font-bold mb-4">Special Offer</h3>
+                    <p className="text-lg sm:text-xl">Get exclusive deals on your wedding services!</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Ad Info Section */}
+            <div className="p-6 sm:p-8 bg-white">
+              <h2 className="text-2xl sm:text-3xl font-bold text-[#5B4336] mb-3">Limited Time Offer</h2>
+              <p className="text-gray-600 mb-6 text-sm sm:text-base">
+                Book your wedding with us today and get up to 30% off on your selected services. Don't miss this amazing opportunity!
+              </p>
+              <button className="w-full bg-[#9c7c5d] hover:bg-[#8b6b4a] text-white font-bold py-3 px-6 rounded-lg transition duration-300">
+                Claim Offer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style>
         {`
+          @keyframes fadeIn {
+            from {
+              opacity: 0;
+              transform: scale(0.95);
+            }
+            to {
+              opacity: 1;
+              transform: scale(1);
+            }
+          }
+          .animate-fade-in {
+            animation: fadeIn 0.3s ease-out;
+          }
           .scroll-container {
             scroll-behavior: smooth;
             -webkit-overflow-scrolling: touch;
@@ -680,21 +825,38 @@ const HomePage: React.FC = () => {
             border-radius: 50%;
             box-shadow: inset 0 0 0 2px #ED695A;
           }
+          @keyframes marquee {
+            0% {
+              transform: translateX(-50%);
+            }
+            100% {
+              transform: translateX(0);
+            }
+          }
+          .animate-marquee {
+            animation: marquee 30s linear infinite;
+            display: flex;
+          }
         `}
       </style>
 
-      <section className="relative h-screen overflow-hidden">
-        <div
-          className="absolute inset-0 w-full h-full bg-cover bg-center bg-no-repeat"
-          style={{
-            backgroundImage: `url(${bgImg})`,
-          }}
-        ></div>
+      <section className="relative min-h-screen w-full overflow-hidden">
+        <div className="absolute inset-0 w-full h-full">
+          {heroImages.map((image, index) => (
+            <div
+              key={index}
+              className={`absolute inset-0 w-full h-full bg-cover bg-center bg-no-repeat transition-opacity duration-700 ${
+                index === heroCurrentSlide ? "opacity-100" : "opacity-0"
+              }`}
+              style={{ backgroundImage: `url(${image})` }}
+            ></div>
+          ))}
+        </div>
 
         <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/20 w-full h-full pointer-events-none"></div>
 
         {/* Header */}
-        <div className="absolute top-0 left-0 right-0 z-50">
+        <div className="absolute top-0 left-0 right-0 z-50 w-full">
           <Header />
         </div>
 
@@ -892,30 +1054,31 @@ const HomePage: React.FC = () => {
             </div>
             <span>Restart</span>
           </div>
-          <div className="text-gray-600 text-xs sm:text-sm font-medium">1/6</div>
+          <div className="text-gray-600 text-xs sm:text-sm font-medium">{heroCurrentSlide + 1}/{heroImages.length}</div>
         </div>
+
+        {/* Hero Navigation Arrows */}
+        {heroImages.length > 1 && (
+          <>
+            <button
+              onClick={() => setHeroCurrentSlide((prev) => (prev - 1 + heroImages.length) % heroImages.length)}
+              className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10 bg-[#9c7c5d] hover:bg-[#8b6b4a] text-white rounded-full p-2 sm:p-3 transition duration-300 opacity-70 hover:opacity-100"
+            >
+              <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
+            </button>
+            <button
+              onClick={() => setHeroCurrentSlide((prev) => (prev + 1) % heroImages.length)}
+              className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10 bg-[#9c7c5d] hover:bg-[#8b6b4a] text-white rounded-full p-2 sm:p-3 transition duration-300 opacity-70 hover:opacity-100"
+            >
+              <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
+            </button>
+          </>
+        )}
       </section>
 
-      {(activeSection === "all" || activeSection === "services") && (
-        <section id="services" className="py-12 sm:py-16 lg:py-20">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-left mb-12 sm:mb-16">
-              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#5B4336] mb-4">
-                Our Services
-              </h2>
-              <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl">
-                We specialize in creating seamless, unforgettable events tailored to your vision. From corporate
-                gatherings and weddings to private celebrations and brand activations, our expert team ensures every
-                detail is flawlessly executed.
-              </p>
-            </div>
-          </div>
-        </section>
-      )}
-
       {(activeSection === "all" || activeSection === "venues") && (
-        <section id="venues" className="py-12 sm:py-16 lg:py-20">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <section id="venues" className="py-12 sm:py-16 lg:py-20 w-full bg-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
             <div className="text-right mb-12 sm:mb-16">
               <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#5B4336] mb-4">
                 Perfect Venues
@@ -1052,6 +1215,106 @@ const HomePage: React.FC = () => {
       )}
 
       {(activeSection === "all" || activeSection === "projects") && (
+        <section id="projects" className="py-12 sm:py-16 lg:py-20 w-full">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+
+            {/* Image Carousel */}
+            <div className="text-center mb-12 sm:mb-16">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#5B4336] mb-4">
+                Our Beautiful Designs
+              </h2>
+              <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto">
+                Explore our stunning collection of wedding projects and designs.
+              </p>
+            </div>
+
+            {projectImages.length > 0 && (
+              <div className="relative w-full h-60 sm:h-80 lg:h-[400px] mb-8 rounded-2xl overflow-hidden group">
+                {/* Carousel Container */}
+                <div className="relative w-full h-full">
+                  {projectImages.map((project, index) => (
+                    <div
+                      key={project.id}
+                      className={`absolute inset-0 transition-opacity duration-700 ${
+                        index === currentSlide ? "opacity-100" : "opacity-0"
+                      }`}
+                    >
+                      <img
+                        src={project.image || "/placeholder.svg"}
+                        alt={project.title}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition duration-300"></div>
+                      
+                      {/* Caption Overlay */}
+                      <div className="absolute inset-0 flex flex-col items-center justify-end p-6 sm:p-8 bg-gradient-to-t from-black/80 via-transparent to-transparent">
+                        <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-2 text-center text-balance">
+                          {project.title}
+                        </h3>
+                        <span className="bg-[#9c7c5d] text-white px-4 py-2 rounded-full text-sm font-medium">
+                          {project.category}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Navigation Arrows */}
+                {projectImages.length > 1 && (
+                  <>
+                    <button
+                      onClick={() => setCurrentSlide((prev) => (prev - 1 + projectImages.length) % projectImages.length)}
+                      className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10 bg-[#9c7c5d] hover:bg-[#8b6b4a] text-white rounded-full p-2 sm:p-3 transition duration-300 opacity-0 group-hover:opacity-100"
+                    >
+                      <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
+                    </button>
+                    <button
+                      onClick={() => setCurrentSlide((prev) => (prev + 1) % projectImages.length)}
+                      className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10 bg-[#9c7c5d] hover:bg-[#8b6b4a] text-white rounded-full p-2 sm:p-3 transition duration-300 opacity-0 group-hover:opacity-100"
+                    >
+                      <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
+                    </button>
+                  </>
+                )}
+
+                {/* Dots Indicator */}
+                {projectImages.length > 1 && (
+                  <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10 flex gap-2 bg-black/40 px-4 py-2 rounded-full">
+                    {projectImages.map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setCurrentSlide(index)}
+                        className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition duration-300 ${
+                          index === currentSlide ? "bg-[#9c7c5d] scale-125" : "bg-white/50"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {(activeSection === "all" || activeSection === "services") && (
+        <section id="services" className="py-12 sm:py-16 lg:py-20 bg-gray-50 w-full">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-left mb-12 sm:mb-16">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#5B4336] mb-4">
+                Our Services
+              </h2>
+              <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl">
+                We specialize in creating seamless, unforgettable events tailored to your vision. From corporate
+                gatherings and weddings to private celebrations and brand activations, our expert team ensures every
+                detail is flawlessly executed.
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {(activeSection === "all" || activeSection === "projects") && (
         <section id="projects" className="py-12 sm:py-16 lg:py-20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-left mb-12 sm:mb-16">
@@ -1064,7 +1327,7 @@ const HomePage: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-              {projects.map((project) => (
+              {projectImages.map((project) => (
                 <div
                   key={project.id}
                   className="group rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition duration-300 transform hover:-translate-y-2"
@@ -1087,6 +1350,28 @@ const HomePage: React.FC = () => {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {activeSection === "all" && (
+        <section id="categories" className="py-12 sm:py-16 lg:py-20 bg-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#5B4336] mb-8 text-center">
+              Event Categories
+            </h2>
+            <div className="overflow-hidden">
+              <div className="animate-marquee">
+                {eventTypes.concat(eventTypes).map((event, index) => (
+                  <div
+                    key={index}
+                    className="flex-shrink-0 mx-4 sm:mx-8 w-32 h-32 sm:w-48 sm:h-48 bg-[#9c7c5d] text-white rounded-full flex items-center justify-center text-center text-base sm:text-lg font-medium shadow-xl hover:bg-[#8b6b4a] transition duration-300 cursor-pointer"
+                  >
+                    {event}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </section>
@@ -1135,6 +1420,11 @@ const HomePage: React.FC = () => {
           onClose={() => setToast(null)}
         />
       )}
+      
+      {/* Full Width Footer */}
+      <div className="w-full">
+        <Footer />
+      </div>
     </div>
   )
 }

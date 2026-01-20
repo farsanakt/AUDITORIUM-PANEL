@@ -100,7 +100,7 @@ const fixedTimeSlots: TimeSlot[] = [
   { id: "evening", label: "Evening" },
 ];
 
-const vendorTypes = ["Caterer", "Decorator", "Photographer", "Event Planner"];
+const vendorTypes = ["Caterer", "Decorator", "Photographer", "Event Planner","Makeup Artist"];
 
 export default function VendorManagement() {
   const [vendors, setVendors] = useState<Vendor[]>([]);
@@ -335,7 +335,7 @@ export default function VendorManagement() {
   };
 
   const handleUpdateVendor = async () => {
-    if (!selectedVendor || !validateForm(selectedVendor, editImages)) return;
+    if (!selectedVendor ) return;
 
     try {
       const formData = new FormData();

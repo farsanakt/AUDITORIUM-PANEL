@@ -18,7 +18,7 @@ interface Offer {
 interface Auditorium {
   _id: string;
   name: string;
-  locations: string[]; // ← Changed from `cities` to `locations`
+  locations: string[]; // Changed from `cities` to `locations`
   images: string[];
   acType: string;
   seatingCapacity: string;
@@ -57,8 +57,8 @@ const VenuePage: React.FC = () => {
 
       const auditoriumData = Array.isArray(auditoriumResponse.data)
         ? auditoriumResponse.data
-            .filter((item: Auditorium) => item.isVerified === true) // Only verified
-            .map((item: Auditorium) => {
+            .filter((item: any) => item.isVerified === true) // Only verified
+            .map((item: any) => {
               const matchingOffer = offerResponse.data.find((offer: Offer) => {
                 const validFrom = new Date(offer.validFrom);
                 const validTo = new Date(offer.validTo);
@@ -72,9 +72,19 @@ const VenuePage: React.FC = () => {
               });
 
               return {
-                ...item,
-                advAmnt: item.advAmnt || item.advamnt,
+                _id: item._id,
+                name: item.name,
+                locations: item.locations.map((loc: any) => loc.name), // Map to location names
+                images: item.images,
+                acType: item.acType,
+                seatingCapacity: item.seatingCapacity,
+                tariff: item.tariff,
+                phone: item.phone,
+                audiUserId: item.audiUserId,
+                totalamount: item.acCompleteAmount || item.nonAcCompleteAmount || item.tariff?.wedding || item.tariff?.reception || "0", // Fallback to available price fields
+                advAmnt: item.acAdvanceAmount || item.nonAcAdvanceAmount || item.advAmnt || item.advamnt || "0",
                 offer: matchingOffer,
+                isVerified: item.isVerified,
               };
             })
         : [];
@@ -220,7 +230,7 @@ const VenuePage: React.FC = () => {
         />
         <Header />
 
-        <div className="relative z-20 w-full max-w-7xl px-4 sm:px-6 flex flex-col md:flex-row justify-between items-start gap-6 sm:gap-8 mt-12">
+        <div className="relative z-20 w-full max-w-7xl px-4 sm:px-6 flex flex-col md:flex-row justify-between items-start gap-6 sm:gap-8 md:gap-10 mt-12">
           <div className="text-left md:w-1/2">
             <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-serif text-[#5B4336] mb-3 sm:mb-4">
               Choose
@@ -295,7 +305,7 @@ const VenuePage: React.FC = () => {
 
               {/* Table */}
               <div className="overflow-x-auto mt-4 sm:mt-6">
-                <table className="w-full text-xs sm:text-sm border border-gray-300 rounded-lg overflow-hidden">
+                <table className="w-full text-xs sm:text-sm border border-gray-300 rounded-lg overflow-hidden min-w-max">
                   <thead className="bg-[#6e3d2b] text-white text-left">
                     <tr>
                       <th className="py-2 sm:py-3 px-3 sm:px-4 font-semibold">Venue Name</th>
@@ -323,12 +333,12 @@ const VenuePage: React.FC = () => {
                         </td>
                         <td className="py-2 px-3 sm:px-0">
                           <button
-                            className="px-5 py-2 bg-gradient-to-r from-[#8B4513] to-[#D2691E] text-white rounded-full shadow-md hover:from-[#A0522D] hover:to-[#FF8C00] hover:shadow-lg transition-all duration-300 text-sm sm:text-base font-semibold tracking-wide"
+                            className="px-5 py-2 bg-gradient-to-r from-[#8B4513] to-[#D2691E] text-white rounded-full shadow-md hover:from-[#A0522D] hover:to-[#FF8C00] hover:shadow-lg transition-all duration-300 text-sm sm:text-base font-semibold tracking-wide w-full sm:w-auto"
                             onClick={() =>
                               navigate(
                                 `/auditoriumdetails/${auditorium._id}?date=${encodeURIComponent(
                                   searchParams.get("date") || ""
-                                )}`
+                                )}&event=${encodeURIComponent(searchParams.get("event") || "")}`
                               )
                             }
                           >

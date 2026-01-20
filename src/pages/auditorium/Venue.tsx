@@ -183,6 +183,7 @@ export default function VenueManagement() {
   const fetchUserData = async (): Promise<void> => {
     try {
       const response = await fetchAuditoriumUserdetails(currentUser.id)
+      console.log(response.data.locations,'ithan location')
       const data: UserData = {
         address: response.data.address || "",
         panchayat: response.data.panchayat || "",
@@ -364,12 +365,12 @@ export default function VenueManagement() {
     if (!newVenue.events?.length) tempErrors.events = "Select at least one"
     if (selectedImages.length < 4) tempErrors.images = "At least 4 images"
 
-    // Validate payment fields based on AC type
+
     if (newVenue.acType === "AC") {
       if (!newVenue.acAdvanceAmount || Number(newVenue.acAdvanceAmount) <= 0)
-        tempErrors.acAdvanceAmount = "Positive number" // Updated field name
+        tempErrors.acAdvanceAmount = "Positive number" 
       if (!newVenue.acCompleteAmount || Number(newVenue.acCompleteAmount) <= 0)
-        tempErrors.acCompleteAmount = "Positive number" // Updated field name
+        tempErrors.acCompleteAmount = "Positive number" 
     } else if (newVenue.acType === "Non-AC") {
       if (!newVenue.nonAcAdvanceAmount || Number(newVenue.nonAcAdvanceAmount) <= 0)
         tempErrors.nonAcAdvanceAmount = "Positive number" // Updated field name
@@ -431,64 +432,90 @@ export default function VenueManagement() {
     return Object.keys(tempErrors).length === 0
   }
 
-  const handleAddVenue = async (): Promise<void> => {
-    if (!validateAdd()) return
-    try {
-      const formData = new FormData()
-      Object.entries(newVenue).forEach(([key, value]) => {
-        if (["tariff"].includes(key)) {
-          formData.append(key, JSON.stringify(value))
-        } else if (["locations", "amenities", "timeSlots", "events"].includes(key)) {
-          formData.append(key, JSON.stringify(value))
-        } else if (value !== null && value !== undefined) {
-          formData.append(key, String(value))
-        }
-      })
-      formData.append("audiUserId", currentUser.id)
-      selectedImages.forEach((file) => formData.append("images", file))
+const handleAddVenue = async (): Promise<void> => {
+  try {
+    const formData = new FormData();
 
-      const response = await addVenueAPI(formData)
-      if (response) {
-        toast.success("Venue added!")
-        resetAddModal()
-        fetchVenues()
+    Object.entries(newVenue).forEach(([key, value]) => {
+      if (
+        ["amenities", "timeSlots", "events", "tariff"].includes(key)
+      ) {
+        formData.append(key, JSON.stringify(value));
+      } else if (key !== "locations" && value !== null && value !== undefined) {
+        formData.append(key, String(value));
       }
-    } catch (error) {
-      toast.error("Failed to add venue.")
+    });
+
+   
+    if (userData?.locations) {
+      formData.append("locations", JSON.stringify(userData.locations));
     }
+
+    formData.append("audiUserId", currentUser.id);
+
+    selectedImages.forEach(file => {
+      formData.append("images", file);
+    });
+
+    const response = await addVenueAPI(formData);
+
+    if (response) {
+      toast.success("Venue added!");
+      resetAddModal();
+      fetchVenues();
+    }
+  } catch (error) {
+    toast.error("Failed to add venue.");
   }
+};
 
-  const handleUpdateVenue = async (): Promise<void> => {
-    if (!selectedVenue || !validateEdit()) return
-    try {
-      const formData = new FormData()
-      Object.entries(selectedVenue).forEach(([key, value]) => {
-        if (["tariff"].includes(key)) {
-          formData.append(key, JSON.stringify(value))
-        } else if (["locations", "amenities", "timeSlots", "events"].includes(key)) {
-          formData.append(key, JSON.stringify(value))
-        } else if (key !== "_id" && value !== null && value !== undefined) {
-          formData.append(key, String(value))
-        }
-      })
-      formData.append("audiUserId", currentUser.id)
-      editImages.forEach((file) => formData.append("images", file))
-      selectedVenue.images.forEach((img, i) => formData.append(`existingImages[${i}]`, img))
 
-      const response = await updateVenues(formData, selectedVenue._id)
-      if (response.data.success) {
-        toast.success("Venue updated!")
-        // resetEditModal() // This function doesn't exist, it should be setIsEditModalOpen(false) and setSelectedVenue(null)
-        setIsEditModalOpen(false)
-        setSelectedVenue(null)
-        setEditImages([])
-        setErrors({})
-        fetchVenues()
+ const handleUpdateVenue = async (): Promise<void> => {
+  if (!selectedVenue ) return
+
+  try {
+    const formData = new FormData()
+
+    Object.entries(selectedVenue).forEach(([key, value]) => {
+      if (["_id", "locations", "images"].includes(key)) return
+
+      if (["tariff", "amenities", "timeSlots", "events"].includes(key)) {
+        formData.append(key, JSON.stringify(value))
+      } else if (value !== null && value !== undefined) {
+        formData.append(key, String(value))
       }
-    } catch (error) {
-      toast.error("Failed to update venue.")
+    })
+
+    // ✅ APPEND LOCATIONS ONLY ONCE
+    if (selectedVenue.locations) {
+      formData.append("locations", JSON.stringify(selectedVenue.locations))
     }
+
+    formData.append("audiUserId", currentUser.id)
+
+    // new images
+    editImages.forEach(file => formData.append("images", file))
+
+    // existing images
+    selectedVenue.images.forEach(img =>
+      formData.append("existingImages", img)
+    )
+
+    const response = await updateVenues(formData, selectedVenue._id)
+
+    if (response.data.success) {
+      toast.success("Venue updated!")
+      setIsEditModalOpen(false)
+      setSelectedVenue(null)
+      setEditImages([])
+      setErrors({})
+      fetchVenues()
+    }
+  } catch (error) {
+    toast.error("Failed to update venue.")
   }
+}
+
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,

@@ -8,6 +8,7 @@ import Bshape from "../../assets/02 2.png"
 import { singleVendorDetails, createVendorInquiry, createVendorReview } from "../../api/userApi"
 import Swal from 'sweetalert2'
 import { Eye, EyeOff } from 'lucide-react'
+import Footer from "../../component/user/Footer"
 
 interface Vendor {
   _id: string
@@ -587,6 +588,7 @@ const VendorDetails: React.FC = () => {
           </div>
         </div>
       </div>
+      {/* <Footer/> */}
     </div>
   )
 }

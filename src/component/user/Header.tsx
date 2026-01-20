@@ -73,7 +73,7 @@ const Header: React.FC<HeaderProps> = () => {
       <header className="fixed top-0 left-0 right-0 bg-[#FDF8F1] z-50">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           {/* Logo */}
-          <div className="flex ml-26 items-center space-x-4">
+          <div className="flex ml-1 items-center space-x-4">
             <img src={logo} alt="Logo" className="h-10 w-auto scale-130" />
             <button onClick={handleLogoClick} className="focus:outline-none">
               <img

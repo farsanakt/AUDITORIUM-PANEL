@@ -3,7 +3,7 @@ import { MapPin, Flag } from "lucide-react";
 import Header from "../../component/user/Header";
 import bgImg from '../../assets/vector.png';
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { FindAuidtorium, fetchAllExistingVouchers } from "../../api/userApi";
+import { FindAuidtorium, existingVenues, fetchAllExistingVouchers, getAllAuditoriums} from "../../api/userApi"; // Assuming getAllVenues exists based on logs
 
 interface Voucher {
   _id: string;
@@ -25,6 +25,7 @@ interface Venue {
   image: string;
   category: string;
   tag: string;
+  locations: { name: string }[]; // Added to store all locations
   voucher?: Voucher;
 }
 
@@ -32,10 +33,17 @@ const VenueSelector: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  const [place, setPlace] = useState(searchParams.get("place") || "");
-  const [event, setEvent] = useState(searchParams.get("event") || "");
+  const [district, setDistrict] = useState(searchParams.get("district") || "");
+  const userLat = parseFloat(searchParams.get("latitude") || "0") || null;
+  const userLon = parseFloat(searchParams.get("longitude") || "0") || null;
+  const placeName = searchParams.get("place")?.toLowerCase() || "";
+  const date = searchParams.get("date") || "";
+  const event = searchParams.get("event") || "";
+  const [radius, setRadius] = useState(searchParams.get("radius") || (userLat && userLon ? "20" : "0"));
   const [venues, setVenues] = useState<Venue[]>([]);
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
+  const [auditoriums, setAuditoriums] = useState<any[]>([]);
+  const [venuesData, setVenuesData] = useState<any[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedVoucher, setSelectedVoucher] = useState<Voucher | null>(null);
 
@@ -50,44 +58,106 @@ const VenueSelector: React.FC = () => {
     }
   };
 
-  const findAuditorium = async () => {
+  const fetchAuditoriums = async () => {
     try {
-      const response = await FindAuidtorium(place, event);
+      const response = await getAllAuditoriums();
       console.log(response, 'lope');
-
-      const mappedVenues: Venue[] = response.map((item: any, index: number) => {
-        const matchingVoucher = vouchers.find(
-          (voucher) => voucher.auditoriumId === item.auditorium._id && voucher.isActive
-        );
-        return {
-          id: item.auditorium._id,
-          name: item.auditorium.auditoriumName || `Auditorium ${index + 1}`,
-          location: place || "Unknown Location",
-          image: item.images && item.images.length > 0 ? item.images[0] : "https://via.placeholder.com/400x300",
-          category: "Auditorium",
-          tag: item.auditorium.tag || "Indoor",
-          voucher: matchingVoucher,
-        };
-      });
-
-      setVenues(mappedVenues);
+      setAuditoriums(response.data || []);
     } catch (error) {
       console.error("Error fetching auditoriums:", error);
-      setVenues([]);
+      setAuditoriums([]);
     }
+  };
+
+  const fetchVenuesData = async () => {
+    try {
+      const response = await existingVenues()
+      console.log(response, 'venues');
+      setVenuesData(response.data || []);
+    } catch (error) {
+      console.error("Error fetching venues:", error);
+      setVenuesData([]);
+    }
+  };
+
+  const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371; // km
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
+
+  const toRad = (value: number): number => {
+    return value * Math.PI / 180;
   };
 
   useEffect(() => {
     fetchVouchers();
+    fetchAuditoriums();
+    fetchVenuesData();
   }, []);
 
   useEffect(() => {
-    findAuditorium();
-  }, [place, event, vouchers]);
+    if (auditoriums.length === 0 || venuesData.length === 0) return;
+
+    const selectedRadius = parseFloat(radius) || 0;
+
+    let filtered = auditoriums.filter((aud: any) => {
+      let matchesDistrict = true;
+      if (district) {
+        matchesDistrict = aud.district === district;
+      }
+
+      let matchesPlace = true;
+      if (placeName) {
+        matchesPlace = aud.locations.some((loc: any) => loc.name.toLowerCase().includes(placeName));
+      }
+
+      let matchesRadius = true;
+      if (selectedRadius > 0 && userLat && userLon) {
+        matchesRadius = aud.locations.some((loc: any) => {
+          const dist = getDistance(userLat, userLon, loc.lat, loc.lon);
+          return dist <= selectedRadius;
+        });
+      }
+
+      return matchesDistrict && matchesPlace && matchesRadius;
+    });
+
+    if (filtered.length === 0) {
+      filtered = auditoriums;
+    }
+
+    const mappedVenues: Venue[] = filtered.map((aud: any, index: number) => {
+      const matchingVoucher = vouchers.find(
+        (voucher) => voucher.auditoriumId === aud._id && voucher.isActive
+      );
+      const matchingVenues = venuesData.filter((v: any) => v.audiUserId === aud._id);
+      const image = matchingVenues.length > 0 && matchingVenues[0].images && matchingVenues[0].images.length > 0 
+        ? matchingVenues[0].images[0] 
+        : "https://via.placeholder.com/400x300?text=No+Image+Available";
+
+      return {
+        id: aud._id,
+        name: aud.auditoriumName || `Auditorium ${index + 1}`,
+        location: aud.district || "Unknown Location",
+        image,
+        category: "Auditorium",
+        tag: aud.tag || "Indoor", // Assuming tag might exist; default to "Indoor"
+        locations: aud.locations || [], // Store all locations
+        voucher: matchingVoucher,
+      };
+    });
+
+    setVenues(mappedVenues);
+  }, [district, radius, placeName, vouchers, auditoriums, venuesData, userLat, userLon]);
 
   const handleCardClick = (id: string) => {
-    const date = searchParams.get("date") || "";
-    navigate(`/venuelist/${id}?date=${encodeURIComponent(date)}`);
+    navigate(`/venuelist/${id}?date=${encodeURIComponent(date)}&event=${encodeURIComponent(event)}`);
   };
 
   const getTagColor = (tag: string): string => {
@@ -246,45 +316,53 @@ const VenueSelector: React.FC = () => {
                 beachfront wedding, choosing the right venue is the first step
                 in bringing your dream to life.
               </p>
-              {/* <button className="bg-[#6e3d2b] text-white px-6 py-2 rounded-full shadow-md hover:bg-[#5a2f20] font-serif">
-                View Details
-              </button> */}
               <p className="mt-6 text-[#6e3d2b] font-serif text-xl italic">
-                Search Results for {place || "Any Place"} - {event || "Any Event"}
+                Search Results for {district || "Any District"} - {radius === "0" ? "All" : radius} km Radius
               </p>
             </div>
 
-            {/* Right Content - Place and Event in same line for desktop, stacked for mobile */}
+            {/* Right Content - District and Radius in same line for desktop, stacked for mobile */}
             <div className="w-full max-w-sm sm:max-w-md space-y-3 sm:space-y-4">
               {/* Mobile: stacked */}
               <div className="flex flex-col sm:hidden space-y-3">
                 <div className="relative">
                   <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
                   <select
-                    value={place}
-                    onChange={(e) => setPlace(e.target.value)}
+                    value={district}
+                    onChange={(e) => setDistrict(e.target.value)}
                     className="w-full h-10 pl-10 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 font-serif"
                   >
-                    <option value="">Place</option>
-                    <option value="Kochi">Kochi</option>
-                    <option value="Trivandrum">Trivandrum</option>
+                    <option value="">Any District</option>
+                    <option value="Alappuzha">Alappuzha</option>
+                    <option value="Ernakulam">Ernakulam</option>
+                    <option value="Idukki">Idukki</option>
                     <option value="Kannur">Kannur</option>
-                    <option value="Calicut">Calicut</option>
+                    <option value="Kasaragod">Kasaragod</option>
+                    <option value="Kollam">Kollam</option>
+                    <option value="Kottayam">Kottayam</option>
+                    <option value="Kozhikode">Kozhikode</option>
+                    <option value="Malappuram">Malappuram</option>
+                    <option value="Palakkad">Palakkad</option>
+                    <option value="Pathanamthitta">Pathanamthitta</option>
+                    <option value="Thiruvananthapuram">Thiruvananthapuram</option>
+                    <option value="Thrissur">Thrissur</option>
+                    <option value="Wayanad">Wayanad</option>
                   </select>
                 </div>
 
                 <div className="relative">
                   <Flag className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
                   <select
-                    value={event}
-                    onChange={(e) => setEvent(e.target.value)}
+                    value={radius}
+                    onChange={(e) => setRadius(e.target.value)}
                     className="w-full h-10 pl-10 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 font-serif"
                   >
-                    {/* <option value="">Event</option> */}
-                    <option value="wedding">Wedding</option>
-                    <option value="engagement">Engagement</option>
-                    <option value="reception">Reception</option>
-                    <option value="anniversary">Anniversary</option>
+                    <option value="5">5 km</option>
+                    <option value="10">10 km</option>
+                    <option value="20">20 km</option>
+                    <option value="50">50 km</option>
+                    <option value="100">100 km</option>
+                    <option value="0">All</option>
                   </select>
                 </div>
               </div>
@@ -294,30 +372,41 @@ const VenueSelector: React.FC = () => {
                 <div className="relative flex-1">
                   <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-5 h-5" />
                   <select
-                    value={place}
-                    onChange={(e) => setPlace(e.target.value)}
+                    value={district}
+                    onChange={(e) => setDistrict(e.target.value)}
                     className="w-full h-12 pl-12 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 font-serif"
                   >
-                    <option value="">Place</option>
-                    <option value="Kochi">Kochi</option>
-                    <option value="Trivandrum">Trivandrum</option>
+                    <option value="">Any District</option>
+                    <option value="Alappuzha">Alappuzha</option>
+                    <option value="Ernakulam">Ernakulam</option>
+                    <option value="Idukki">Idukki</option>
                     <option value="Kannur">Kannur</option>
-                    <option value="Calicut">Calicut</option>
+                    <option value="Kasaragod">Kasaragod</option>
+                    <option value="Kollam">Kollam</option>
+                    <option value="Kottayam">Kottayam</option>
+                    <option value="Kozhikode">Kozhikode</option>
+                    <option value="Malappuram">Malappuram</option>
+                    <option value="Palakkad">Palakkad</option>
+                    <option value="Pathanamthitta">Pathanamthitta</option>
+                    <option value="Thiruvananthapuram">Thiruvananthapuram</option>
+                    <option value="Thrissur">Thrissur</option>
+                    <option value="Wayanad">Wayanad</option>
                   </select>
                 </div>
 
                 <div className="relative flex-1">
                   <Flag className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-5 h-5" />
                   <select
-                    value={event}
-                    onChange={(e) => setEvent(e.target.value)}
+                    value={radius}
+                    onChange={(e) => setRadius(e.target.value)}
                     className="w-full h-12 pl-12 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 font-serif"
                   >
-                    
-                    <option value="wedding">Wedding</option>
-                    <option value="engagement">Engagement</option>
-                    <option value="reception">Reception</option>
-                    <option value="anniversary">Anniversary</option>
+                    <option value="5">5 km</option>
+                    <option value="10">10 km</option>
+                    <option value="20">20 km</option>
+                    <option value="50">50 km</option>
+                    <option value="100">100 km</option>
+                    <option value="0">All</option>
                   </select>
                 </div>
               </div>
@@ -369,7 +458,7 @@ const VenueSelector: React.FC = () => {
                           <span>🎫</span>
                           <span>{venue.voucher.audiName}</span>
                         </div>
-                        <div className="terms-link" onClick={() => openTermsModal(venue.voucher!)}>
+                        <div className="terms-link" onClick={(e) => { e.stopPropagation(); openTermsModal(venue.voucher!); }}>
                           click here for terms and conditions
                         </div>
                       </div>
@@ -381,9 +470,12 @@ const VenueSelector: React.FC = () => {
                   <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2 font-serif">
                     {venue.name}
                   </h3>
-                  <div className="flex items-center text-gray-600 text-sm">
+                  <div className="flex items-center text-gray-600 text-sm mb-2">
                     <MapPin className="w-4 h-4 mr-1" />
                     <span>{venue.location}</span>
+                  </div>
+                  <div className="text-gray-600 text-sm">
+                    Locations: {venue.locations.map(loc => loc.name).join(', ') || 'N/A'}
                   </div>
                 </div>
               </div>
@@ -392,7 +484,7 @@ const VenueSelector: React.FC = () => {
 
           {/* Second row */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-            {venues.slice(4, 8).map((venue) => (
+            {venues.slice(4).map((venue) => (
               <div
                 key={venue.id}
                 className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 group cursor-pointer"
@@ -432,7 +524,7 @@ const VenueSelector: React.FC = () => {
                           <span>🎫</span>
                           <span>{venue.voucher.audiName}</span>
                         </div>
-                        <div className="terms-link" onClick={() => openTermsModal(venue.voucher!)}>
+                        <div className="terms-link" onClick={(e) => { e.stopPropagation(); openTermsModal(venue.voucher!); }}>
                           click here for terms and conditions
                         </div>
                       </div>
@@ -444,9 +536,12 @@ const VenueSelector: React.FC = () => {
                   <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2 font-serif">
                     {venue.name}
                   </h3>
-                  <div className="flex items-center text-gray-600 text-sm">
+                  <div className="flex items-center text-gray-600 text-sm mb-2">
                     <MapPin className="w-4 h-4 mr-1" />
                     <span>{venue.location}</span>
+                  </div>
+                  <div className="text-gray-600 text-sm">
+                    Locations: {venue.locations.map(loc => loc.name).join(', ') || 'N/A'}
                   </div>
                 </div>
               </div>
