@@ -319,7 +319,8 @@ const HomePage: React.FC = () => {
     if (type === "event management") {
       return "Our expert event management teams ensure every detail of your special day is perfectly executed."
     } else if (type === "makeup artist") {
-      return "Transform your look with our skilled makeup artists for your special occasion."
+      return "Makeup artists enhance natural beauty with skill, creativity, and precision to create looks suited for every occasion. From subtle everyday styles to glamorous bridal and event makeup, they focus on delivering confidence, elegance, and a flawless finish tailored to individual preferences and moments"
+
     } else if (type === "caterer") {
       return "Our caterers provide delicious and customized menus for your event."
     } else if (type === "decorator") {
@@ -623,53 +624,72 @@ const HomePage: React.FC = () => {
   return (
     <div className="min-h-screen bg-white overflow-x-hidden w-screen relative">
       {/* Ad Banner Modal */}
-      {showAd && (
-        <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4 w-full">
-          <div className="relative bg-white rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden animate-fade-in">
-            {/* Close Button */}
-            <button
-              onClick={closeAd}
-              className="absolute top-4 right-4 z-10 bg-[#9c7c5d] hover:bg-[#8b6b4a] text-white rounded-full p-2 transition duration-300"
-            >
-              <X className="w-6 h-6" />
-            </button>
+     {showAd && (
+  <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4">
+    <div className="relative bg-white rounded-xl max-w-xl w-full shadow-2xl overflow-hidden animate-fade-in">
 
-            {/* Ad Banner with Blurred Background */}
-            <div className="relative h-60 sm:h-80 w-full overflow-hidden">
-              {/* Blurred Background Image */}
-              <div
-                className="absolute inset-0 w-full h-full bg-cover bg-center blur-sm"
-                style={{
-                  backgroundImage: `url(${bgImg})`,
-                }}
-              ></div>
+      {/* Close Button */}
+      <button
+        onClick={closeAd}
+        className="absolute top-3 right-3 z-20 bg-[#9c7c5d] hover:bg-[#8b6b4a] text-white rounded-full p-1.5 transition"
+      >
+        <X className="w-5 h-5" />
+      </button>
 
-              {/* Dark Overlay */}
-              <div className="absolute inset-0 bg-black/30"></div>
+      {/* IMAGE SECTION */}
+      <div className="relative h-48 sm:h-60 w-full overflow-hidden">
 
-              {/* Ad Content */}
-              <div className="relative h-full flex items-center justify-center p-4">
-                <img
-                  src={pjct || "/placeholder.svg"}
-                  alt="Special Offer"
-                  className="w-full h-full object-cover rounded-lg shadow-lg"
-                />
-              </div>
-            </div>
+        {/* Background */}
+        <div
+          className="absolute inset-0 bg-cover bg-center blur-[2px]"
+          style={{ backgroundImage: `url(${bgImg})` }}
+        />
 
-            {/* Ad Info Section */}
-            <div className="p-6 sm:p-8 bg-white">
-              <h2 className="text-2xl sm:text-3xl font-bold text-[#5B4336] mb-3">Limited Time Offer</h2>
-              <p className="text-gray-600 mb-6 text-sm sm:text-base">
-                Book your wedding with us today and get up to 30% off on your selected services. Don't miss this amazing opportunity!
-              </p>
-              <button className="w-full bg-[#9c7c5d] hover:bg-[#8b6b4a] text-white font-bold py-3 px-6 rounded-lg transition duration-300">
-                Claim Offer
-              </button>
-            </div>
+        {/* Overlay */}
+        <div className="absolute inset-0 bg-black/30" />
+
+        {/* OFFER BADGE */}
+        <div className="absolute top-4 left-4 z-10">
+          <div className="bg-gradient-to-r from-[#ED695A] to-[#9c7c5d] text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg">
+            🎉 30% OFF
           </div>
         </div>
-      )}
+
+        {/* Main Image */}
+        <div className="relative h-full flex items-center justify-center p-3">
+          <img
+            src={bgImg || "/placeholder.svg"}
+            alt="Special Offer"
+            className="w-full h-full object-cover rounded-lg shadow-lg"
+          />
+        </div>
+      </div>
+
+      {/* CONTENT */}
+      <div className="p-5 sm:p-6 text-center">
+        <h2 className="text-xl sm:text-2xl font-bold text-[#5B4336] mb-2">
+          Limited Time Wedding Offer
+        </h2>
+
+        <p className="text-gray-600 text-sm sm:text-base mb-4">
+          Book your wedding today and get
+          <span className="text-[#ED695A] font-bold"> 30% OFF </span>
+          on selected services.
+        </p>
+
+        <button className="w-full bg-gradient-to-r from-[#9c7c5d] to-[#8b6b4a] hover:opacity-90 text-white font-semibold py-2.5 rounded-lg transition shadow-md">
+          Claim Offer Now
+        </button>
+
+        <p className="mt-3 text-xs text-gray-400">
+          *Offer valid for a limited period
+        </p>
+      </div>
+    </div>
+  </div>
+)}
+
+
 
       <style>
         {`
@@ -1147,8 +1167,7 @@ const HomePage: React.FC = () => {
                 Perfect Venues
               </h2>
               <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl ml-auto">
-                Choose from our collection of stunning venues that will provide the perfect backdrop for your wedding.
-                Book and earn vouchers for your vendor bookings!
+               Discover the perfect venue for your special moments with ease and confidence. Our platform brings together a curated collection of premium venues, from elegant convention centers to intimate event spaces, designed to suit weddings, receptions, corporate events, and celebrations of every kind. 
               </p>
             </div>
 
@@ -1280,7 +1299,7 @@ const HomePage: React.FC = () => {
                 Event Categories
               </h2>
               <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto">
-                Browse vendors by their expertise and find the perfect match for your event
+               Explore a wide range of event categories designed to suit every occasion. From weddings and receptions to corporate events, birthday parties, and cultural celebrations, our platform makes it easy to find the right services and venues for your needs. 
               </p>
             </div>
 
@@ -1498,7 +1517,7 @@ const HomePage: React.FC = () => {
               Our Venues
             </h2>
             <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto text-center mb-8">
-              Explore all our stunning venues for your perfect event
+Choose from our collection of stunning venues that will provide the perfect backdrop for your wedding. Book and earn vouchers for your vendor bookings!
             </p>
             {loading ? (
               <div className="text-center text-gray-600">Loading venues...</div>

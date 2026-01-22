@@ -83,11 +83,11 @@ export default function Footer() {
           <div className="text-left space-y-4">
             <h4 className="footer-title">Partner With Us</h4>
 
-            <button onClick={()=>navigate('/auditorium/login')} className="btn-primary">
+            <button onClick={()=>navigate('/vendor/login')} className="btn-primary">
               Register as Vendor
             </button>
 
-            <button onClick={()=>navigate('/vendor/login')} className="btn-outline">
+            <button onClick={()=>navigate('/auditorium/login')} className="btn-outline">
               Register Auditorium
             </button>
           </div>

@@ -100,20 +100,20 @@ const Header: React.FC = () => {
           {/* LEFT */}
           <div className="flex items-center space-x-6">
             <div
-  onClick={() => navigate("/")}
-  className="flex items-center space-x-4 cursor-pointer"
->
-  <img
-    src={logo}
-    alt="Logo"
-    className="h-10 w-auto scale-130"
-  />
-  <img
-    src={logo1}
-    alt="Logo2"
-    className="h-6 w-auto ml-15 scale-800"
-  />
-</div>
+          onClick={() => navigate("/")}
+          className="flex items-center space-x-4 cursor-pointer"
+        >
+          <img
+            src={logo}
+            alt="Logo"
+            className="h-10 w-auto scale-130"
+          />
+          <img
+            src={logo1}
+            alt="Logo2"
+            className="h-6 w-auto ml-15 scale-800"
+          />
+        </div>
 
 
             
@@ -223,16 +223,28 @@ const Header: React.FC = () => {
                 Login
               </button>
             ) : (
-              <div className="relative">
+              <div className="flex items-center gap-2 relative">
+                
+                {/* USER NAME */}
+                <span className="text-sm text-[#825F4C]">
+                  {displayName}
+                </span>
+
+                {/* USER ICON */}
                 <button
-                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setDropdownOpen(!dropdownOpen);
+                  }}
                   className="w-10 h-10 rounded-full bg-[#ED695A] text-white flex items-center justify-center"
                 >
                   <User size={18} />
                 </button>
 
+
                 {dropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-40 bg-white shadow-lg rounded-md">
+                  <div className="absolute right-0 top-full mt-3 w-44 bg-white border border-[#b09d94] rounded-xl shadow-xl z-50">
+
                     <button
                       onClick={goToProfile}
                       className="block w-full px-4 py-2 text-left hover:bg-gray-100"

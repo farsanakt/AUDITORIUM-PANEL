@@ -14,6 +14,7 @@ import { useSelector } from "react-redux"
 import AdminStaffLogin from "../admin/stafflogin"
 import AdminItemsManagement from "../admin/AdminItems"
 import AllEnquiries from "../admin/Enquires"
+import BulkUpload from "../admin/BulkUpload"
 
 
 const AdminRoute = () => {
@@ -36,6 +37,7 @@ const AdminRoute = () => {
         <Route path='/stafflogin' element={<AdminStaffLogin/>}/>
         <Route path="/items" element={<AdminItemsManagement/>}/>
         <Route path="/alladminenquiry" element={<AllEnquiries/>}/>
+        <Route path ='/bulkupload' element={<BulkUpload/>}/>
         <Route path='/subscriptionmanagement' element={<AdminSubscriptionManager/>}/>
 
           <Route

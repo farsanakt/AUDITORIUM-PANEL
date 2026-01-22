@@ -583,6 +583,15 @@ export const userForgotPassword=async(email:string)=>{
 
 //################# Admin ############
 
+
+export const bulkUploadApi = (formData: FormData) => {
+  return api.post("/bulk-upload", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+};
+
 export const addAdminStaff=async(formdata:any)=>{
 
   return await api.post('/addadminstaff',formdata)
