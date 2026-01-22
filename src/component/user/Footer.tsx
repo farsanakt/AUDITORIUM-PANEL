@@ -11,9 +11,11 @@ import {
 } from 'lucide-react';
 import logo from "../../assets/logo-removebg.png";
 import logo1 from "../../assets/iBooking-removebg.png";
+import { useNavigate } from 'react-router-dom';
 
 export default function Footer() {
   const year = new Date().getFullYear();
+  const navigate=useNavigate()
 
   return (
     <footer className="w-screen bg-[#78533F] text-gray-200">
@@ -81,11 +83,11 @@ export default function Footer() {
           <div className="text-left space-y-4">
             <h4 className="footer-title">Partner With Us</h4>
 
-            <button className="btn-primary">
+            <button onClick={()=>navigate('/auditorium/login')} className="btn-primary">
               Register as Vendor
             </button>
 
-            <button className="btn-outline">
+            <button onClick={()=>navigate('/vendor/login')} className="btn-outline">
               Register Auditorium
             </button>
           </div>

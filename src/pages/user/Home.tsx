@@ -329,6 +329,8 @@ const HomePage: React.FC = () => {
   }
 
   useEffect(() => {
+
+    
     const loadData = async () => {
       await Promise.all([fetchAllOffers(), fetchAllVouchers(), fetchVendors()])
     }
@@ -504,14 +506,14 @@ const HomePage: React.FC = () => {
 
   const renderVendorSection = (type: string) => {
     const vendors = vendorsByType[type] || []
-    const sectionId = type.replace(/\s+/g, "")
-
-    if (vendors.length === 0) return null
+    const sectionId = `${type.toLowerCase().replace(/\s+/g, "-")}`
+    const vendorIndex = vendorTypes.indexOf(type)
+    const isAlternate = vendorIndex % 2 === 1
 
     return (
-      <section key={type} id={sectionId} className="py-12 sm:py-16 lg:py-20 w-full bg-white">
+      <section key={type} id={sectionId} className="py-6 sm:py-8 lg:py-10 w-full bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-          <div className="text-left mb-12 sm:mb-16">
+          <div className={`mb-8 sm:mb-10 ${isAlternate ? "text-right" : "text-left"}`} style={{ animation: "fadeInScale 0.8s ease forwards" }}>
             <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#5B4336] mb-4">
               {getSectionTitle(type)}
             </h2>
@@ -545,9 +547,10 @@ const HomePage: React.FC = () => {
                 {vendors.map((artist, index) => (
                   <div
                     key={artist.id}
-                    className="group rounded-xl overflow-hidden hover:shadow-xl transition duration-300 transform opacity-0 scale-95 flex-shrink-0 w-[240px] sm:w-[280px]"
+                    className="group rounded-xl overflow-hidden transition-all duration-500 transform flex-shrink-0 w-[240px] sm:w-[280px] card-animate card-shimmer relative"
                     style={{
                       animation: `fadeInScale 0.6s ease ${index * 0.15}s forwards`,
+                      animationDelay: `${index * 0.1}s`,
                     }}
                   >
                     <div className="relative h-48 sm:h-56">
@@ -646,18 +649,11 @@ const HomePage: React.FC = () => {
 
               {/* Ad Content */}
               <div className="relative h-full flex items-center justify-center p-4">
-                {adImages.length > 0 ? (
-                  <img
-                    src={adImages[0] || "/placeholder.svg"}
-                    alt="Special Offer"
-                    className="w-full h-full object-cover rounded-lg shadow-lg"
-                  />
-                ) : (
-                  <div className="text-center text-white">
-                    <h3 className="text-3xl sm:text-4xl font-bold mb-4">Special Offer</h3>
-                    <p className="text-lg sm:text-xl">Get exclusive deals on your wedding services!</p>
-                  </div>
-                )}
+                <img
+                  src={pjct || "/placeholder.svg"}
+                  alt="Special Offer"
+                  className="w-full h-full object-cover rounded-lg shadow-lg"
+                />
               </div>
             </div>
 
@@ -708,6 +704,16 @@ const HomePage: React.FC = () => {
             to {
               opacity: 1;
               transform: scale(1);
+            }
+          }
+          @keyframes slideInFromLeft {
+            from {
+              opacity: 0;
+              transform: translateX(-20px) scale(0.9);
+            }
+            to {
+              opacity: 1;
+              transform: translateX(0) scale(1);
             }
           }
           .group:hover .card-content {
@@ -827,15 +833,72 @@ const HomePage: React.FC = () => {
           }
           @keyframes marquee {
             0% {
+              transform: translateX(0);
+            }
+            100% {
+              transform: translateX(-50%);
+            }
+          }
+          .animate-marquee {
+            animation: marquee 30s linear infinite;
+            display: flex;
+          }
+          @keyframes marqueeRight {
+            0% {
               transform: translateX(-50%);
             }
             100% {
               transform: translateX(0);
             }
           }
-          .animate-marquee {
-            animation: marquee 30s linear infinite;
+          .animate-marquee-right {
+            animation: marqueeRight 25s linear infinite;
             display: flex;
+          }
+          @keyframes cardFloat {
+            0%, 100% {
+              transform: translateY(0px);
+            }
+            50% {
+              transform: translateY(-8px);
+            }
+          }
+          @keyframes cardPulse {
+            0%, 100% {
+              box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            }
+            50% {
+              box-shadow: 0 20px 25px -5px rgba(156, 124, 93, 0.15), 0 10px 10px -5px rgba(156, 124, 93, 0.1);
+            }
+          }
+          @keyframes shimmer {
+            0% {
+              background-position: -200% 0;
+            }
+            100% {
+              background-position: 200% 0;
+            }
+          }
+          .card-animate {
+            animation: cardFloat 3s ease-in-out infinite, cardPulse 3s ease-in-out infinite;
+          }
+          .card-animate:hover {
+            animation: none;
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 25px 50px -12px rgba(156, 124, 93, 0.25);
+          }
+          .card-shimmer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 2s ease-in-out infinite;
+            pointer-events: none;
+            border-radius: inherit;
           }
         `}
       </style>
@@ -1077,9 +1140,9 @@ const HomePage: React.FC = () => {
       </section>
 
       {(activeSection === "all" || activeSection === "venues") && (
-        <section id="venues" className="py-12 sm:py-16 lg:py-20 w-full bg-white">
+        <section id="venues" className="py-6 sm:py-8 lg:py-10 w-full bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-            <div className="text-right mb-12 sm:mb-16">
+            <div className="text-right mb-8 sm:mb-10" style={{ animation: "fadeInScale 0.8s ease forwards" }}>
               <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#5B4336] mb-4">
                 Perfect Venues
               </h2>
@@ -1114,9 +1177,10 @@ const HomePage: React.FC = () => {
                   {venues.map((venue, index) => (
                     <div
                       key={venue.id}
-                      className={`group rounded-xl overflow-visible hover:shadow-xl transition duration-300 transform opacity-0 scale-95 flex-shrink-0 w-[240px] sm:w-[280px]`}
+                      className={`group rounded-xl overflow-visible transition-all duration-500 transform flex-shrink-0 w-[240px] sm:w-[280px] card-animate card-shimmer relative`}
                       style={{
                         animation: `fadeInScale 0.6s ease ${index * 0.15}s forwards`,
+                        animationDelay: `${index * 0.1}s`,
                       }}
                     >
                       <div className="relative h-48 sm:h-56 overflow-visible">
@@ -1208,6 +1272,78 @@ const HomePage: React.FC = () => {
         </section>
       )}
 
+      {(activeSection === "all" || activeSection === "eventcategories") && (
+        <section id="eventcategories" className="py-6 sm:py-8 lg:py-10 w-full bg-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+            <div className="text-center mb-8 sm:mb-10">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#5B4336] mb-4">
+                Event Categories
+              </h2>
+              <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto">
+                Browse vendors by their expertise and find the perfect match for your event
+              </p>
+            </div>
+
+            {vendorLoading ? (
+              <div className="text-center text-gray-600">Loading vendors...</div>
+            ) : vendorError ? (
+              <div className="text-center text-red-600">{vendorError}</div>
+            ) : Object.keys(vendorsByType).length === 0 ? (
+              <div className="text-center text-gray-600">No vendors available.</div>
+            ) : (
+              <div className="overflow-hidden w-full">
+                <div className="animate-marquee-right flex">
+                  {/* First set of vendors */}
+                  {Object.entries(vendorsByType).flatMap(([type, vendors]) =>
+                    vendors.map((vendor) => (
+                      <div
+                        key={`${type}-${vendor.id}`}
+                        className="flex flex-col items-center text-center flex-shrink-0 mx-4 sm:mx-6"
+                      >
+                        <div className="relative mb-3 sm:mb-4 overflow-hidden rounded-full w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 border-4 border-[#9c7c5d] cursor-pointer hover:shadow-lg transition duration-300 transform hover:scale-110">
+                          <img
+                            src={vendor.image || "/placeholder.svg"}
+                            alt={vendor.name}
+                            className="w-full h-full object-cover"
+                            onClick={() => navigate(`/vendordetails/${vendor.id}`)}
+                          />
+                        </div>
+                        <h3 className="text-sm sm:text-base md:text-lg font-semibold text-[#5B4336] mb-1 whitespace-nowrap">
+                          {vendor.name}
+                        </h3>
+                        <p className="text-xs sm:text-sm text-gray-600 whitespace-nowrap">{capitalizeWords(type)}</p>
+                      </div>
+                    )),
+                  )}
+                  {/* Duplicate set for seamless loop */}
+                  {Object.entries(vendorsByType).flatMap(([type, vendors]) =>
+                    vendors.map((vendor) => (
+                      <div
+                        key={`${type}-${vendor.id}-dup`}
+                        className="flex flex-col items-center text-center flex-shrink-0 mx-4 sm:mx-6"
+                      >
+                        <div className="relative mb-3 sm:mb-4 overflow-hidden rounded-full w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 border-4 border-[#9c7c5d] cursor-pointer hover:shadow-lg transition duration-300 transform hover:scale-110">
+                          <img
+                            src={vendor.image || "/placeholder.svg"}
+                            alt={vendor.name}
+                            className="w-full h-full object-cover"
+                            onClick={() => navigate(`/vendordetails/${vendor.id}`)}
+                          />
+                        </div>
+                        <h3 className="text-sm sm:text-base md:text-lg font-semibold text-[#5B4336] mb-1 whitespace-nowrap">
+                          {vendor.name}
+                        </h3>
+                        <p className="text-xs sm:text-sm text-gray-600 whitespace-nowrap">{capitalizeWords(type)}</p>
+                      </div>
+                    )),
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
       {(activeSection === "all" || vendorTypes.includes(activeSection)) && (
         <>
           {vendorTypes.map((type) => renderVendorSection(type))}
@@ -1215,11 +1351,11 @@ const HomePage: React.FC = () => {
       )}
 
       {(activeSection === "all" || activeSection === "projects") && (
-        <section id="projects" className="py-12 sm:py-16 lg:py-20 w-full">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+        <section id="projects" className="py-6 sm:py-8 lg:py-10 w-full">
+          <div className="w-full px-4 sm:px-6 lg:px-8">
 
             {/* Image Carousel */}
-            <div className="text-center mb-12 sm:mb-16">
+            <div className="text-center mb-8 sm:mb-10">
               <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#5B4336] mb-4">
                 Our Beautiful Designs
               </h2>
@@ -1298,9 +1434,9 @@ const HomePage: React.FC = () => {
       )}
 
       {(activeSection === "all" || activeSection === "services") && (
-        <section id="services" className="py-12 sm:py-16 lg:py-20 bg-gray-50 w-full">
+        <section id="services" className="py-6 sm:py-8 lg:py-10 bg-gray-50 w-full">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-left mb-12 sm:mb-16">
+            <div className="text-left mb-8 sm:mb-10">
               <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#5B4336] mb-4">
                 Our Services
               </h2>
@@ -1357,22 +1493,81 @@ const HomePage: React.FC = () => {
 
       {activeSection === "all" && (
         <section id="categories" className="py-12 sm:py-16 lg:py-20 bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="w-full px-4 sm:px-6 lg:px-8">
             <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#5B4336] mb-8 text-center">
-              Event Categories
+              Our Venues
             </h2>
-            <div className="overflow-hidden">
-              <div className="animate-marquee">
-                {eventTypes.concat(eventTypes).map((event, index) => (
-                  <div
-                    key={index}
-                    className="flex-shrink-0 mx-4 sm:mx-8 w-32 h-32 sm:w-48 sm:h-48 bg-[#9c7c5d] text-white rounded-full flex items-center justify-center text-center text-base sm:text-lg font-medium shadow-xl hover:bg-[#8b6b4a] transition duration-300 cursor-pointer"
-                  >
-                    {event}
-                  </div>
-                ))}
+            <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto text-center mb-8">
+              Explore all our stunning venues for your perfect event
+            </p>
+            {loading ? (
+              <div className="text-center text-gray-600">Loading venues...</div>
+            ) : venues.length === 0 ? (
+              <div className="text-center text-gray-600">No venues available.</div>
+            ) : (
+              <div className="overflow-hidden w-full">
+                <div className="animate-marquee-right flex">
+                  {/* First set of venues */}
+                  {venues.map((venue) => (
+                    <div
+                      key={venue.id}
+                      className="flex-shrink-0 mx-3 sm:mx-4 w-48 sm:w-56 md:w-64 cursor-pointer group"
+                      onClick={() => navigate(`/auditoriumdetails/${venue.id}`)}
+                    >
+                      <div className="relative h-32 sm:h-40 md:h-48 rounded-xl overflow-hidden mb-3 shadow-lg group-hover:shadow-xl transition-all duration-300 transform group-hover:scale-105">
+                        <img
+                          src={venue.images[0] || "/placeholder.svg"}
+                          alt={venue.name}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+                        <div className="absolute bottom-2 left-2 right-2">
+                          <h3 className="text-white text-sm sm:text-base font-semibold truncate">{venue.name}</h3>
+                          <p className="text-white/80 text-xs sm:text-sm flex items-center">
+                            <MapPin className="h-3 w-3 mr-1" />
+                            <span className="truncate">{venue.location}</span>
+                          </p>
+                        </div>
+                        {venue.offer && (
+                          <div className="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
+                            {venue.offer.discountValue}{venue.offer.discountType === "percentage" ? "%" : "₹"} OFF
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  {/* Duplicate set for seamless loop */}
+                  {venues.map((venue) => (
+                    <div
+                      key={`${venue.id}-dup`}
+                      className="flex-shrink-0 mx-3 sm:mx-4 w-48 sm:w-56 md:w-64 cursor-pointer group"
+                      onClick={() => navigate(`/auditoriumdetails/${venue.id}`)}
+                    >
+                      <div className="relative h-32 sm:h-40 md:h-48 rounded-xl overflow-hidden mb-3 shadow-lg group-hover:shadow-xl transition-all duration-300 transform group-hover:scale-105">
+                        <img
+                          src={venue.images[0] || "/placeholder.svg"}
+                          alt={venue.name}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+                        <div className="absolute bottom-2 left-2 right-2">
+                          <h3 className="text-white text-sm sm:text-base font-semibold truncate">{venue.name}</h3>
+                          <p className="text-white/80 text-xs sm:text-sm flex items-center">
+                            <MapPin className="h-3 w-3 mr-1" />
+                            <span className="truncate">{venue.location}</span>
+                          </p>
+                        </div>
+                        {venue.offer && (
+                          <div className="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
+                            {venue.offer.discountValue}{venue.offer.discountType === "percentage" ? "%" : "₹"} OFF
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </section>
       )}
@@ -1423,7 +1618,9 @@ const HomePage: React.FC = () => {
       
       {/* Full Width Footer */}
       <div className="w-full">
-        <Footer />
+        <div className="mb-0">
+          <Footer />
+        </div>
       </div>
     </div>
   )

@@ -1,237 +1,259 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import logo from "../../assets/logo-removebg.png";
 import logo1 from "../../assets/iBooking-removebg.png";
 import { useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { logout } from "../../redux/slices/authSlice";
-import { User } from "lucide-react";
-import { toast } from "react-toastify";
-import { adminLogout } from "../../api/userApi";
+import { User, ChevronDown, Search } from "lucide-react";
+import { adminLogout, fetchAllVendors, getAllAuditoriums } from "../../api/userApi";
 
-interface HeaderProps {
-  onLoginClick?: () => void;
-}
 
-const Header: React.FC<HeaderProps> = () => {
+const Header: React.FC = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  const [vendorOpen, setVendorOpen] = useState(false);
+  const [auditoriumOpen, setAuditoriumOpen] = useState(false);
+
+  const [vendors, setVendors] = useState<any[]>([]);
+  const [auditoriums, setAuditoriums] = useState<any[]>([]);
+
+  const [search, setSearch] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+
   const navigate = useNavigate();
   const dispatch = useDispatch();
-
   const { currentUser } = useSelector((state: any) => state.auth);
 
-  const displayName = currentUser?.email ? currentUser.email.split('@')[0] : '';
+  const displayName = currentUser?.email
+    ? currentUser.email.split("@")[0]
+    : "";
 
-  const onLoginClick = () => {
-    navigate("/login");
-    setMenuOpen(false);
-  };
+  /* ================= FETCH DATA ================= */
 
-  const handleLogout = async() => {
-    dispatch(logout())
-    navigate("/");
-    if(currentUser.role =="admin"|| "staff"|| "superadmin"|| "vendormanager"|| "venuemanager"){
-      await adminLogout(currentUser.id)
+  useEffect(() => {
+    const fetchData = async () => {
+      const vendorRes = await fetchAllVendors()
+      const auditoriumRes = await getAllAuditoriums()
+
+      setVendors(vendorRes.data || []);
+      setAuditoriums(auditoriumRes.data || []);
+    };
+
+    fetchData();
+  }, []);
+
+  /* ================= DERIVED DATA ================= */
+
+  const vendorTypes = Array.from(
+    new Set(vendors.map((v) => v.vendorType))
+  );
+
+  useEffect(() => {
+    if (search.length < 2) {
+      setSearchResults([]);
+      return;
     }
-    
-    setMenuOpen(false);
+
+    const filtered = auditoriums.filter((a) =>
+      a.auditoriumName
+        .toLowerCase()
+        .includes(search.toLowerCase())
+    );
+
+    setSearchResults(filtered);
+  }, [search, auditoriums]);
+
+  /* ================= ACTIONS ================= */
+
+  const handleLogout = async () => {
+    dispatch(logout());
+    navigate("/");
+
+    if (
+      ["admin", "staff", "superadmin", "vendormanager", "venuemanager"].includes(
+        currentUser?.role
+      )
+    ) {
+      await adminLogout(currentUser.id);
+    }
   };
 
   const goToProfile = () => {
     if (!currentUser) return;
 
-    const role = currentUser.role;
-    if (role === "user") {
-      navigate("/userprofile");
-    } else if (role === "auditorium") {
+    if (currentUser.role === "user") navigate("/userprofile");
+    if (currentUser.role === "vendor") navigate("/vendor/profile");
+    if (currentUser.role === "auditorium")
       navigate("/auditorium/profile");
-    } else if (role === "vendor") {
-      navigate("/vendor/profile");
-    }
-    setDropdownOpen(false);
-    setMenuOpen(false);
-  };
 
-  const handleLogoClick = () => {
-    navigate("/");
-    setMenuOpen(false);
     setDropdownOpen(false);
   };
 
-  const handlePortalClick = (path: string) => {
-    if (currentUser) {
-      toast.error("Please logout first before switching accounts.")
-
-      return;
-    }
-    navigate(path);
-    setMenuOpen(false);
-  };
+  /* ================= UI ================= */
 
   return (
     <>
       <header className="fixed top-0 left-0 right-0 bg-[#FDF8F1] z-50">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          {/* Logo */}
-          <div className="flex ml-1 items-center space-x-4">
-            <img src={logo} alt="Logo" className="h-10 w-auto scale-130" />
-            <button onClick={handleLogoClick} className="focus:outline-none">
-              <img
-                src={logo1}
-                alt="Logo2"
-                className="h-6 w-auto ml-15 scale-800"
-              />
-            </button>
+
+          {/* LEFT */}
+          <div className="flex items-center space-x-6">
+            <div
+  onClick={() => navigate("/")}
+  className="flex items-center space-x-4 cursor-pointer"
+>
+  <img
+    src={logo}
+    alt="Logo"
+    className="h-10 w-auto scale-130"
+  />
+  <img
+    src={logo1}
+    alt="Logo2"
+    className="h-6 w-auto ml-15 scale-800"
+  />
+</div>
+
+
+            
+
+            {/* Vendor */}
+            <div className="relative">
+             <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setVendorOpen((prev) => !prev);
+                setAuditoriumOpen(false);
+              }}
+              className="font-bold text-[#825F4C] pl-22 flex items-center gap-1 cursor-pointer"
+            >
+
+                Vendor <ChevronDown size={16} />
+              </button>
+
+              {vendorOpen && (
+                <div className="absolute mt-2 w-48 bg-white shadow-lg rounded-md">
+                  {vendorTypes.map((type) => (
+                    <button
+                      key={type}
+                      onClick={() =>
+                        navigate(`/vendorslist?type=${type}`)
+                      }
+                      className="block w-full px-4 py-2 text-left hover:bg-gray-100"
+                    >
+                      {type}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Auditorium */}
+            <div className="relative">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setAuditoriumOpen((prev) => !prev);
+                setVendorOpen(false);
+              }}
+              className="font-bold text-[#825F4C] flex items-center gap-1 cursor-pointer"
+            >
+
+                Auditorium <ChevronDown size={16} />
+              </button>
+
+              {auditoriumOpen && (
+                <div className="absolute mt-2 w-64 bg-white shadow-lg rounded-md max-h-64 overflow-y-auto">
+                  {auditoriums.map((a) => (
+                    <button
+                      key={a._id}
+                      onClick={() =>
+                        navigate(`/venuelist/${a._id}`)
+                      }
+                      className="block w-full px-4 py-2 text-left hover:bg-gray-100"
+                    >
+                      {a.auditoriumName}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Desktop Menu */}
-          <nav className="hidden md:flex items-center space-x-6 text-[#825F4C]">
-            {/* Always visible portal links */}
-            <button
-              onClick={() => handlePortalClick("/vendor/login")}
-              className="hover:text-gray-800"
-            >
-              Vendor
-            </button>
-            <button
-              onClick={() => handlePortalClick("/auditorium/login")}
-              className="hover:text-gray-800"
-            >
-              Auditorium
-            </button>
-            <button
-              onClick={() => handlePortalClick("/admin/login")}
-              className="hover:text-gray-800"
-            >
-              Admin
-            </button>
+          {/* RIGHT */}
+          <div className="hidden md:flex items-center space-x-4">
+
+            {/* SEARCH */}
+            <div className="relative">
+              <div className="flex items-center bg-white border border-[#b09d94] rounded-lg px-3 py-2 w-72 shadow-sm">
+                <Search size={16} className="text-gray-400" />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search auditorium..."
+                  className="ml-2 w-full outline-none text-sm"
+                />
+              </div>
+
+              {searchResults.length > 0 && (
+                <div className="absolute mt-1 w-full bg-white shadow-lg rounded-md max-h-60 overflow-y-auto z-50">
+                  {searchResults.map((a) => (
+                    <button
+                      key={a._id}
+                      onClick={() =>
+                        navigate(`/venuelist/${a._id}`)
+                      }
+                      className="block w-full px-4 py-2 text-left hover:bg-gray-100"
+                    >
+                      {a.auditoriumName}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {!currentUser ? (
               <button
-                onClick={onLoginClick}
-                className="bg-[#ED695A] hover:bg-red-400 text-white px-4 py-2 rounded-lg shadow-xl transition-colors"
+                onClick={() => navigate("/login")}
+                className="bg-[#ED695A] text-white px-4 py-2 rounded-lg"
               >
                 Login
               </button>
             ) : (
-              <div className="flex items-center space-x-2">
-                <span className="text-[#825F4C] text-sm">{displayName}</span>
-                <div className="relative">
-                  <button
-                    onClick={() => setDropdownOpen(!dropdownOpen)}
-                    className="w-10 h-10 rounded-full bg-[#ED695A] text-white flex items-center justify-center hover:bg-red-400 transition"
-                  >
-                    <User size={18} />
-                  </button>
-                  {dropdownOpen && (
-                    <div className="absolute right-0 mt-2 w-40 bg-white border rounded-lg shadow-lg text-sm z-50">
-                      <button
-                        onClick={goToProfile}
-                        className="block w-full px-4 py-2 hover:bg-gray-100 text-left"
-                      >
-                        Profile
-                      </button>
-                      <button
-                        onClick={handleLogout}
-                        className="block w-full px-4 py-2 hover:bg-gray-100 text-left"
-                      >
-                        Logout
-                      </button>
-                    </div>
-                  )}
-                </div>
+              <div className="relative">
+                <button
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  className="w-10 h-10 rounded-full bg-[#ED695A] text-white flex items-center justify-center"
+                >
+                  <User size={18} />
+                </button>
+
+                {dropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-40 bg-white shadow-lg rounded-md">
+                    <button
+                      onClick={goToProfile}
+                      className="block w-full px-4 py-2 text-left hover:bg-gray-100"
+                    >
+                      Profile
+                    </button>
+                    <button
+                      onClick={handleLogout}
+                      className="block w-full px-4 py-2 text-left hover:bg-gray-100"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                )}
               </div>
             )}
-          </nav>
-
-          {/* Mobile Menu Toggle */}
-          <div className="md:hidden flex items-center space-x-2 text-gray-800">
-            {currentUser && <span className="text-xs text-[#825F4C]">{displayName}</span>}
-            <button
-              className="focus:outline-none"
-              onClick={() => {
-                setMenuOpen(!menuOpen);
-                setDropdownOpen(false);
-              }}
-            >
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                {menuOpen ? (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                ) : (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
-                )}
-              </svg>
-            </button>
           </div>
         </div>
-
-        {/* Mobile Menu Content */}
-        {menuOpen && (
-          <div className="md:hidden bg-[#FDF8F1] px-4 pb-4 space-y-3 text-[#825F4C]">
-            {/* Always visible portal links */}
-            <button
-              onClick={() => handlePortalClick("/vendor/login")}
-              className="block text-left w-full hover:text-gray-800"
-            >
-              Vendor
-            </button>
-            <button
-              onClick={() => handlePortalClick("/auditorium/login")}
-              className="block text-left w-full hover:text-gray-800"
-            >
-              Auditorium
-            </button>
-            <button
-              onClick={() => handlePortalClick("/admin/login")}
-              className="block text-left w-full hover:text-gray-800"
-            >
-              Admin
-            </button>
-
-            {!currentUser ? (
-              <button
-                onClick={onLoginClick}
-                className="block w-full text-center bg-[#ED695A] hover:bg-red-400 text-white px-4 py-2 rounded-lg shadow-2xl"
-              >
-                Login
-              </button>
-            ) : (
-              <div className="space-y-2">
-                <button
-                  onClick={goToProfile}
-                  className="block w-full px-4 py-2 rounded hover:bg-gray-100 text-left"
-                >
-                  Profile
-                </button>
-                <button
-                  onClick={handleLogout}
-                  className="block w-full px-4 py-2 rounded hover:bg-gray-100 text-left"
-                >
-                  Logout
-                </button>
-              </div>
-            )}
-          </div>
-        )}
       </header>
 
-      {/* Spacer to avoid content hidden behind fixed header */}
-      <div className="h-24 md:h-20"></div>
+      <div className="h-24 md:h-20" />
     </>
   );
 };
