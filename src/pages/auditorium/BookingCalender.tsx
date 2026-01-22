@@ -60,11 +60,40 @@ interface Venue {
   phone: string
   email: string
   audiUserId: string
-  totalamount: string
-  advAmnt: string
+  acCompleteAmount: string
+  acAdvanceAmount: string
   images: string[]
   amenities: string[]
-  cities: string[]
+  altPhone: string
+  cancellationPolicy: string
+  changingRooms: string
+  createdAt: string
+  decorPolicy: string
+  diningCapacity: string
+  district: string
+  events: string[]
+  foodPolicy: string
+  guestroom: string
+  isVerified: boolean
+  locations: {
+    district: string
+    lat: number
+    lon: number
+    name: string
+  }[]
+  nonAcAdvanceAmount: string
+  nonAcCompleteAmount: string
+  parkingSlots: string
+  pincode: string
+  stageSize: string
+  tariff: {
+    wedding: string
+    reception: string
+  }
+  termsAndConditions: string[]
+  updatedAt: string
+  youtubeLink: string
+  __v: number
 }
 
 interface Booking {
@@ -181,8 +210,10 @@ const VenueBookingPage: React.FC = () => {
     console.log(currentUser,'ith current user')
     try {
       if (currentUser) {
+        console.log('njn')
+        console.log(currentUser.id,'user id')
         const response = await existingBookings(currentUser.id)
-        console.log(response.data, "booking data")
+        console.log(response.data, "booking dataaaaaa")
         if (response.data && Array.isArray(response.data)) {
           setBookings(response.data)
         }
@@ -502,8 +533,8 @@ const VenueBookingPage: React.FC = () => {
       selectedDate: formatDateForBackend(selectedDate),
       selectedTimeSlot: selectedTimeSlot?.label,
       timeSlotId: selectedTimeSlot?.id,
-      totalAmount: currentVenue?.totalamount,
-      advanceAmount: currentVenue?.advAmnt,
+      totalAmount: currentVenue?.acCompleteAmount,
+      advanceAmount: currentVenue?.acAdvanceAmount,
       address: userAddress,
       phoneNumber: confirmedUserPhone, // Added phone number
       communicationType: confirmedCommunicationPreference // Added communication preference
@@ -970,11 +1001,11 @@ const VenueBookingPage: React.FC = () => {
                     <div className="bg-white border border-[#b09d94] rounded-lg p-3 shadow-sm">
                       <div className="flex justify-between mb-2">
                         <span className="text-xs text-[#876553]">Total Amount</span>
-                        <span className="text-sm font-semibold text-[#3C3A39]">₹{getCurrentVenue()?.totalamount}</span>
+                        <span className="text-sm font-semibold text-[#3C3A39]">₹{getCurrentVenue()?.acCompleteAmount}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-xs text-[#876553]">Advance Amount</span>
-                        <span className="text-sm font-semibold text-[#ED695A]">₹{getCurrentVenue()?.advAmnt}</span>
+                        <span className="text-sm font-semibold text-[#ED695A]">₹{getCurrentVenue()?.acAdvanceAmount}</span>
                       </div>
                     </div>
                   </div>

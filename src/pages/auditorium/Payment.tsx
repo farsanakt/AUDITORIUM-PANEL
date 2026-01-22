@@ -19,6 +19,7 @@ export default function PaymentDetails() {
   const [paymentType, setPaymentType] = useState<"advance" | "full">("advance")
   const [paymentMethod, setPaymentMethod] = useState<string>("credit")
   const [customer, setCustomer] = useState<any>(null)
+  const [customerName, setCustomerName] = useState<string>("")
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
    const { currentUser } = useSelector((state: RootState) => state.auth);
@@ -63,7 +64,8 @@ const handlePayment = async () => {
       communicationPrefer: bookingData.communicationType,
 
       // 👇 new field added
-      userReferenceId: userReferenceId
+      userReferenceId: userReferenceId,
+      customerName: customerName
     }
 
     const response = await createBooking(paymentData)
@@ -85,6 +87,7 @@ const handlePayment = async () => {
     try {
       const response = await userDetails(bookingData.userEmail)
       setCustomer(response.data)
+      setCustomerName(response.data?.ownerName || "")
     } catch (error) {
       console.error("Failed to fetch customer details:", error)
     }
@@ -202,8 +205,8 @@ const handlePayment = async () => {
                       </Label>
                       <Input
                         id="name"
-                        value={customer?.ownerName || ""}
-                        readOnly
+                        value={customerName}
+                        onChange={(e) => setCustomerName(e.target.value)}
                         className="bg-gray-50 border-[#b09d94]"
                       />
                     </div>
@@ -477,6 +480,11 @@ const handlePayment = async () => {
                   <p><span className="font-medium">Amount Paid:</span> ₹{paymentDetails.total.toLocaleString()}</p>
                   <p><span className="font-medium">Payment Type:</span> {paymentType === "advance" ? "Advance Payment" : "Full Payment"}</p>
                   <p><span className="font-medium">Payment Method:</span> {paymentMethod.charAt(0).toUpperCase() + paymentMethod.slice(1)}</p>
+                  <p><span className="font-medium">Customer Name:</span> {customerName}</p>
+                  <p><span className="font-medium">Customer Email:</span> {bookingData.userEmail}</p>
+                  <p><span className="font-medium">Customer Phone:</span> {customer?.phone || bookingData.userPhone}</p>
+                  <p><span className="font-medium">Customer Address:</span> {bookingData.address}</p>
+                  <p><span className="font-medium">Booked By:</span> {currentUser?.email}</p>
                 </div>
               </div>
               
