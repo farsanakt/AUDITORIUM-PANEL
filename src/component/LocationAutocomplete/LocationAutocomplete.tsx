@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MapPin } from "lucide-react";
 import { useLocationIQ } from "./useLocationIQ";
 import { LocationResult } from "./types";
@@ -7,15 +7,22 @@ interface Props {
   value: string;
   placeholder?: string;
   onSelect: (location: LocationResult) => void;
+  className?: string;
 }
 
 const LocationAutocomplete = ({
   value,
   placeholder = "Enter your location",
   onSelect,
+  className = "",
 }: Props) => {
   const [query, setQuery] = useState(value);
   const [open, setOpen] = useState(false);
+
+  // Sync internal state with prop changes
+  useEffect(() => {
+    setQuery(value);
+  }, [value]);
 
   const { results, loading } = useLocationIQ(query);
 
@@ -29,7 +36,7 @@ const LocationAutocomplete = ({
   const shouldShowDropdown = open && query.trim().length >= 2;
 
   return (
-    <div className="relative w-full">
+    <div className={`relative w-full`}>
       {/* INPUT */}
       <div className="relative">
         <MapPin
@@ -49,7 +56,7 @@ const LocationAutocomplete = ({
           onFocus={() => {
             if (query.trim().length >= 2) setOpen(true);
           }}
-          className="
+          className={`
             w-full h-11
             pl-9 pr-4
             bg-white
@@ -58,7 +65,8 @@ const LocationAutocomplete = ({
             text-sm text-gray-800
             placeholder:text-gray-400
             focus:outline-none
-          "
+            ${className}
+          `}
         />
       </div>
 

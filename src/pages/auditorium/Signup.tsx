@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
-import { Eye, EyeOff, Loader2, X, Check } from "lucide-react"
+import { Eye, EyeOff, Loader2, X, Check, Upload, MapPin, Calendar, Lock } from "lucide-react"
 import tk from "../../assets/Rectangle 50.png"
 import { useNavigate } from "react-router-dom"
 import Header from "../../component/user/Header"
@@ -46,21 +46,12 @@ const AuditoriumRegistrationPage: React.FC = () => {
     events: [] as string[],
   })
 
+  // Mock Districts (Kerala)
   const districts = [
-    "Alappuzha",
-    "Ernakulam",
-    "Idukki",
-    "Kannur",
-    "Kasaragod",
-    "Kollam",
-    "Kottayam",
-    "Kozhikode",
-    "Malappuram",
-    "Palakkad",
-    "Pathanamthitta",
-    "Thiruvananthapuram",
-    "Thrissur",
-    "Wayanad",
+    "Alappuzha", "Ernakulam", "Idukki", "Kannur",
+    "Kasaragod", "Kollam", "Kottayam", "Kozhikode",
+    "Malappuram", "Palakkad", "Pathanamthitta",
+    "Thiruvananthapuram", "Thrissur", "Wayanad",
   ]
 
   useEffect(() => {
@@ -69,9 +60,7 @@ const AuditoriumRegistrationPage: React.FC = () => {
 
   const fetchEvents = async () => {
     try {
-      const response = await getItems('hi') // Assuming 'hi' is used to fetch admin items including events
-      console.log("Admin items response:", response.data)
-
+      const response = await getItems('hi') 
       if (response.data?.success && response.data?.items?.events) {
         const events = response.data.items.events
           .filter((type: string) => type && type.trim())
@@ -80,8 +69,6 @@ const AuditoriumRegistrationPage: React.FC = () => {
       }
     } catch (error) {
       console.error("Error fetching events:", error)
-      // Fallback to static list if API fails
-    
     }
   }
 
@@ -119,10 +106,8 @@ const AuditoriumRegistrationPage: React.FC = () => {
   /* ---------------- VALIDATION ---------------- */
 
   const isStep1Valid = () => formData.auditoriumName && formData.ownerName && formData.email && formData.phone
-
   const isStep2Valid = () => formData.district && formData.locations.length > 0 && formData.address && formData.events.length > 0
-
-  const isStep3Valid = () => formData.password && formData.confirmPassword
+  const isStep3Valid = () => formData.password && formData.confirmPassword && formData.logo && formData.seal
 
   /* ---------------- SUBMIT ---------------- */
 
@@ -155,13 +140,21 @@ const AuditoriumRegistrationPage: React.FC = () => {
 
       const res = await singUpRequest(signupData)
        if (res.data.success) {
-    toast.success(res.data.message);
-    navigate("/auditorium/login");
-  } else {
-    toast.error(res.data.message);
-  }
+          toast.success(res.data.message);
+          setShowOtpModal(true); // Assuming API flow sends OTP on Signup directly or navigates
+          // If the backend sends an OTP and we need to verify right here without navigating: 
+          // Uncomment below if navigation is not immediate but OTP verification is required first
+          // navigate("/auditorium/login"); // If direct login without OTP modal via API response logic
+          // Based on original code: navigate("/auditorium/login") was called.
+          // Adjusting to show OTP modal if that is the flow, OR navigate if verify is separate.
+          // Original: navigate("/auditorium/login"); 
+          // New Plan: Maintain original logic -> Navigate to Login
+          navigate("/auditorium/login");
+
+        } else {
+          toast.error(res.data.message);
+        }
     } catch (err: any) {
-     
       toast.error(err.response?.data?.message || "Signup failed")
     } finally {
       setIsSigningUp(false)
@@ -182,345 +175,367 @@ const AuditoriumRegistrationPage: React.FC = () => {
     }
   }
 
-  /* ---------------- STEP CONTENT ---------------- */
+  /* ---------------- UI ---------------- */
 
-  const inputClass =
-    "w-full px-3 py-2 border border-[#b09d94] rounded-full focus:outline-none focus:border-[#ED695A] text-sm"
+  const renderStepIndicator = () => (
+    <div className="flex items-center justify-center mb-10 w-full max-w-md mx-auto">
+       {[1, 2, 3].map((step) => (
+         <div key={step} className="flex items-center">
+            <div 
+              className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-300
+                ${currentStep >= step ? "bg-[#ED695A] text-white shadow-lg shadow-[#ED695A]/30" : "bg-gray-100 text-gray-400"}
+              `}
+            >
+              {currentStep > step ? <Check size={20} /> : step}
+            </div>
+            {step < 3 && (
+              <div 
+                className={`w-16 h-1 mx-2 transition-all duration-300 rounded-full
+                  ${currentStep > step ? "bg-[#ED695A]" : "bg-gray-100"}
+                `}
+              />
+            )}
+         </div>
+       ))}
+    </div>
+  )
 
   const renderStepContent = () => {
+    const inputBaseClass = "w-full px-5 py-3.5 bg-gray-50 border-gray-200 rounded-xl text-gray-900 focus:ring-2 focus:ring-[#ED695A]/20 focus:border-[#ED695A] transition-all outline-none"
+    const labelClass = "block text-sm font-medium text-gray-700 mb-1.5 ml-1"
+
     switch (currentStep) {
       case 1:
         return (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <input
-              className={inputClass}
-              placeholder="Enter auditorium name"
-              value={formData.auditoriumName}
-              onChange={(e) => setFormData({ ...formData, auditoriumName: e.target.value })}
-            />
-            <input
-              className={inputClass}
-              placeholder="Enter owner name"
-              value={formData.ownerName}
-              onChange={(e) => setFormData({ ...formData, ownerName: e.target.value })}
-            />
-            <input
-              className={inputClass}
-              placeholder="Enter email address"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            />
-            <input
-              className={inputClass}
-              placeholder="Enter phone number"
-              value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-            />
+          <div className="space-y-5 animate-fade-in-up">
+            <div className="grid grid-cols-1 gap-5">
+              <div>
+                <label className={labelClass}>Auditorium Name</label>
+                <input
+                  className={inputBaseClass}
+                  placeholder="e.g. Grand Convention Center"
+                  value={formData.auditoriumName}
+                  onChange={(e) => setFormData({ ...formData, auditoriumName: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Owner Name</label>
+                <input
+                  className={inputBaseClass}
+                  placeholder="Full Name"
+                  value={formData.ownerName}
+                  onChange={(e) => setFormData({ ...formData, ownerName: e.target.value })}
+                />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                 <div>
+                    <label className={labelClass}>Email Address</label>
+                    <input
+                      className={inputBaseClass}
+                      placeholder="name@example.com"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    />
+                 </div>
+                 <div>
+                    <label className={labelClass}>Phone Number</label>
+                    <input
+                      className={inputBaseClass}
+                      placeholder="+91 9876543210"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    />
+                 </div>
+              </div>
+            </div>
           </div>
         )
 
       case 2:
         return (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <label className="block text-[#78533F] text-xs font-serif">Address</label>
-              <input
-                className={inputClass}
-                placeholder="Enter full address"
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-              />
-            </div>
+          <div className="space-y-6 animate-fade-in-up">
+             <div>
+               <label className={labelClass}>Full Address</label>
+               <textarea
+                 className={`${inputBaseClass} min-h-[100px] resize-none`}
+                 placeholder="Street, City, Zip Code"
+                 value={formData.address}
+                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+               />
+             </div>
 
-            <div className="space-y-1">
-              <label className="block text-[#78533F] text-xs font-serif">District</label>
-              <select
-                className={inputClass}
-                value={formData.district}
-                onChange={(e) => setFormData({ ...formData, district: e.target.value, locations: [] })}
-              >
-                <option value="">Select district</option>
-                {districts.map((d) => (
-                  <option key={d} value={d}>
-                    {d}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-1">
-              <label className="block text-[#78533F] text-xs font-serif">Locations</label>
-              <div className={inputClass + " bg-white"}>
-                <LocationAutocomplete
-                  value=""
-                  placeholder="Search locations in selected district"
-                  onSelect={handleLocationSelect}
-                />
-              </div>
-              {formData.locations.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {formData.locations.map((loc) => (
-                    <span
-                      key={loc.name}
-                      className="flex items-center px-2 py-1 rounded-full text-xs font-serif border border-[#ED695A] text-[#ED695A] bg-[#FDF8F1] whitespace-nowrap"
-                    >
-                      {loc.name}
-                      <X
-                        size={12}
-                        className="ml-2 cursor-pointer flex-shrink-0"
-                        onClick={() => removeLocation(loc.name)}
-                      />
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-1">
-              <label className="block text-[#78533F] text-xs font-serif">Events</label>
-              <div className="relative">
-                <div
-                  className={inputClass + " cursor-pointer"}
-                  onClick={() => setIsEventsDropdownOpen(!isEventsDropdownOpen)}
-                >
-                  {formData.events.length > 0 ? `${formData.events.length} selected` : "Select events"}
-                </div>
-                {isEventsDropdownOpen && (
-                  <div className="absolute z-10 w-full bg-white border border-[#b09d94] rounded-md mt-1 max-h-60 overflow-auto">
-                    {eventsList.map((event) => (
-                      <label key={event} className="flex items-center px-3 py-2 hover:bg-gray-100">
-                        <input
-                          type="checkbox"
-                          checked={formData.events.includes(event)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setFormData({ ...formData, events: [...formData.events, event] })
-                            } else {
-                              setFormData({ ...formData, events: formData.events.filter((ev) => ev !== event) })
-                            }
-                          }}
-                          className="mr-2"
-                        />
-                        {event}
-                      </label>
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+               <div>
+                  <label className={labelClass}>District</label>
+                  <select
+                    className={inputBaseClass}
+                    value={formData.district}
+                    onChange={(e) => setFormData({ ...formData, district: e.target.value, locations: [] })}
+                  >
+                    <option value="">Select District</option>
+                    {districts.map((d) => (
+                      <option key={d} value={d}>{d}</option>
                     ))}
+                  </select>
+               </div>
+               <div>
+                  <label className={labelClass}>Supported Events</label>
+                  <div className="relative">
+                    <button
+                      className={`${inputBaseClass} text-left flex justify-between items-center`}
+                      onClick={() => setIsEventsDropdownOpen(!isEventsDropdownOpen)}
+                    >
+                      <span className="truncate text-gray-500">
+                        {formData.events.length > 0 ? `${formData.events.length} Selected` : "Select Events"}
+                      </span>
+                      <Calendar size={18} className="text-gray-400" />
+                    </button>
+                    
+                    {isEventsDropdownOpen && (
+                       <div className="absolute z-10 w-full mt-2 bg-white border border-gray-100 rounded-xl shadow-xl max-h-60 overflow-auto p-2">
+                         {eventsList.map((event) => (
+                           <label key={event} className="flex items-center px-3 py-2.5 hover:bg-gray-50 rounded-lg cursor-pointer">
+                             <input
+                               type="checkbox"
+                               checked={formData.events.includes(event)}
+                               onChange={(e) => {
+                                 const updated = e.target.checked 
+                                   ? [...formData.events, event]
+                                   : formData.events.filter(ev => ev !== event);
+                                 setFormData({ ...formData, events: updated });
+                               }}
+                               className="w-4 h-4 text-[#ED695A] border-gray-300 rounded focus:ring-[#ED695A]"
+                             />
+                             <span className="ml-3 text-sm text-gray-700">{event}</span>
+                           </label>
+                         ))}
+                       </div>
+                    )}
+                  </div>
+               </div>
+             </div>
+
+             {formData.events.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                   {formData.events.map((ev) => (
+                     <span key={ev} className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-[#ED695A]/10 text-[#ED695A] border border-[#ED695A]/20">
+                        {ev}
+                        <X size={14} className="ml-1.5 cursor-pointer hover:text-[#d85849]" onClick={() => setFormData({ ...formData, events: formData.events.filter((e) => e !== ev) })} />
+                     </span>
+                   ))}
+                </div>
+             )}
+
+             <div>
+                <label className={labelClass}>Locations (in {formData.district})</label>
+                <div className="bg-white rounded-xl">
+                   <LocationAutocomplete
+                      value=""
+                      placeholder="Search and add locations..."
+                      onSelect={handleLocationSelect}
+                      className={inputBaseClass}
+                   />
+                </div>
+                {formData.locations.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-3 p-3 bg-gray-50 rounded-xl border border-gray-100 border-dashed">
+                     {formData.locations.map((loc) => (
+                       <span key={loc.name} className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium bg-white border border-gray-200 shadow-sm text-gray-700">
+                          <MapPin size={12} className="mr-1.5 text-gray-400" />
+                          {loc.name}
+                          <X size={14} className="ml-2 cursor-pointer text-gray-400 hover:text-red-500" onClick={() => removeLocation(loc.name)} />
+                       </span>
+                     ))}
                   </div>
                 )}
-              </div>
-              {formData.events.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {formData.events.map((ev) => (
-                    <span
-                      key={ev}
-                      className="flex items-center px-2 py-1 rounded-full text-xs font-serif border border-[#ED695A] text-[#ED695A] bg-[#FDF8F1] whitespace-nowrap"
-                    >
-                      {ev}
-                      <X
-                        size={12}
-                        className="ml-2 cursor-pointer flex-shrink-0"
-                        onClick={() => setFormData({ ...formData, events: formData.events.filter((e) => e !== ev) })}
-                      />
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
+             </div>
           </div>
         )
 
       case 3:
         return (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <label className="block text-[#78533F] text-xs font-serif">Auditorium Logo</label>
-              <input
-                type="file"
-                accept="image/*"
-                className={inputClass}
-                onChange={(e) => setFormData((prev) => ({ ...prev, logo: e.target.files?.[0] || null }))}
-              />
+          <div className="space-y-6 animate-fade-in-up">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+               <div className="bg-gray-50 border border-gray-200 border-dashed rounded-xl p-6 text-center hover:bg-gray-100 transition duration-300 group">
+                  <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm text-[#ED695A]">
+                     <Upload size={20} />
+                  </div>
+                  <label className="cursor-pointer">
+                    <span className="text-sm font-medium text-gray-900 block mb-1">Upload Logo</span>
+                    <span className="text-xs text-gray-500">JPG, PNG up to 5MB</span>
+                    <input type="file" className="hidden" accept="image/*" onChange={(e) => setFormData({ ...formData, logo: e.target.files?.[0] || null })} />
+                  </label>
+                  {formData.logo && <p className="text-xs text-green-600 mt-2 font-medium break-all">{formData.logo.name}</p>}
+               </div>
+
+               <div className="bg-gray-50 border border-gray-200 border-dashed rounded-xl p-6 text-center hover:bg-gray-100 transition duration-300 group">
+                  <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm text-[#ED695A]">
+                     <Upload size={20} />
+                  </div>
+                  <label className="cursor-pointer">
+                    <span className="text-sm font-medium text-gray-900 block mb-1">Upload Seal</span>
+                    <span className="text-xs text-gray-500">Official Seal Image</span>
+                    <input type="file" className="hidden" accept="image/*" onChange={(e) => setFormData({ ...formData, seal: e.target.files?.[0] || null })} />
+                  </label>
+                  {formData.seal && <p className="text-xs text-green-600 mt-2 font-medium break-all">{formData.seal.name}</p>}
+               </div>
             </div>
 
-            <div className="space-y-1">
-              <label className="block text-[#78533F] text-xs font-serif">Auditorium Seal</label>
-              <input
-                type="file"
-                accept="image/*"
-                className={inputClass}
-                onChange={(e) => setFormData((prev) => ({ ...prev, seal: e.target.files?.[0] || null }))}
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="block text-[#78533F] text-xs font-serif">Password</label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  className={inputClass + " pr-10"}
-                  placeholder="Enter password"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                />
-                <button
-                  className="absolute right-3 top-1/2 -translate-y-1/2"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <label className="block text-[#78533F] text-xs font-serif">Confirm Password</label>
-              <div className="relative">
-                <input
-                  type={showConfirmPassword ? "text" : "password"}
-                  className={inputClass + " pr-10"}
-                  placeholder="Confirm password"
-                  value={formData.confirmPassword}
-                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                />
-                <button
-                  className="absolute right-3 top-1/2 -translate-y-1/2"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                >
-                  {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
+            <div className="space-y-4 pt-4 border-t border-gray-100">
+               <div className="relative">
+                  <label className={labelClass}>Password</label>
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    className={`${inputBaseClass} pr-12`}
+                    placeholder="Create a strong password"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  />
+                  <button 
+                    className="absolute right-4 top-[34px] text-gray-400 hover:text-gray-600"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+               </div>
+               <div className="relative">
+                  <label className={labelClass}>Confirm Password</label>
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    className={`${inputBaseClass} pr-12`}
+                    placeholder="Repeat password"
+                    value={formData.confirmPassword}
+                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                  />
+                  <button 
+                    className="absolute right-4 top-[34px] text-gray-400 hover:text-gray-600"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  >
+                    {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+               </div>
             </div>
           </div>
         )
     }
   }
 
-  /* ---------------- UI ---------------- */
-
   return (
-    <div className="min-h-screen bg-[#FDF8F1] flex justify-center items-center px-2 py-4 sm:px-4 sm:py-6">
+    <div className="min-h-screen bg-[#FDF8F1] flex flex-col">
       <Header />
-
-      <div className="flex flex-col lg:flex-row bg-white shadow-xl rounded-xl max-w-4xl w-full overflow-hidden">
-        {/* LEFT SIDE - IMAGE WITH OVERLAY TEXT */}
-        <div className="hidden lg:flex lg:w-2/5 relative flex-shrink-0">
-          <img
-            src={tk || "/placeholder.svg"}
-            className="w-full h-full object-cover brightness-75"
-            alt="Auditorium background"
-          />
-          <div className="absolute inset-0 p-4 sm:p-6 text-[#78533F] flex flex-col justify-center">
-            <h2 className="text-2xl sm:text-3xl font-bold mb-3 font-serif">Join as an Auditorium Owner</h2>
-            <div className="w-16 h-1 bg-[#ED695A] mb-4"></div>
-            <p className="text-base sm:text-lg mb-6 font-serif">
-              Showcase your venue to clients with our intuitive platform.
-            </p>
-            <h3 className="text-xl sm:text-2xl font-bold mb-3 font-serif">Why Register?</h3>
-            <ul className="space-y-2 text-sm sm:text-base font-serif">
-              <li className="flex items-center">
-                <Check size={18} className="mr-2 text-[#ED695A] flex-shrink-0" /> Reach many customers
-              </li>
-              <li className="flex items-center">
-                <Check size={18} className="mr-2 text-[#ED695A] flex-shrink-0" /> Manage bookings easily
-              </li>
-              <li className="flex items-center">
-                <Check size={18} className="mr-2 text-[#ED695A] flex-shrink-0" /> Get featured
-              </li>
-              <li className="flex items-center">
-                <Check size={18} className="mr-2 text-[#ED695A] flex-shrink-0" /> Boost visibility
-              </li>
-            </ul>
-          </div>
-        </div>
-
-        {/* RIGHT SIDE - FORM */}
-        <div className="w-full lg:w-3/5 p-4 sm:p-6 flex flex-col">
-          <h2 className="text-center text-2xl sm:text-3xl font-bold text-[#78533F] font-serif mb-1">
-            Auditorium Registration
-          </h2>
-          <p className="text-center text-[#78533F] mb-4 font-serif text-sm sm:text-base">
-            Sign up to manage your auditorium
-          </p>
-
-          {/* Progress Bar */}
-          <div className="flex items-center justify-center mb-6">
-            <div
-              className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-bold text-xs sm:text-sm ${currentStep >= 1 ? "bg-[#ED695A]" : "bg-gray-300"}`}
-            >
-              1
+      
+      <div className="flex-1 flex items-center justify-center p-4">
+         <div className="w-full max-w-4xl bg-white rounded-2xl overflow-hidden shadow-2xl flex flex-col lg:flex-row min-h-[550px] border border-gray-100">
+            
+            {/* Left Side: Branding */}
+            <div className="hidden lg:block w-5/12 relative">
+               <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${tk || "/placeholder.svg"})` }}></div>
+               <div className="absolute inset-0 bg-[#78533F]/90 flex flex-col justify-center p-8 text-white">
+                  <h2 className="text-2xl font-bold font-serif mb-4 leading-tight">Partner With Us</h2>
+                  <p className="text-white/80 text-sm mb-8 leading-relaxed">Join our network of premium auditoriums.</p>
+                  
+                  <div className="space-y-6">
+                     <div className="flex items-start">
+                        <div className="w-10 h-10 rounded-full bg-[#ED695A]/20 flex items-center justify-center mt-1 mr-4 border border-[#ED695A]/30 text-[#ED695A]">1</div>
+                        <div>
+                           <h4 className="font-bold text-lg mb-1">Create Profile</h4>
+                           <p className="text-sm text-white/60">Set up your venue details</p>
+                        </div>
+                     </div>
+                     <div className="flex items-start">
+                        <div className="w-10 h-10 rounded-full bg-[#ED695A]/20 flex items-center justify-center mt-1 mr-4 border border-[#ED695A]/30 text-[#ED695A]">2</div>
+                        <div>
+                           <h4 className="font-bold text-lg mb-1">Add Location</h4>
+                           <p className="text-sm text-white/60">Pinpoint your venue on the map</p>
+                        </div>
+                     </div>
+                     <div className="flex items-start">
+                        <div className="w-10 h-10 rounded-full bg-[#ED695A]/20 flex items-center justify-center mt-1 mr-4 border border-[#ED695A]/30 text-[#ED695A]">3</div>
+                        <div>
+                           <h4 className="font-bold text-lg mb-1">Get Verified</h4>
+                           <p className="text-sm text-white/60">Upload documents and start listing</p>
+                        </div>
+                     </div>
+                  </div>
+               </div>
             </div>
-            <div className={`flex-1 h-1 mx-1.5 sm:mx-2 ${currentStep >= 2 ? "bg-[#ED695A]" : "bg-gray-300"}`}></div>
-            <div
-              className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-bold text-xs sm:text-sm ${currentStep >= 2 ? "bg-[#ED695A]" : "bg-gray-300"}`}
-            >
-              2
+
+            {/* Right Side: Form */}
+            <div className="w-full lg:w-3/5 p-8 lg:p-12 flex flex-col justify-center">
+               <div className="max-w-2xl mx-auto w-full">
+                  <div className="text-center mb-10">
+                     <h2 className="text-3xl font-bold text-[#78533F] font-serif mb-2">Auditorium Registration</h2>
+                     <p className="text-gray-500">Complete the form below to register your venue</p>
+                  </div>
+
+                  {renderStepIndicator()}
+
+                  <div className="min-h-[400px] flex flex-col justify-between">
+                     {renderStepContent()}
+
+                     {/* Navigation Buttons */}
+                     <div className="flex items-center justify-between pt-8 mt-4 border-t border-gray-100">
+                        {currentStep > 1 ? (
+                           <button
+                             onClick={() => setCurrentStep(prev => prev - 1)}
+                             className="px-8 py-3 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-gray-50 hover:text-gray-900 transition"
+                           >
+                             Back
+                           </button>
+                        ) : (
+                           <div></div> // Spacer
+                        )}
+
+                        {currentStep < 3 ? (
+                           <button
+                             onClick={() => {
+                                if (currentStep === 1 && isStep1Valid()) setCurrentStep(2)
+                                else if (currentStep === 2 && isStep2Valid()) setCurrentStep(3)
+                                else toast.error("Please complete the current step")
+                             }}
+                             className="px-8 py-3 bg-[#ED695A] hover:bg-[#d85849] text-white rounded-xl font-bold shadow-lg shadow-[#ED695A]/25 transition hover:-translate-y-0.5"
+                           >
+                             Continue
+                           </button>
+                        ) : (
+                           <button
+                             onClick={handleSignup}
+                             disabled={isSigningUp}
+                             className="px-10 py-3 bg-[#ED695A] hover:bg-[#d85849] text-white rounded-xl font-bold shadow-lg shadow-[#ED695A]/25 transition hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed flex items-center"
+                           >
+                             {isSigningUp ? <Loader2 className="animate-spin mr-2" /> : "Complete Registration"}
+                           </button>
+                        )}
+                     </div>
+                  </div>
+
+                  <p className="text-center mt-8 text-gray-500 text-sm">
+                     Already have an account? 
+                     <a href="/auditorium/login" className="text-[#ED695A] font-bold ml-1 hover:underline">Sign In</a>
+                  </p>
+               </div>
             </div>
-            <div className={`flex-1 h-1 mx-1.5 sm:mx-2 ${currentStep >= 3 ? "bg-[#ED695A]" : "bg-gray-300"}`}></div>
-            <div
-              className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-bold text-xs sm:text-sm ${currentStep >= 3 ? "bg-[#ED695A]" : "bg-gray-300"}`}
-            >
-              3
-            </div>
-          </div>
 
-          <div className="flex-grow">{renderStepContent()}</div>
-
-          <div className="mt-6 flex gap-2 justify-between">
-            {currentStep > 1 && (
-              <button
-                className="px-4 sm:px-6 py-2 border border-[#b09d94] text-[#78533F] rounded-full hover:bg-gray-100 text-sm sm:text-base"
-                onClick={() => setCurrentStep((p) => p - 1)}
-              >
-                Back
-              </button>
-            )}
-            {currentStep < 3 ? (
-              <button
-                className="ml-auto px-6 sm:px-8 py-2 bg-[#ED695A] text-white rounded-full hover:bg-[#d55a4a] text-sm sm:text-base"
-                onClick={() => {
-                  if (currentStep === 1 && isStep1Valid()) setCurrentStep(2)
-                  else if (currentStep === 2 && isStep2Valid()) setCurrentStep(3)
-                  else toast.error("Please complete the current step")
-                }}
-              >
-                Next
-              </button>
-            ) : (
-              <button
-                className="w-full px-6 sm:px-8 py-2 bg-[#ED695A] text-white rounded-full hover:bg-[#d55a4a] flex items-center justify-center text-sm sm:text-base"
-                onClick={handleSignup}
-                disabled={isSigningUp}
-              >
-                {isSigningUp ? <Loader2 className="animate-spin mr-2" size={18} /> : "Register"}
-              </button>
-            )}
-          </div>
-
-          <p className="text-center mt-4 text-[#78533F] font-serif text-xs sm:text-sm">
-            Already have an account?{" "}
-            <a href="/auditorium/login" className="text-[#ED695A] hover:underline">
-              Sign In
-            </a>
-          </p>
-        </div>
+         </div>
       </div>
 
-      {/* OTP MODAL */}
       {showOtpModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
-          <div className="bg-white p-6 rounded-2xl w-full max-w-xs">
-            <h3 className="text-center text-lg sm:text-xl font-bold text-[#78533F] mb-4">Verify OTP</h3>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl animate-fade-in-up text-center">
+            <h3 className="text-xl font-bold text-[#78533F] mb-4">Verify Phone Number</h3>
+            <p className="text-gray-500 text-sm mb-6">Enter the code sent to your mobile</p>
             <input
-              className={inputClass}
               value={otp}
-              onChange={(e) => setOtp(e.target.value)}
-              placeholder="Enter 6-digit OTP"
+              onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
               maxLength={6}
+              className="w-full text-center text-3xl font-bold tracking-[0.5em] py-4 border-b-2 border-gray-200 focus:border-[#ED695A] outline-none bg-transparent mb-6"
+              placeholder="000000"
             />
             <button
-              className="w-full mt-4 px-6 py-2 bg-[#ED695A] text-white rounded-full hover:bg-[#d55a4a] flex items-center justify-center text-sm sm:text-base"
-              onClick={handleVerifyOtp}
-              disabled={isVerifyingOtp}
+               className="w-full py-3 bg-[#ED695A] text-white font-bold rounded-xl hover:bg-[#d85849] transition disabled:opacity-50"
+               onClick={handleVerifyOtp}
+               disabled={isVerifyingOtp}
             >
-              {isVerifyingOtp ? "Verifying..." : "Verify"}
+               {isVerifyingOtp ? "Verifying..." : "Verify & Login"}
             </button>
           </div>
         </div>
