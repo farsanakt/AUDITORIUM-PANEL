@@ -10,9 +10,10 @@ import { cn } from "../../component/lib/utils"
 import Header from "../../component/user/Header"
 import Sidebar from "../../component/auditorium/Sidebar"
 import { useLocation, useNavigate } from "react-router-dom"
-import { createBooking, userDetails } from "../../api/userApi"
+import { createBooking, fetchAuditoriumUserdetails, userDetails } from "../../api/userApi"
 import { useSelector } from "react-redux"
 import { RootState } from "../../redux/store"
+import logo from "../../assets/logo-removebg.png";
 
 export default function PaymentDetails() {
   const [paymentStatus, setPaymentStatus] = useState<"pending" | "success">("pending")
@@ -33,7 +34,7 @@ const handlePayment = async () => {
   setIsProcessing(true)
   try {
 
-    // Determine which ID to send based on role
+
     const userReferenceId =
       currentUser?.role === "auditorium"
         ? currentUser.id
@@ -67,6 +68,7 @@ const handlePayment = async () => {
       userReferenceId: userReferenceId,
       customerName: customerName
     }
+    const respo = await fetchAuditoriumUserdetails(currentUser?.id);
 
     const response = await createBooking(paymentData)
 
@@ -107,6 +109,64 @@ const handlePayment = async () => {
     setShowSuccessModal(false)
     navigate("/auditorium/bookings")
   }
+
+  const getBase64 = (url: string): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0);
+          resolve(canvas.toDataURL('image/png'));
+        } else {
+          reject(new Error('Failed to get canvas context'));
+        }
+      };
+      img.onerror = reject;
+      img.src = url;
+    });
+  };
+
+  const handlePrintReceipt = async () => {
+    try {
+      const logoBase64 = await getBase64(logo);
+      const content = `
+        <div style="position: relative; padding: 20px; font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto;">
+          <img src="${logoBase64}" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0.1; width: 60%; z-index: -1;" />
+          <h2 style="text-align: center; color: #78533F; font-size: 24px; margin-bottom: 20px;">Payment Receipt</h2>
+          <div style="font-size: 14px; line-height: 1.5;">
+            <p><strong>Venue:</strong> ${bookingData.venueName}</p>
+            <p><strong>Date:</strong> ${bookingData.selectedDate}</p>
+            <p><strong>Time:</strong> ${bookingData.selectedTimeSlot}</p>
+            <p><strong>Amount Paid:</strong> ₹${paymentDetails.total.toLocaleString()}</p>
+            <p><strong>Payment Type:</strong> ${paymentType === "advance" ? "Advance Payment" : "Full Payment"}</p>
+            <p><strong>Payment Method:</strong> ${paymentMethod.charAt(0).toUpperCase() + paymentMethod.slice(1)}</p>
+            <p><strong>Customer Name:</strong> ${customerName}</p>
+            <p><strong>Customer Email:</strong> ${bookingData.userEmail}</p>
+            <p><strong>Customer Phone:</strong> ${customer?.phone || bookingData.userPhone}</p>
+            <p><strong>Customer Address:</strong> ${bookingData.address}</p>
+            <p><strong>Booked By:</strong> ${currentUser?.email}</p>
+          </div>
+        </div>
+      `;
+
+      const printWindow = window.open('', '', 'height=600,width=800');
+      if (printWindow) {
+        printWindow.document.write('<html><head><title>Payment Receipt</title></head><body>');
+        printWindow.document.write(content);
+        printWindow.document.write('</body></html>');
+        printWindow.document.close();
+        printWindow.print();
+      }
+    } catch (error) {
+      console.error('Failed to generate print receipt:', error);
+      alert('Failed to load logo for printing. Please try again.');
+    }
+  };
 
   const paymentDetails = {
     fullAmount: parseInt(bookingData.totalAmount),
@@ -492,10 +552,7 @@ const handlePayment = async () => {
                 <Button
                   variant="outline"
                   className="flex-1 border-[#b09d94] flex items-center justify-center gap-2"
-                  onClick={() => {
-                    // Handle print receipt
-                    window.print()
-                  }}
+                  onClick={handlePrintReceipt}
                 >
                   <Printer className="h-4 w-4" />
                   Print Receipt

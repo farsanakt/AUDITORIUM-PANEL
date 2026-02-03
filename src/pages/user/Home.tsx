@@ -2,15 +2,13 @@
 
 import type React from "react"
 import { useState, useEffect, useRef } from "react"
-import { MapPin, Calendar, Flag, Search, ChevronLeft, ChevronRight, Star, X } from "lucide-react"
+import { MapPin, Search, ChevronLeft, ChevronRight, Star, X, Sparkles } from "lucide-react"
 import Header from "../../component/user/Header"
 import bgImg from "../../assets/Rectangle 50.png"
-import pjct from "../../assets/image 16.png"
 import pjct1 from "../../assets/Rectangle 30.png"
 import dum from '../../assets/dum3.webp'
 import dumm from '../../assets/dum2.jpg'
 import dum1 from '../../assets/dum2.jpg'
-import dum2 from '../../assets/dum4.jpg'
 import dum3 from '../../assets/dum5.jpg'
 import dum4 from '../../assets/dum6.jpg'
 import { useNavigate } from "react-router-dom"
@@ -19,7 +17,13 @@ import { existingVenues, fetchAllExistingOffer, fetchAllExistingVouchers, fetchA
 import LocationAutocomplete from "../../component/LocationAutocomplete/LocationAutocomplete" 
 import Footer from "../../component/user/Footer"
 import { LocationResult } from "../../component/LocationAutocomplete/types"
-import { Project } from "../../types/project"; 
+
+interface Project {
+  id: number;
+  title: string;
+  image: string;
+  category: string;
+}
 
 const Toast = ({ message, type = "error", onClose }: { message: string; type?: string; onClose: () => void }) => {
   useEffect(() => {
@@ -30,18 +34,11 @@ const Toast = ({ message, type = "error", onClose }: { message: string; type?: s
   }, [onClose]);
 
   return (
-    <div className={`fixed bottom-4 right-4 z-50 p-4 rounded-lg shadow-lg text-white ${type === "error" ? "bg-red-600" : "bg-green-600"}`}>
+    <div className={`fixed bottom-6 right-6 z-[9999] px-6 py-4 rounded-xl shadow-2xl text-white font-medium ${type === "error" ? "bg-red-500/90 backdrop-blur" : "bg-emerald-600/90 backdrop-blur"} animate-fade-in-up flex items-center gap-3`}>
       {message}
     </div>
   );
 };
-
-interface Service {
-  id: number
-  title: string
-  description: string
-  image: string
-}
 
 interface Artist {
   id: number
@@ -91,8 +88,13 @@ interface Venue {
   voucher?: Voucher
 }
 
+interface RootState {
+  auth: {
+    currentUser: any;
+  }
+}
+
 const HomePage: React.FC = () => {
-  const [isVisible, setIsVisible] = useState<boolean>(false)
   const [formData, setFormData] = useState({
     district: "",
     place: "",
@@ -102,46 +104,57 @@ const HomePage: React.FC = () => {
     latitude: "",
     longitude: "",
   })
+  
+  const [restoreKey, setRestoreKey] = useState(0) // Forces LocationAutocomplete re-mount after login
+
   const [venues, setVenues] = useState<Venue[]>([])
   const [vendorsByType, setVendorsByType] = useState<Record<string, Artist[]>>({})
   const [vendorTypes, setVendorTypes] = useState<string[]>([])
   const [offers, setOffers] = useState<Offer[]>([])
   const [vouchers, setVouchers] = useState<Voucher[]>([])
   const [loading, setLoading] = useState<boolean>(true)
-  const [error, setError] = useState<string | null>(null)
   const [vendorLoading, setVendorLoading] = useState<boolean>(true)
-  const [vendorError, setVendorError] = useState<string | null>(null)
+
   const [activeSection, setActiveSection] = useState<string>("all")
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedVoucher, setSelectedVoucher] = useState<Voucher | null>(null)
   const [toast, setToast] = useState<{ message: string; type: string } | null>(null)
   const [showAd, setShowAd] = useState<boolean>(false)
   const [currentSlide, setCurrentSlide] = useState<number>(0)
-  const [adImages, setAdImages] = useState<string[]>([])
   const [heroCurrentSlide, setHeroCurrentSlide] = useState<number>(0)
   const navigate = useNavigate()
 
-  const { currentUser } = useSelector((state: any) => state.auth);
+  const { currentUser } = useSelector((state: RootState) => state.auth);
   const displayName = currentUser?.email ? currentUser.email.split('@')[0] : '';
-
+  
   const [eventTypes, setEventTypes] = useState<string[]>([])
   const [loadingDropdowns, setLoadingDropdowns] = useState<boolean>(true)
   const [projectImages, setProjectImages] = useState<Project[]>([])
 
   const venuesRef = useRef<HTMLDivElement>(null)
-  const vendorRefs = useRef<Record<string, HTMLDivElement | null>>({})
-  const adTimerRef = useRef<NodeJS.Timeout | null>(null)
-  const slideTimerRef = useRef<NodeJS.Timeout | null>(null)
-  const heroSlideTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const adTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const slideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const heroSlideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  const heroImages = [dumm, bgImg, dum1, dum3, dum4]; 
 
-  const heroImages = [dumm,bgImg, dum1,dum3,dum4]; 
+  useEffect(() => {
+    const pendingSearch = sessionStorage.getItem("pendingSearch");
+    if (pendingSearch && currentUser) {
+      try {
+        const parsedData = JSON.parse(pendingSearch);
+        setFormData(parsedData);
+        setRestoreKey(prev => prev + 1); // Force re-render of LocationAutocomplete
+        sessionStorage.removeItem("pendingSearch");
+      } catch (e) {
+        console.error("Failed to parse pending search data", e);
+      }
+    }
+  }, [currentUser]);
 
   const fetchALLExitingItems = async () => {
     try {
       const response = await getItems('hi')
-      console.log("Admin items response:", response.data)
-      
       if (response.data?.success && response.data?.items?.events) {
         const events = response.data.items.events.filter((e: string) => e && e.trim()).sort()
         setEventTypes(events)
@@ -151,30 +164,12 @@ const HomePage: React.FC = () => {
     }
   }
 
-  // Fetch project images from backend
   const fetchProjectImages = async () => {
     try {
-      // Replace with your actual API endpoint
-      // For now, using local fallback
       const defaultProjects: Project[] = [
-        {
-          id: 1,
-          title: "Romantic Beach Wedding",
-          image: pjct1,
-          category: "Beach Wedding",
-        },
-        {
-          id: 2,
-          title: "Garden Party Reception",
-          image: dum1,
-          category: "Garden Wedding",
-        },
-        {
-          id: 3,
-          title: "Grand Ballroom Event",
-          image: dum,
-          category: "Ballroom Wedding",
-        },
+        { id: 1, title: "Romantic Beach", image: pjct1, category: "Beach Wedding" },
+        { id: 2, title: "Garden Party", image: dum1, category: "Garden Wedding" },
+        { id: 3, title: "Grand Ballroom", image: dum, category: "Ballroom Wedding" },
       ]
       setProjectImages(defaultProjects)
     } catch (error) {
@@ -189,11 +184,9 @@ const HomePage: React.FC = () => {
   const fetchAllOffers = async () => {
     try {
       const response = await fetchAllExistingOffer()
-      console.log("Fetched offers:", response.data)
       setOffers(response.data || [])
     } catch (err) {
       console.error("Error fetching offers:", err)
-      setError("Failed to load offers. Please try again.")
       setOffers([])
     }
   }
@@ -201,11 +194,9 @@ const HomePage: React.FC = () => {
   const fetchAllVouchers = async () => {
     try {
       const response = await fetchAllExistingVouchers()
-      console.log("Fetched vouchers:", response.data)
       setVouchers(response.data || [])
     } catch (err) {
       console.error("Error fetching vouchers:", err)
-      setError("Failed to load vouchers. Please try again.")
       setVouchers([])
     }
   }
@@ -213,24 +204,17 @@ const HomePage: React.FC = () => {
   const fetchVenues = async () => {
     try {
       setLoading(true)
-      setError(null)
       const response = await existingVenues()
-      console.log("Venues API response:", response.data)
       const mappedVenues = response.data
         .filter((venue: any) => venue.isVerified === true)
         .map((venue: any) => {
           const matchingOffer = offers.find((offer) => offer.userId === venue.audiUserId && offer.isActive)
-          const matchingVoucher = vouchers.find(
-            (voucher) => voucher.auditoriumId === venue.audiUserId && voucher.isActive,
-          )
+          const matchingVoucher = vouchers.find((voucher) => voucher.auditoriumId === venue.audiUserId && voucher.isActive)
           return {
             id: venue._id || venue.id || "unknown-" + Math.random().toString(36).substring(2),
             name: venue.name || venue.venueName || "Unknown Venue",
             location: venue.address || "Unknown Location",
-            images:
-              venue.images && Array.isArray(venue.images) && venue.images.length > 0
-                ? venue.images
-                : ["/placeholder.svg?height=200&width=300"],
+            images: venue.images && Array.isArray(venue.images) && venue.images.length > 0 ? venue.images : ["/placeholder.svg?height=200&width=300"],
             price: venue.totalamount || venue.tariff?.wedding || "Price not available",
             rating: venue.rating || 4.5,
             review: venue.review || "Great venue with excellent amenities!",
@@ -239,11 +223,9 @@ const HomePage: React.FC = () => {
             voucher: matchingVoucher,
           }
         })
-      console.log("Mapped venues:", mappedVenues)
       setVenues(mappedVenues)
     } catch (err) {
       console.error("Error fetching venues:", err)
-      setError("Failed to load venues. Please try again.")
       setVenues([])
     } finally {
       setLoading(false)
@@ -253,29 +235,20 @@ const HomePage: React.FC = () => {
   const fetchVendors = async () => {
     try {
       setVendorLoading(true)
-      setVendorError(null)
       const response = await fetchAllVendors()
-      console.log("Vendors API response:", response.data)
       const vendors = response.data
 
       const groupedVendors: Record<string, Artist[]> = {}
       vendors.forEach((v: any) => {
         const type = v.vendorType.toLowerCase()
-        if (!groupedVendors[type]) {
-          groupedVendors[type] = []
-        }
+        if (!groupedVendors[type]) groupedVendors[type] = []
         groupedVendors[type].push({
           id: v._id || v.id || "unknown-" + Math.random().toString(36).substring(2),
           name: v.name,
           role: capitalizeWords(type),
           image: v.images[0] || "/placeholder.svg",
           rating: v.rating || 4.5,
-          location:
-            v.cities && v.cities.length > 0
-              ? v.cities[0]
-              : v.address && v.address !== "No address provided"
-                ? v.address
-                : "Unknown",
+          location: v.cities?.[0] || v.address !== "No address provided" ? v.address : "Unknown",
           review: v.review || "",
           startingPrice: v.startingPrice || "N/A",
         })
@@ -284,54 +257,32 @@ const HomePage: React.FC = () => {
       const types = Object.keys(groupedVendors).sort()
       setVendorTypes(types)
       setVendorsByType(groupedVendors)
-      console.log("Grouped Vendors:", groupedVendors)
     } catch (err) {
       console.error("Error fetching vendors:", err)
-      setVendorError("Failed to load vendors. Please try again.")
     } finally {
       setVendorLoading(false)
     }
   }
 
- 
-  const capitalizeWords = (str: string) => {
-    return str
-      .split(" ")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ")
-  }
+  const capitalizeWords = (str: string) => str.split(" ").map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ")
 
-  // Helper to get pluralized section title
   const getSectionTitle = (type: string) => {
     const capitalized = capitalizeWords(type)
-    if (capitalized.endsWith("er") || capitalized.endsWith("or")) {
-      return capitalized + "s"
-    } else if (capitalized === "Event Management") {
-      return "Event Management"
-    } else if (capitalized === "Makeup Artist") {
-      return "Makeup Artists"
-    }
+    if (capitalized.endsWith("er") || capitalized.endsWith("or")) return capitalized + "s"
+    if (capitalized === "Event Management") return "Event Management"
+    if (capitalized === "Makeup Artist") return "Makeup Artists"
     return capitalized
   }
 
-
   const getSectionDescription = (type: string) => {
-    if (type === "event management") {
-      return "Our expert event management teams ensure every detail of your special day is perfectly executed."
-    } else if (type === "makeup artist") {
-      return "Makeup artists enhance natural beauty with skill, creativity, and precision to create looks suited for every occasion. From subtle everyday styles to glamorous bridal and event makeup, they focus on delivering confidence, elegance, and a flawless finish tailored to individual preferences and moments"
-
-    } else if (type === "caterer") {
-      return "Our caterers provide delicious and customized menus for your event."
-    } else if (type === "decorator") {
-      return "Our decorators create beautiful and thematic setups for your special occasions."
-    }
-    return `Explore our ${getSectionTitle(type).toLowerCase()} for your event needs.`
+    if (type === "event management") return "Expert planning for your perfect day."
+    if (type === "makeup artist") return "Enhance your beauty with professional artistry."
+    if (type === "caterer") return "Exquisite menus tailored to your taste."
+    if (type === "decorator") return "Stunning setups for memorable occasions."
+    return `Premium ${getSectionTitle(type).toLowerCase()} services.`
   }
 
   useEffect(() => {
-
-    
     const loadData = async () => {
       await Promise.all([fetchAllOffers(), fetchAllVouchers(), fetchVendors()])
     }
@@ -352,57 +303,33 @@ const HomePage: React.FC = () => {
   }, [])
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsVisible(true)
-    }, 300)
-    return () => clearTimeout(timer)
-  }, [])
-
-  useEffect(() => {
-    
     adTimerRef.current = setTimeout(() => {
       setShowAd(true)
-     
       adTimerRef.current = setInterval(() => {
         setShowAd(true)
         setCurrentSlide(0)
-      }, 600000) 
-    }, 10000) 
-    return () => {
-      if (adTimerRef.current) clearTimeout(adTimerRef.current)
-    }
+      }, 600000)
+    }, 10000)
+    return () => { if (adTimerRef.current) clearTimeout(adTimerRef.current) }
   }, [])
 
-  // Auto-slide carousel for projects
   useEffect(() => {
     if (projectImages.length > 1) {
-      slideTimerRef.current = setInterval(() => {
-        setCurrentSlide((prev) => (prev + 1) % projectImages.length)
-      }, 5000) // Change slide every 5 seconds
-      return () => {
-        if (slideTimerRef.current) clearInterval(slideTimerRef.current)
-      }
+      slideTimerRef.current = setInterval(() => setCurrentSlide(prev => (prev + 1) % projectImages.length), 5000)
+      return () => { if (slideTimerRef.current) clearInterval(slideTimerRef.current) }
     }
   }, [projectImages])
 
-  // Auto-slide for hero section
   useEffect(() => {
     if (heroImages.length > 1) {
-      heroSlideTimerRef.current = setInterval(() => {
-        setHeroCurrentSlide((prev) => (prev + 1) % heroImages.length)
-      }, 5000) // Change every 5 seconds
-      return () => {
-        if (heroSlideTimerRef.current) clearInterval(heroSlideTimerRef.current)
-      }
+      heroSlideTimerRef.current = setInterval(() => setHeroCurrentSlide(prev => (prev + 1) % heroImages.length), 6000)
+      return () => { if (heroSlideTimerRef.current) clearInterval(heroSlideTimerRef.current) }
     }
   }, [heroImages.length])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }))
+    setFormData(prev => ({ ...prev, [name]: value }))
   }
 
   const handleLocationSelect = (location: LocationResult) => {
@@ -416,45 +343,35 @@ const HomePage: React.FC = () => {
       location: location.displayName,
       place: parts[0],
       district: parts[1],
-      latitude: location.latitude ? location.latitude.toString() : "",
-      longitude: location.longitude ? location.longitude.toString() : "",
+      latitude: location.lat ? location.lat.toString() : "",
+      longitude: location.lon ? location.lon.toString() : "",
     }));
+    setRestoreKey(prev => prev + 1);
   }
 
   const handleSubmit = () => {
-    console.log("Form submitted:", formData)
     const { district, place, date, event, latitude, longitude } = formData
+    if (!currentUser) {
+      sessionStorage.setItem("pendingSearch", JSON.stringify(formData));
+      setToast({ message: "Please log in to continue searching.", type: "error" });
+      setTimeout(() => navigate('/login'), 1500);
+      return;
+    }
     if (!district || !place || !date || !event) {
-      setToast({ message: "Please fill in all fields: location, date, and event.", type: "error" })
+      setToast({ message: "Please fill in all fields.", type: "error" })
       return
     }
-    navigate(
-      `/auditoriumlist?district=${encodeURIComponent(district)}&place=${encodeURIComponent(place)}&date=${encodeURIComponent(date)}&event=${encodeURIComponent(event)}&latitude=${encodeURIComponent(latitude)}&longitude=${encodeURIComponent(longitude)}`,
-    )
+    navigate(`/auditoriumlist?district=${encodeURIComponent(district)}&place=${encodeURIComponent(place)}&date=${encodeURIComponent(date)}&event=${encodeURIComponent(event)}&latitude=${encodeURIComponent(latitude)}&longitude=${encodeURIComponent(longitude)}`)
   }
 
   const scrollLeft = (type: string) => {
-    if (vendorRefs.current[type]) {
-      vendorRefs.current[type]?.scrollBy({ left: -300, behavior: "smooth" })
-    } else if (type === "venues" && venuesRef.current) {
-      venuesRef.current.scrollBy({ left: -300, behavior: "smooth" })
-    }
+    const container = document.getElementById(`scroll-container-${type}`);
+    if (container) container.scrollBy({ left: -280, behavior: "smooth" });
   }
 
   const scrollRight = (type: string) => {
-    if (vendorRefs.current[type]) {
-      vendorRefs.current[type]?.scrollBy({ left: 300, behavior: "smooth" })
-    } else if (type === "venues" && venuesRef.current) {
-      venuesRef.current.scrollBy({ left: 300, behavior: "smooth" })
-    }
-  }
-
-  const handleSectionClick = (section: string) => {
-    setActiveSection(section)
-    const sectionElement = document.getElementById(section)
-    if (sectionElement) {
-      sectionElement.scrollIntoView({ behavior: "smooth" })
-    }
+    const container = document.getElementById(`scroll-container-${type}`);
+    if (container) container.scrollBy({ left: 280, behavior: "smooth" });
   }
 
   const openTermsModal = (voucher: Voucher) => {
@@ -463,44 +380,29 @@ const HomePage: React.FC = () => {
   }
 
   const getFormattedPrice = (venue: Venue) => {
-    if (!venue.price || venue.price === "Price not available") {
-      return <span>{venue.price}</span>
-    }
-
+    if (!venue.price || venue.price === "Price not available") return <span className="text-gray-500 italic text-sm">{venue.price}</span>
     const originalPrice = Number.parseFloat(venue.price)
-    if (isNaN(originalPrice)) {
-      return <span>{venue.price}</span>
-    }
+    if (isNaN(originalPrice)) return <span className="text-gray-500 italic text-sm">{venue.price}</span>
 
     let discountedPrice = originalPrice
-    let discountText = ""
-
     if (venue.offer) {
       if (venue.offer.discountType === "percentage") {
         discountedPrice *= 1 - venue.offer.discountValue / 100
       } else {
         discountedPrice -= venue.offer.discountValue
       }
-      discountText = `${venue.offer.discountValue}${venue.offer.discountType === "percentage" ? "%" : "₹"} off with ${venue.offer.offerCode}`
-    }
-
-    let voucherText = ""
-    if (venue.voucher) {
-      voucherText = `Earn ${venue.voucher.discountValue}${venue.voucher.discountType === "percentage" ? "%" : "₹"} voucher (${venue.voucher.voucherCode}) for vendor bookings`
     }
 
     return (
       <div className="flex flex-col">
         {venue.offer ? (
-          <div>
-            <span className="line-through text-gray-500 mr-2">₹{originalPrice.toFixed(2)}</span>
-            <span className="text-green-600">₹{discountedPrice.toFixed(2)}</span>
+          <div className="flex items-center gap-2">
+            <span className="line-through text-gray-400 text-xs">₹{originalPrice.toFixed(0)}</span>
+            <span className="text-emerald-700 font-bold text-base">₹{discountedPrice.toFixed(0)}</span>
           </div>
         ) : (
-          <span className="text-green-600">₹{originalPrice.toFixed(2)}</span>
+          <span className="text-gray-800 font-bold text-base">₹{originalPrice.toFixed(0)}</span>
         )}
-        {discountText && <span className="text-xs text-green-600">{discountText}</span>}
-        {voucherText && <span className="text-xs text-blue-600 mt-1">{voucherText}</span>}
       </div>
     )
   }
@@ -508,1141 +410,414 @@ const HomePage: React.FC = () => {
   const renderVendorSection = (type: string) => {
     const vendors = vendorsByType[type] || []
     const sectionId = `${type.toLowerCase().replace(/\s+/g, "-")}`
-    const vendorIndex = vendorTypes.indexOf(type)
-    const isAlternate = vendorIndex % 2 === 1
 
     return (
-      <section key={type} id={sectionId} className="py-6 sm:py-8 lg:py-10 w-full bg-white">
+      <section key={type} id={sectionId} className="py-12 w-full bg-white border-b border-gray-50 last:border-0">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-          <div className={`mb-8 sm:mb-10 ${isAlternate ? "text-right" : "text-left"}`} style={{ animation: "fadeInScale 0.8s ease forwards" }}>
-            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#5B4336] mb-4">
-              {getSectionTitle(type)}
-            </h2>
-            <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl">
-              {getSectionDescription(type)}
-            </p>
+          <div className="flex justify-between items-end mb-6 animate-fade-in-up">
+            <div>
+              <h2 className="text-3xl font-bold text-[#5B4336] mb-1 font-serif tracking-tight">{getSectionTitle(type)}</h2>
+              <p className="text-gray-500 font-sans text-sm tracking-wide uppercase">{getSectionDescription(type)}</p>
+            </div>
+            {vendors.length > 4 && (
+              <div className="flex gap-2">
+                <button onClick={() => scrollLeft(type)} className="p-2 rounded-full border border-gray-200 text-gray-500 hover:border-[#9c7c5d] hover:text-[#9c7c5d] transition"><ChevronLeft className="w-5 h-5" /></button>
+                <button onClick={() => scrollRight(type)} className="p-2 rounded-full border border-gray-200 text-gray-500 hover:border-[#9c7c5d] hover:text-[#9c7c5d] transition"><ChevronRight className="w-5 h-5" /></button>
+              </div>
+            )}
           </div>
 
           {vendorLoading ? (
-            <div className="text-center text-gray-600">Loading {type} vendors...</div>
-          ) : vendorError ? (
-            <div className="text-center text-red-600">{vendorError}</div>
+            <div className="flex space-x-4 overflow-hidden py-2">
+              {[1,2,3,4].map(i => <div key={i} className="min-w-[260px] h-[320px] bg-gray-100 rounded-lg animate-pulse" />)}
+            </div>
           ) : vendors.length === 0 ? (
-            <div className="text-center text-gray-600">No {type} vendors available.</div>
+            <div className="text-center text-gray-400 py-12 bg-gray-50/50 rounded-xl border border-dashed border-gray-200">No {type} vendors currently available.</div>
           ) : (
-            <div className="relative">
-              {vendors.length > 4 && (
-                <div className="absolute top-1/2 -left-4 sm:-left-6 transform -translate-y-1/2 z-10">
-                  <button
-                    onClick={() => scrollLeft(type)}
-                    className="scroll-button bg-[#9c7c5d] text-white rounded-full p-2 sm:p-3 hover:bg-[#8b6b4a] transition duration-300"
-                  >
-                    <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
-                  </button>
-                </div>
-              )}
-              <div
-                ref={(el) => (vendorRefs.current[type] = el)}
-                className="scroll-container flex overflow-x-auto space-x-4 sm:space-x-6 pb-4"
-              >
-                {vendors.map((artist, index) => (
-                  <div
-                    key={artist.id}
-                    className="group rounded-xl overflow-hidden transition-all duration-500 transform flex-shrink-0 w-[240px] sm:w-[280px] card-animate card-shimmer relative"
-                    style={{
-                      animation: `fadeInScale 0.6s ease ${index * 0.15}s forwards`,
-                      animationDelay: `${index * 0.1}s`,
-                    }}
-                  >
-                    <div className="relative h-48 sm:h-56">
-                      <img
-                        src={artist.image || "/placeholder.svg"}
-                        alt={artist.name}
-                        className="w-full h-full object-cover rounded-xl cursor-pointer z-20"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          console.log(`Navigating to vendor details with ID: ${artist.id}`)
-                          if (artist.id) {
-                            try {
-                              navigate(`/vendordetails/${artist.id}`)
-                            } catch (err) {
-                              console.error("Navigation error:", err)
-                              alert("Failed to navigate to vendor details. Please try again.")
-                            }
-                          } else {
-                            console.error("Vendor ID is undefined")
-                            alert("Vendor ID is missing.")
-                          }
-                        }}
-                      />
-                      <div className="absolute inset-0 bg-black opacity-20 group-hover:opacity-30 transition duration-300 rounded-xl pointer-events-none"></div>
-                    </div>
-                    <div className="p-3 text-left card-content transition-transform duration-300">
-                      <h3 className="text-lg sm:text-xl font-medium text-[#5B4336]">{artist.name}</h3>
-                      <p className="text-gray-600 text-sm flex items-center mb-1">
-                        <MapPin className="h-4 w-4 text-gray-600 mr-1" />
-                        {artist.location}
-                      </p>
-                      <div className="text-sm text-gray-600 mb-1">Starting Price: ₹{artist.startingPrice}</div>
-                      <div className="flex items-center text-sm text-gray-600">
-                        <Star className="h-4 w-4 text-yellow-500 mr-1" />
-                        <span>{artist.rating.toFixed(1)}</span>
+            <div id={`scroll-container-${type}`} className="scroll-container flex overflow-x-auto space-x-5 pb-6 snap-x snap-mandatory min-h-[400px]">
+              {vendors.map((artist, index) => (
+                <div key={artist.id} className="flex-shrink-0 w-[260px] sm:w-[280px] bg-white rounded-lg shadow-sm hover:shadow-xl transition-all duration-500 snap-center border border-gray-100 group cursor-pointer hover-lift flex flex-col justify-between" onClick={() => navigate(`/vendordetails/${artist.id}`)} style={{ animationDelay: `${index * 100}ms` }}>
+                  {/* Vendor card content unchanged */}
+                  <div>
+                    <div className="relative h-56 overflow-hidden rounded-t-lg">
+                      <img src={artist.image || "/placeholder.svg"} alt={artist.name} className="w-full h-full object-cover animate-zoom-subtle" />
+                      <div className="absolute top-2 right-2 badge-premium px-2 py-0.5 rounded text-[10px] font-bold text-[#5B4336] flex items-center uppercase tracking-wider">
+                        <Star className="w-3 h-3 text-yellow-500 mr-1" fill="currentColor" /> {artist.rating.toFixed(1)}
                       </div>
                     </div>
+                    <div className="p-5">
+                      <h3 className="text-xl font-bold text-[#5B4336] mb-1 font-serif">{artist.name}</h3>
+                      <p className="text-sm text-gray-500 flex items-center mb-0"><MapPin className="h-3 w-3 mr-1 text-[#9c7c5d]" /> {artist.location}</p>
+                    </div>
                   </div>
-                ))}
-              </div>
-              {vendors.length > 4 && (
-                <div className="absolute top-1/2 -right-4 sm:-right-6 transform -translate-y-1/2 z-10">
-                  <button
-                    onClick={() => scrollRight(type)}
-                    className="scroll-button bg-[#9c7c5d] text-white rounded-full p-2 sm:p-3 hover:bg-[#8b6b4a] transition duration-300"
-                  >
-                    <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
-                  </button>
+                  <div className="p-5 pt-0 mt-auto">
+                    <div className="pt-4 border-t border-gray-50 flex justify-between items-center text-sm">
+                      <div>
+                        <span className="text-gray-400 text-xs uppercase block">From</span>
+                        <span className="text-[#9c7c5d] font-semibold text-lg">₹{artist.startingPrice}</span>
+                      </div>
+                      <button className="text-[#9c7c5d] text-xs font-bold uppercase tracking-wider border border-[#9c7c5d] px-4 py-2 rounded-full hover:bg-[#9c7c5d] hover:text-white transition">View</button>
+                    </div>
+                  </div>
                 </div>
-              )}
+              ))}
             </div>
           )}
-          <div className="text-right mt-6">
-            <button
-              onClick={() => navigate(`/vendorslist?type=${type}`)}
-              className="px-4 py-2 bg-gray-200 text-[#9c7c5d] rounded-lg hover:bg-gray-300 transition duration-300"
-            >
-              View All
-            </button>
+          
+          <div className="text-center mt-4">
+            <button onClick={() => navigate(`/vendorslist?type=${type}`)} className="text-[#9c7c5d] hover:text-[#8b6b4a] text-sm font-medium hover:underline transition underline-offset-4">View all {getSectionTitle(type)}</button>
           </div>
         </div>
       </section>
     )
   }
 
-  const closeAd = () => {
-    setShowAd(false)
-  }
+  const closeAd = () => setShowAd(false)
 
   return (
-    <div className="min-h-screen bg-white overflow-x-hidden w-screen relative">
-      {/* Ad Banner Modal */}
-     {showAd && (
-  <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4">
-    <div className="relative bg-white rounded-xl max-w-xl w-full shadow-2xl overflow-hidden animate-fade-in">
+    <div className="min-h-screen bg-white overflow-x-hidden w-screen relative font-sans text-gray-800">
+      <style>{`
+        .scroll-container {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        .scroll-container::-webkit-scrollbar { display: none; }
 
-      {/* Close Button */}
-      <button
-        onClick={closeAd}
-        className="absolute top-3 right-3 z-20 bg-[#9c7c5d] hover:bg-[#8b6b4a] text-white rounded-full p-1.5 transition"
-      >
-        <X className="w-5 h-5" />
-      </button>
+        @keyframes marquee {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        .animate-marquee {
+          display: flex;
+          animation: marquee 40s linear infinite;
+          width: max-content;
+        }
+      `}</style>
 
-      {/* IMAGE SECTION */}
-      <div className="relative h-48 sm:h-60 w-full overflow-hidden">
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-        {/* Background */}
-        <div
-          className="absolute inset-0 bg-cover bg-center blur-[2px]"
-          style={{ backgroundImage: `url(${bgImg})` }}
-        />
-
-        {/* Overlay */}
-        <div className="absolute inset-0 bg-black/30" />
-
-        {/* OFFER BADGE */}
-        <div className="absolute top-4 left-4 z-10">
-          <div className="bg-gradient-to-r from-[#ED695A] to-[#9c7c5d] text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg">
-            🎉 30% OFF
+      {showAd && (
+        <div className="fixed inset-0 bg-black/40 z-[9999] flex items-center justify-center p-4 backdrop-blur-md">
+          <div className="relative bg-white rounded-xl max-w-lg w-full shadow-2xl overflow-hidden">
+            <button onClick={closeAd} className="absolute top-4 right-4 z-20 bg-white/30 hover:bg-white/50 backdrop-blur p-2 rounded-full"><X className="w-5 h-5" /></button>
+            <div className="relative h-56 w-full" style={{ backgroundImage: `url(${bgImg})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+              <div className="absolute bottom-6 left-6 text-white">
+                <span className="bg-[#ED695A] text-white px-3 py-1 rounded text-[10px] font-bold uppercase tracking-widest">Limited Time</span>
+                <h3 className="text-3xl font-serif tracking-wide">Wedding Special</h3>
+              </div>
+            </div>
+            <div className="p-8 text-center">
+              <h2 className="text-3xl font-bold text-[#5B4336] mb-2 font-serif"><span className="text-[#ED695A] mr-2">30% OFF</span>Venue Booking</h2>
+              <p className="text-gray-500 mb-8 text-sm leading-relaxed">Book your dream venue today and save big on selected services.</p>
+              <button className="w-full bg-[#9c7c5d] hover:bg-[#8b6b4a] text-white font-semibold py-3.5 rounded-lg transition">Claim Offer Now</button>
+            </div>
           </div>
         </div>
+      )}
 
-        {/* Main Image */}
-        <div className="relative h-full flex items-center justify-center p-3">
-          <img
-            src={bgImg || "/placeholder.svg"}
-            alt="Special Offer"
-            className="w-full h-full object-cover rounded-lg shadow-lg"
-          />
-        </div>
-      </div>
-
-      {/* CONTENT */}
-      <div className="p-5 sm:p-6 text-center">
-        <h2 className="text-xl sm:text-2xl font-bold text-[#5B4336] mb-2">
-          Limited Time Wedding Offer
-        </h2>
-
-        <p className="text-gray-600 text-sm sm:text-base mb-4">
-          Book your wedding today and get
-          <span className="text-[#ED695A] font-bold"> 30% OFF </span>
-          on selected services.
-        </p>
-
-        <button className="w-full bg-gradient-to-r from-[#9c7c5d] to-[#8b6b4a] hover:opacity-90 text-white font-semibold py-2.5 rounded-lg transition shadow-md">
-          Claim Offer Now
-        </button>
-
-        <p className="mt-3 text-xs text-gray-400">
-          *Offer valid for a limited period
-        </p>
-      </div>
-    </div>
-  </div>
-)}
-
-
-
-      <style>
-        {`
-          @keyframes fadeIn {
-            from {
-              opacity: 0;
-              transform: scale(0.95);
-            }
-            to {
-              opacity: 1;
-              transform: scale(1);
-            }
-          }
-          .animate-fade-in {
-            animation: fadeIn 0.3s ease-out;
-          }
-          .scroll-container {
-            scroll-behavior: smooth;
-            -webkit-overflow-scrolling: touch;
-          }
-          .scroll-container::-webkit-scrollbar {
-            display: none;
-          }
-          .scroll-button {
-            opacity: 0.7;
-            transition: opacity 0.3s;
-          }
-          .scroll-button:hover {
-            opacity: 1;
-          }
-          @keyframes fadeInScale {
-            to {
-              opacity: 1;
-              transform: scale(1);
-            }
-          }
-          @keyframes slideInFromLeft {
-            from {
-              opacity: 0;
-              transform: translateX(-20px) scale(0.9);
-            }
-            to {
-              opacity: 1;
-              transform: translateX(0) scale(1);
-            }
-          }
-          .group:hover .card-content {
-            transform: translateY(-5px);
-          }
-          .offer-badge, .voucher-badge {
-            color: white;
-            font-weight: bold;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            line-height: 1rem;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-            pointer-events: none;
-          }
-          .offer-badge {
-            background-color: #ef4444;
-          }
-          .voucher-badge {
-            background-color: #10b981;
-          }
-          .voucher-card {
-            position: absolute;
-            bottom: 10px;
-            right: 10px;
-            width: 180px;
-            height: 85px;
-            display: flex;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-            font-family: Arial, sans-serif;
-            z-index: 10;
-            border: 3px dashed #ED695A;
-            pointer-events: none;
-          }
-          .voucher-left {
-            width: 50px;
-            background: linear-gradient(135deg, #ED695A 0%, #d85545 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-          }
-          .voucher-code-vertical {
-            writing-mode: vertical-rl;
-            text-orientation: mixed;
-            color: white;
-            font-weight: bold;
-            font-size: 0.75rem;
-            letter-spacing: 1px;
-          }
-          .voucher-right {
-            flex: 1;
-            background: linear-gradient(135deg, #fef9c3 0%, #fef3c7 100%);
-            padding: 8px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            position: relative;
-          }
-          .voucher-title {
-            color: #5B4336;
-            font-size: 0.7rem;
-            font-weight: bold;
-            margin-bottom: 3px;
-            text-align: center;
-          }
-          .voucher-discount {
-            color: #ef4444;
-            font-size: 0.65rem;
-            font-weight: 700;
-            margin-bottom: 3px;
-            text-align: center;
-            line-height: 1.2;
-          }
-          .voucher-vendor {
-            color: #5B4336;
-            font-size: 0.6rem;
-            display: flex;
-            align-items: center;
-            gap: 3px;
-            margin-bottom: 3px;
-          }
-          .terms-link {
-            color: #9c7c5d;
-            font-size: 0.5rem;
-            text-decoration: underline;
-            cursor: pointer;
-            text-align: center;
-            pointer-events: auto;
-          }
-          .voucher-card::before {
-            content: '';
-            position: absolute;
-            left: 50%;
-            top: -6px;
-            transform: translateX(-50%);
-            width: 12px;
-            height: 12px;
-            background: white;
-            border-radius: 50%;
-            box-shadow: inset 0 0 0 2px #ED695A;
-          }
-          .voucher-card::after {
-            content: '';
-            position: absolute;
-            left: 50%;
-            bottom: -6px;
-            transform: translateX(-50%);
-            width: 12px;
-            height: 12px;
-            background: white;
-            border-radius: 50%;
-            box-shadow: inset 0 0 0 2px #ED695A;
-          }
-          @keyframes marquee {
-            0% {
-              transform: translateX(0);
-            }
-            100% {
-              transform: translateX(-50%);
-            }
-          }
-          .animate-marquee {
-            animation: marquee 30s linear infinite;
-            display: flex;
-          }
-          @keyframes marqueeRight {
-            0% {
-              transform: translateX(-50%);
-            }
-            100% {
-              transform: translateX(0);
-            }
-          }
-          .animate-marquee-right {
-            animation: marqueeRight 25s linear infinite;
-            display: flex;
-          }
-          @keyframes cardFloat {
-            0%, 100% {
-              transform: translateY(0px);
-            }
-            50% {
-              transform: translateY(-8px);
-            }
-          }
-          @keyframes cardPulse {
-            0%, 100% {
-              box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            }
-            50% {
-              box-shadow: 0 20px 25px -5px rgba(156, 124, 93, 0.15), 0 10px 10px -5px rgba(156, 124, 93, 0.1);
-            }
-          }
-          @keyframes shimmer {
-            0% {
-              background-position: -200% 0;
-            }
-            100% {
-              background-position: 200% 0;
-            }
-          }
-          .card-animate {
-            animation: cardFloat 3s ease-in-out infinite, cardPulse 3s ease-in-out infinite;
-          }
-          .card-animate:hover {
-            animation: none;
-            transform: translateY(-10px) scale(1.02);
-            box-shadow: 0 25px 50px -12px rgba(156, 124, 93, 0.25);
-          }
-          .card-shimmer::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-            background-size: 200% 100%;
-            animation: shimmer 2s ease-in-out infinite;
-            pointer-events: none;
-            border-radius: inherit;
-          }
-        `}
-      </style>
-
-      <section className="relative min-h-screen w-full overflow-hidden">
-        <div className="absolute inset-0 w-full h-full">
+      <section className="relative min-h-[90vh] w-full overflow-hidden flex flex-col items-center justify-center">
+        <div className="absolute inset-0 w-full h-full z-0">
           {heroImages.map((image, index) => (
-            <div
-              key={index}
-              className={`absolute inset-0 w-full h-full bg-cover bg-center bg-no-repeat transition-opacity duration-700 ${
-                index === heroCurrentSlide ? "opacity-100" : "opacity-0"
-              }`}
-              style={{ backgroundImage: `url(${image})` }}
-            ></div>
+            <div key={index} className={`absolute inset-0 w-full h-full bg-cover bg-center transition-opacity duration-[1500ms] ${index === heroCurrentSlide ? "opacity-100 scale-105" : "opacity-0"}`} style={{ backgroundImage: `url(${image})` }} />
           ))}
+          <div className="absolute inset-0 bg-black/40" />
         </div>
 
-        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/20 w-full h-full pointer-events-none"></div>
+        <div className="absolute top-0 w-full z-50"><Header /></div>
 
-        {/* Header */}
-        <div className="absolute top-0 left-0 right-0 z-50 w-full">
-          <Header />
-        </div>
+        <div className="relative z-10 w-full max-w-5xl px-4 sm:px-6 flex flex-col items-center text-center pt-20">
+          {currentUser && <div className="animate-fade-in-up mb-6 px-6 py-2 glass rounded-full text-white font-medium text-xs uppercase tracking-widest border border-white/20">Welcome back, {displayName}</div>}
 
-        {/* Welcome Message - Top Center (only if logged in) */}
-        {currentUser && (
-          <div className="absolute top-20 left-1/2 transform -translate-x-1/2 z-40 text-center">
-            <div
-              className={`text-xl sm:text-xl md:text-xl font-medium text-[#9c7c5d] transition-all duration-1000 delay-600 ${
-                isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
-              }`}
-            >
-              Welcome back, {displayName}!
-            </div>
-          </div>
-        )}
-
-        {/* Main Hero Content */}
-        <div className="relative z-10 h-full flex flex-col lg:flex-row items-center justify-between px-4 sm:px-6 md:px-8 lg:px-12 xl:px-20 py-8 pt-32 sm:pt-36">
-          <div className="w-full lg:w-1/2 flex flex-col justify-center text-left space-y-4 sm:space-y-6 lg:space-y-8 mb-8 lg:mb-0">
-            <h1
-              className={`text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-6xl font-light text-amber-900 leading-tight transition-all duration-1000 ${
-                isVisible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-10"
-              }`}
-            >
-              <div
-                className={`transition-all duration-1000 delay-300 ${
-                  isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
-                }`}
-              >
-                Make Every Moment
-              </div>
-              <div
-                className={`transition-all duration-1000 delay-500 ${
-                  isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
-                }`}
-              >
-                Unforgettable!
-              </div>
-            </h1>
-
-            <div
-              className={`text-[#9c7c5d] text-xs sm:text-sm font-medium space-y-1 transition-all duration-1000 delay-700 ${
-                isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
-              }`}
-            >
-              <div>HURRY UP TO</div>
-              <div>BOOK YOUR WEDDING</div>
-            </div>
+          <div className="space-y-6 mb-12 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+            <h1 className="text-5xl md:text-7xl lg:text-8xl font-light text-white font-serif leading-none tracking-tight drop-shadow-lg">Unforgettable <br /><span className="font-normal italic text-[#e6d0b5]">Moments</span></h1>
+            <p className="text-white/90 text-lg font-light tracking-wide max-w-xl mx-auto drop-shadow-md">Discover curated venues and premium vendors for your perfect celebration.</p>
           </div>
 
-          <div
-            className={`w-full lg:w-1/2 flex flex-col items-center lg:items-end justify-center space-y-4 sm:space-y-6 text-center lg:text-right transition-all duration-1000 delay-400 ${
-              isVisible ? "opacity-100 translate-x-0" : "opacity-0 translate-x-10"
-            }`}
-          >
-           <div className="w-full max-w-sm sm:max-w-md space-y-3 sm:space-y-4">
-
-  {/* ---------- MOBILE VIEW ---------- */}
-  <div className="flex flex-col sm:hidden space-y-3">
-
-    <LocationAutocomplete
-      value={formData.location}
-      placeholder="Enter your location"
-      onSelect={handleLocationSelect}
-    />
-
-    {/* DATE FIELD (UPDATED) */}
-    <div className="relative">
-      <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
-      <input
-        type="text"
-        name="date"
-        value={formData.date}
-        placeholder="Select your venue date"
-        onFocus={(e) => (e.target.type = "date")}
-        onBlur={(e) => {
-          if (!e.target.value) e.target.type = "text"
-        }}
-        onChange={handleInputChange}
-        min={new Date().toISOString().split("T")[0]}
-        className="w-full h-10 pl-10 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
-      />
-    </div>
-
-    <div className="relative">
-      <Flag className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
-      <select
-        name="event"
-        value={formData.event}
-        onChange={handleInputChange}
-        disabled={loadingDropdowns}
-        className="w-full h-10 pl-10 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
-      >
-        <option value="">Select Event</option>
-        {eventTypes.map((event) => (
-          <option key={event} value={event}>{event}</option>
-        ))}
-      </select>
-    </div>
-
-    <button
-      onClick={handleSubmit}
-      disabled={loadingDropdowns}
-      className="h-10 px-4 w-full bg-[#9c7c5d] text-white rounded-md font-medium hover:bg-[#8b6b4a] transition duration-300 flex items-center justify-center gap-2 text-sm disabled:opacity-50"
-    >
-      <span>Find Venues</span>
-      <Search className="w-4 h-4" />
-    </button>
-  </div>
-
-  {/* ---------- DESKTOP VIEW ---------- */}
-  <div className="hidden sm:grid grid-cols-2 gap-3 sm:gap-4">
-
-    <div className="col-span-2">
-      <LocationAutocomplete
-        value={formData.location}
-        placeholder="Enter your location"
-        onSelect={handleLocationSelect}
-      />
-    </div>
-
-    {/* DATE FIELD (UPDATED) */}
-    <div className="relative">
-      <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4 sm:w-5 sm:h-5" />
-      <input
-        type="text"
-        name="date"
-        value={formData.date}
-        placeholder="Select your venue date"
-        onFocus={(e) => (e.target.type = "date")}
-        onBlur={(e) => {
-          if (!e.target.value) e.target.type = "text"
-        }}
-        onChange={handleInputChange}
-        min={new Date().toISOString().split("T")[0]}
-        className="w-full h-10 sm:h-12 pl-10 sm:pl-12 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
-      />
-    </div>
-
-    <div className="relative">
-      <Flag className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4 sm:w-5 sm:h-5" />
-      <select
-        name="event"
-        value={formData.event}
-        onChange={handleInputChange}
-        disabled={loadingDropdowns}
-        className="w-full h-10 sm:h-12 pl-10 sm:pl-12 pr-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-md text-[#9c7c5d] text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
-      >
-        <option value="">Select Event</option>
-        {eventTypes.map((event) => (
-          <option key={event} value={event}>{event}</option>
-        ))}
-      </select>
-    </div>
-
-    <button
-      onClick={handleSubmit}
-      disabled={loadingDropdowns}
-      className="h-10 sm:h-12 px-4 w-full col-span-2 bg-[#9c7c5d] text-white rounded-md font-medium hover:bg-[#8b6b4a] transition duration-300 flex items-center justify-center gap-2 text-sm disabled:opacity-50"
-    >
-      <span>Find Venues</span>
-      <Search className="w-4 h-4" />
-    </button>
-
-  </div>
-</div>
-
-
-            <div
-              className={`text-[#9c7c5d] text-xs sm:text-sm font-medium space-y-1 transition-all duration-1000 delay-800 cursor-pointer ${
-                isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
-              }`}
-            >
-              <div onClick={() => handleSectionClick("venues")}>VENUE</div>
-              {vendorTypes.map((type) => (
-                <div
-                  key={type}
-                  onClick={() => handleSectionClick(type.replace(/\s+/g, ""))}
-                >
-                  {getSectionTitle(type).toUpperCase()}
-                </div>
-              ))}
-              <div onClick={() => handleSectionClick("projects")}>DESIGNS</div>
-              <div onClick={() => handleSectionClick("all")} className="mt-2">
-                SHOW ALL
-              </div>
+          {/* Desktop Search */}
+          <div className="w-full max-w-4xl bg-white/80 backdrop-blur-md rounded-full p-2 shadow-2xl border border-white/40 hidden md:flex items-center gap-2">
+            <div className="flex-1 relative pl-6 border-r border-gray-300/50">
+              <span className="text-[10px] text-gray-600 font-bold uppercase tracking-wider block mb-0.5">Where</span>
+              <LocationAutocomplete
+                key={`loc-${restoreKey}`}
+                value={formData.location}
+                placeholder="Search destinations"
+                onSelect={handleLocationSelect}
+                className="w-full h-6 bg-transparent border-0 p-0 text-sm font-medium text-gray-900 focus:ring-0 placeholder-gray-600"
+              />
             </div>
+            <div className="flex-1 relative px-6 border-r border-gray-300/50">
+              <span className="text-[10px] text-gray-600 font-bold uppercase tracking-wider block mb-0.5">When</span>
+              <input type="date" name="date" value={formData.date} onChange={handleInputChange} min={new Date().toISOString().split("T")[0]} className="w-full h-6 bg-transparent border-0 p-0 text-gray-900 text-sm font-medium focus:ring-0 cursor-pointer" />
+            </div>
+            <div className="flex-1 relative px-6">
+              <span className="text-[10px] text-gray-600 font-bold uppercase tracking-wider block mb-0.5">What</span>
+              <select name="event" value={formData.event} onChange={handleInputChange} disabled={loadingDropdowns} className="w-full h-6 bg-transparent border-0 p-0 text-gray-900 text-sm font-medium focus:ring-0 cursor-pointer appearance-none">
+                <option value="">Select event type</option>
+                {eventTypes.map(event => <option key={event} value={event}>{event}</option>)}
+              </select>
+            </div>
+            <button onClick={handleSubmit} className="w-14 h-14 bg-[#9c7c5d] hover:bg-[#8b6b4a] text-white rounded-full flex items-center justify-center transition-transform hover:scale-105 shadow-lg"><Search className="w-6 h-6" /></button>
+          </div>
+
+          {/* Mobile Search */}
+          <div className="w-full bg-white/90 backdrop-blur-md rounded-2xl p-4 shadow-xl md:hidden space-y-3 border border-white/50">
+            <LocationAutocomplete
+              key={`loc-mobile-${restoreKey}`}
+              value={formData.location}
+              placeholder="Where to?"
+              onSelect={handleLocationSelect}
+              className="w-full h-12 bg-white/50 rounded-lg px-4 border border-gray-200 text-sm focus:bg-white transition"
+            />
+            <div className="grid grid-cols-2 gap-3">
+              <input type="date" name="date" value={formData.date} onChange={handleInputChange} className="w-full h-12 bg-white/50 rounded-lg px-4 border border-gray-200 text-sm focus:bg-white transition" />
+              <select name="event" value={formData.event} onChange={handleInputChange} className="w-full h-12 bg-white/50 rounded-lg px-4 border border-gray-200 text-sm focus:bg-white transition">
+                <option value="">Select event type</option>
+                {eventTypes.map(event => <option key={event} value={event}>{event}</option>)}
+              </select>
+            </div>
+            <button onClick={handleSubmit} className="w-full h-12 bg-[#9c7c5d] text-white font-bold rounded-lg uppercase tracking-wider text-sm shadow-md">Search</button>
           </div>
         </div>
-
-        <div className="absolute bottom-4 sm:bottom-6 md:bottom-8 right-4 sm:right-6 md:right-8 flex items-center gap-2 sm:gap-4 z-40">
-          <div className="flex items-center gap-2 text-gray-600 text-xs sm:text-sm font-medium">
-            <div className="w-3 h-3 sm:w-4 sm:h-4 border border-gray-400 rounded-full flex items-center justify-center">
-              <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-gray-400 rounded-full"></div>
-            </div>
-            <span>Restart</span>
-          </div>
-          <div className="text-gray-600 text-xs sm:text-sm font-medium">{heroCurrentSlide + 1}/{heroImages.length}</div>
-        </div>
-
-        {/* Hero Navigation Arrows */}
-        {heroImages.length > 1 && (
-          <>
-            <button
-              onClick={() => setHeroCurrentSlide((prev) => (prev - 1 + heroImages.length) % heroImages.length)}
-              className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10 bg-[#9c7c5d] hover:bg-[#8b6b4a] text-white rounded-full p-2 sm:p-3 transition duration-300 opacity-70 hover:opacity-100"
-            >
-              <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
-            </button>
-            <button
-              onClick={() => setHeroCurrentSlide((prev) => (prev + 1) % heroImages.length)}
-              className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10 bg-[#9c7c5d] hover:bg-[#8b6b4a] text-white rounded-full p-2 sm:p-3 transition duration-300 opacity-70 hover:opacity-100"
-            >
-              <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
-            </button>
-          </>
-        )}
       </section>
 
+      {/* Venues Section */}
       {(activeSection === "all" || activeSection === "venues") && (
-        <section id="venues" className="py-6 sm:py-8 lg:py-10 w-full bg-white">
+        <section id="venues" className="py-12 w-full bg-[#FAFAFA]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-            <div className="text-right mb-8 sm:mb-10" style={{ animation: "fadeInScale 0.8s ease forwards" }}>
-              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#5B4336] mb-4">
-                Perfect Venues
-              </h2>
-              <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl ml-auto">
-               Discover the perfect venue for your special moments with ease and confidence. Our platform brings together a curated collection of premium venues, from elegant convention centers to intimate event spaces, designed to suit weddings, receptions, corporate events, and celebrations of every kind. 
-              </p>
+            <div className="flex flex-col md:flex-row justify-between items-end mb-8 animate-fade-in-up">
+               <div className="max-w-xl">
+                 <h2 className="text-4xl font-bold text-[#5B4336] mb-3 font-serif tracking-tight">Our Venues</h2>
+                 <p className="text-gray-500 font-light text-lg">
+                    Handpicked locations for your exclusive events.
+                 </p>
+               </div>
+               <div className="flex gap-3 mt-4 md:mt-0">
+                  <button onClick={() => scrollLeft("venues")} className="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-[#9c7c5d] hover:text-white hover:border-[#9c7c5d] transition">
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <button onClick={() => scrollRight("venues")} className="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-[#9c7c5d] hover:text-white hover:border-[#9c7c5d] transition">
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+               </div>
             </div>
 
             {loading ? (
-              <div className="text-center text-gray-600">Loading venues...</div>
-            ) : error ? (
-              <div className="text-center text-red-600">{error}</div>
+             <div className="flex space-x-6 overflow-hidden py-4">
+               {[1,2,3,4].map(i => (
+                 <div key={i} className="min-w-[260px] md:min-w-[280px] h-[340px] bg-gray-200 rounded-lg animate-pulse skeleton" />
+               ))}
+             </div>
             ) : venues.length === 0 ? (
-              <div className="text-center text-gray-600">No verified venues available.</div>
+               <div className="text-center py-20 text-gray-400">No verified venues found at this time.</div>
             ) : (
-              <div className="relative">
-                {venues.length > 4 && (
-                  <div className="absolute top-1/2 -left-4 sm:-left-6 transform -translate-y-1/2 z-10">
-                    <button
-                      onClick={() => scrollLeft("venues")}
-                      className="scroll-button bg-[#9c7c5d] text-white rounded-full p-2 sm:p-3 hover:bg-[#8b6b4a] transition duration-300"
-                    >
-                      <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
-                    </button>
-                  </div>
-                )}
-                <div
-                  ref={venuesRef}
-                  className="scroll-container flex overflow-x-auto overflow-y-visible space-x-4 sm:space-x-6 pb-4"
-                >
-                  {venues.map((venue, index) => (
-                    <div
-                      key={venue.id}
-                      className={`group rounded-xl overflow-visible transition-all duration-500 transform flex-shrink-0 w-[240px] sm:w-[280px] card-animate card-shimmer relative`}
-                      style={{
-                        animation: `fadeInScale 0.6s ease ${index * 0.15}s forwards`,
-                        animationDelay: `${index * 0.1}s`,
-                      }}
-                    >
-                      <div className="relative h-48 sm:h-56 overflow-visible">
-                        <img
+              <div
+                id="scroll-container-venues"
+                ref={venuesRef}
+                className="scroll-container scrollbar-hide flex overflow-x-auto space-x-6 pb-6 snap-x snap-mandatory px-2"
+              >
+                {venues.map((venue, index) => (
+                  <div
+                    key={venue.id}
+                    className="flex-shrink-0 w-[260px] md:w-[300px] bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-500 snap-center group cursor-pointer overflow-hidden border border-gray-50 hover-lift"
+                    onClick={() => navigate(`/auditoriumdetails/${venue.id}`)}
+                    style={{ animationDelay: `${index * 100}ms` }}
+                  >
+                    <div className="relative h-52 overflow-hidden">
+                       <img
                           src={venue.images[0] || "/placeholder.svg"}
                           alt={venue.name}
-                          className="w-full h-full object-cover rounded-xl cursor-pointer z-20"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            console.log(`Navigating to venue details with ID: ${venue.id}`)
-                            if (venue.id) {
-                              try {
-                                navigate(`/auditoriumdetails/${venue.id}`)
-                              } catch (err) {
-                                console.error("Navigation error:", err)
-                                alert("Failed to navigate to venue details. Please try again.")
-                              }
-                            } else {
-                              console.error("Venue ID is undefined")
-                              alert("Venue ID is missing.")
-                            }
-                          }}
-                        />
-                        <div className="absolute inset-0 bg-black opacity-20 group-hover:opacity-30 transition duration-300 rounded-xl pointer-events-none"></div>
-                        <div className="absolute top-2 left-2 space-y-1 z-10">
+                          className="w-full h-full object-cover animate-zoom-subtle"
+                       />
+                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                       
+                       <div className="absolute top-3 left-3 flex flex-col gap-1 items-start">
                           {venue.offer && (
-                            <div className="offer-badge">
-                              {venue.offer.discountValue}
-                              {venue.offer.discountType === "percentage" ? "%" : "₹"} OFF
-                            </div>
+                            <span className="badge-premium bg-white/95 text-red-600 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">
+                              {venue.offer.discountValue}{venue.offer.discountType === "percentage" ? "%" : "₹"} OFF
+                            </span>
                           )}
-                          {venue.voucher && (
-                            <div className="voucher-badge">
-                              EARN {venue.voucher.discountValue}
-                              {venue.voucher.discountType === "percentage" ? "%" : "₹"} VOUCHER
-                            </div>
-                          )}
-                        </div>
-                        {venue.voucher && (
-                          <div className="voucher-card">
-                            <div className="voucher-left">
-                              <div className="voucher-code-vertical">{venue.voucher.voucherCode}</div>
-                            </div>
-                            <div className="voucher-right">
-                              <div className="voucher-title">Book now and grab a</div>
-                              <div className="voucher-discount">
-                                {venue.voucher.discountValue}
-                                {venue.voucher.discountType === "percentage" ? "%" : "₹"} on your purchase
-                              </div>
-                              <div className="voucher-vendor">
-                                <span>🎫</span>
-                                <span>{venue.voucher.audiName}</span>
-                              </div>
-                              <div className="terms-link" onClick={() => openTermsModal(venue.voucher!)}>
-                                click here for terms and conditions
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                      <div className="p-3 text-left card-content transition-transform duration-300 pt-10 sm:pt-12">
-                        <h3 className="text-lg sm:text-xl font-medium text-[#5B4336]">{venue.name}</h3>
-                        <p className="text-gray-600 text-sm flex items-center mb-1">
-                          <MapPin className="h-4 w-4 text-gray-600 mr-1" />
-                          {venue.location}
-                        </p>
-                        <div className="text-sm text-gray-600 mb-1">{getFormattedPrice(venue)}</div>
-                        <div className="flex items-center text-sm text-gray-600">
-                          <Star className="h-4 w-4 text-yellow-500 mr-1" />
-                          <span>{venue.rating.toFixed(1)}</span>
-                        </div>
-                      </div>
+                       </div>
+
+                       <div className="absolute bottom-3 right-3 badge-premium px-2 py-0.5 rounded text-[10px] font-bold text-[#5B4336] flex items-center">
+                          <Star className="w-3 h-3 text-yellow-500 mr-1" fill="currentColor" />
+                          {venue.rating.toFixed(1)}
+                       </div>
                     </div>
-                  ))}
-                </div>
-                {venues.length > 4 && (
-                  <div className="absolute top-1/2 -right-4 sm:-right-6 transform -translate-y-1/2 z-10">
-                    <button
-                      onClick={() => scrollRight("venues")}
-                      className="scroll-button bg-[#9c7c5d] text-white rounded-full p-2 sm:p-3 hover:bg-[#8b6b4a] transition duration-300"
-                    >
-                      <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
-                    </button>
+
+                    <div className="p-5">
+                       <h3 className="text-lg font-bold text-[#5B4336] mb-1 font-serif line-clamp-1">{venue.name}</h3>
+                       <p className="text-xs text-gray-500 flex items-center mb-4 uppercase tracking-wide">
+                          <MapPin className="h-3 w-3 mr-1 text-[#9c7c5d]" /> {venue.location}
+                       </p>
+                       <div className="border-t border-gray-100 pt-3 flex justify-between items-center text-sm">
+                          <div>
+                              <span className="text-gray-400 text-xs uppercase block">Starts from</span>
+                              {getFormattedPrice(venue)}
+                              {venue.voucher && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    openTermsModal(venue.voucher!)
+                                  }}
+                                  className="mt-1 text-[10px] font-bold text-[#ED695A] hover:text-[#78533F] hover:underline transition-colors flex items-center gap-1 uppercase tracking-wide"
+                                >
+                                  <Sparkles className="w-3 h-3" />
+                                  View Voucher
+                                </button>
+                              )}
+                          </div>
+                          <button className="text-[#9c7c5d] text-xs font-bold uppercase tracking-wider border border-[#9c7c5d] px-3 py-1 rounded-full hover:bg-[#9c7c5d] hover:text-white transition">
+                              View
+                          </button>
+                       </div>
+                    </div>
                   </div>
-                )}
+                ))}
               </div>
             )}
           </div>
         </section>
       )}
 
+
+      {/* Services Marquee - Left to Right */}
       {(activeSection === "all" || activeSection === "eventcategories") && (
-        <section id="eventcategories" className="py-6 sm:py-8 lg:py-10 w-full bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-            <div className="text-center mb-8 sm:mb-10">
-              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#5B4336] mb-4">
-                Event Categories
-              </h2>
-              <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto">
-               Explore a wide range of event categories designed to suit every occasion. From weddings and receptions to corporate events, birthday parties, and cultural celebrations, our platform makes it easy to find the right services and venues for your needs. 
-              </p>
+        <section id="eventcategories" className="py-12 w-full bg-white overflow-hidden border-t border-gray-50">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-[#5B4336] mb-2 font-serif">Services</h2>
+            <div className="h-0.5 w-12 bg-[#9c7c5d] mx-auto opacity-50"></div>
+          </div>
+          <div className="w-full relative py-8 overflow-hidden">
+            <div className="absolute left-0 top-0 bottom-0 w-40 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none" />
+            <div className="absolute right-0 top-0 bottom-0 w-40 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none" />
+            <div className="animate-marquee flex gap-20 items-center pl-8 py-4">
+              {[...Array(4)].flatMap((_, i) => 
+                Object.entries(vendorsByType).flatMap(([type, vendors]) => 
+                  vendors.slice(0, 1).map(vendor => (
+                    <div key={`${i}-${type}`} className="flex flex-col items-center group cursor-pointer flex-shrink-0" onClick={() => navigate(`/vendordetails/${vendor.id}`)}>
+                      <div className="w-40 h-40 rounded-full overflow-hidden border-3 border-transparent group-hover:border-[#9c7c5d] p-1 transition-all duration-500">
+                        <div className="w-full h-full rounded-full overflow-hidden">
+                          <img src={vendor.image || "/placeholder.svg"} alt={type} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition duration-500" />
+                        </div>
+                      </div>
+                      <h3 className="mt-6 font-bold text-gray-800 text-base font-serif uppercase tracking-widest">{capitalizeWords(type)}</h3>
+                    </div>
+                  ))
+                )
+              )}
             </div>
-
-            {vendorLoading ? (
-              <div className="text-center text-gray-600">Loading vendors...</div>
-            ) : vendorError ? (
-              <div className="text-center text-red-600">{vendorError}</div>
-            ) : Object.keys(vendorsByType).length === 0 ? (
-              <div className="text-center text-gray-600">No vendors available.</div>
-            ) : (
-              <div className="overflow-hidden w-full">
-                <div className="animate-marquee-right flex">
-                  {/* First set of vendors */}
-                  {Object.entries(vendorsByType).flatMap(([type, vendors]) =>
-                    vendors.map((vendor) => (
-                      <div
-                        key={`${type}-${vendor.id}`}
-                        className="flex flex-col items-center text-center flex-shrink-0 mx-4 sm:mx-6"
-                      >
-                        <div className="relative mb-3 sm:mb-4 overflow-hidden rounded-full w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 border-4 border-[#9c7c5d] cursor-pointer hover:shadow-lg transition duration-300 transform hover:scale-110">
-                          <img
-                            src={vendor.image || "/placeholder.svg"}
-                            alt={vendor.name}
-                            className="w-full h-full object-cover"
-                            onClick={() => navigate(`/vendordetails/${vendor.id}`)}
-                          />
-                        </div>
-                        <h3 className="text-sm sm:text-base md:text-lg font-semibold text-[#5B4336] mb-1 whitespace-nowrap">
-                          {vendor.name}
-                        </h3>
-                        <p className="text-xs sm:text-sm text-gray-600 whitespace-nowrap">{capitalizeWords(type)}</p>
-                      </div>
-                    )),
-                  )}
-                  {/* Duplicate set for seamless loop */}
-                  {Object.entries(vendorsByType).flatMap(([type, vendors]) =>
-                    vendors.map((vendor) => (
-                      <div
-                        key={`${type}-${vendor.id}-dup`}
-                        className="flex flex-col items-center text-center flex-shrink-0 mx-4 sm:mx-6"
-                      >
-                        <div className="relative mb-3 sm:mb-4 overflow-hidden rounded-full w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 border-4 border-[#9c7c5d] cursor-pointer hover:shadow-lg transition duration-300 transform hover:scale-110">
-                          <img
-                            src={vendor.image || "/placeholder.svg"}
-                            alt={vendor.name}
-                            className="w-full h-full object-cover"
-                            onClick={() => navigate(`/vendordetails/${vendor.id}`)}
-                          />
-                        </div>
-                        <h3 className="text-sm sm:text-base md:text-lg font-semibold text-[#5B4336] mb-1 whitespace-nowrap">
-                          {vendor.name}
-                        </h3>
-                        <p className="text-xs sm:text-sm text-gray-600 whitespace-nowrap">{capitalizeWords(type)}</p>
-                      </div>
-                    )),
-                  )}
-                </div>
-              </div>
-            )}
           </div>
         </section>
       )}
-
+      {/* Vendor Sections */}
       {(activeSection === "all" || vendorTypes.includes(activeSection)) && (
         <>
           {vendorTypes.map((type) => renderVendorSection(type))}
         </>
       )}
 
+      {/* Projects Carousel */}
       {(activeSection === "all" || activeSection === "projects") && (
-        <section id="projects" className="py-6 sm:py-8 lg:py-10 w-full">
-          <div className="w-full px-4 sm:px-6 lg:px-8">
-
-            {/* Image Carousel */}
-            <div className="text-center mb-8 sm:mb-10">
-              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#5B4336] mb-4">
-                Our Beautiful Designs
-              </h2>
-              <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto">
-                Explore our stunning collection of wedding projects and designs.
+        <section id="projects" className="pt-16 pb-0 w-full bg-[#111] text-white">
+           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+              <Sparkles className="w-8 h-8 text-[#9c7c5d] mx-auto mb-4 opacity-80" />
+              <h2 className="text-4xl font-bold mb-6 font-serif tracking-tight text-white">Signature Designs</h2>
+              <p className="text-white/40 mb-10 max-w-lg mx-auto font-light text-sm tracking-wide">
+                 Immersive themes and curated setups for your unique story.
               </p>
-            </div>
 
-            {projectImages.length > 0 && (
-              <div className="relative w-full h-60 sm:h-80 lg:h-[400px] mb-8 rounded-2xl overflow-hidden group">
-                {/* Carousel Container */}
-                <div className="relative w-full h-full">
-                  {projectImages.map((project, index) => (
+              <div className="relative w-full h-[400px] md:h-[600px] overflow-hidden shadow-2xl">
+                 {projectImages.map((project, index) => (
                     <div
                       key={project.id}
-                      className={`absolute inset-0 transition-opacity duration-700 ${
-                        index === currentSlide ? "opacity-100" : "opacity-0"
-                      }`}
+                      className={`absolute inset-0 transition-opacity duration-1000 ${index === currentSlide ? "opacity-100" : "opacity-0"}`}
                     >
-                      <img
-                        src={project.image || "/placeholder.svg"}
-                        alt={project.title}
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition duration-300"></div>
-                      
-                      {/* Caption Overlay */}
-                      <div className="absolute inset-0 flex flex-col items-center justify-end p-6 sm:p-8 bg-gradient-to-t from-black/80 via-transparent to-transparent">
-                        <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-2 text-center text-balance">
-                          {project.title}
-                        </h3>
-                        <span className="bg-[#9c7c5d] text-white px-4 py-2 rounded-full text-sm font-medium">
-                          {project.category}
-                        </span>
-                      </div>
+                       <img src={project.image || "/placeholder.svg"} alt={project.title} className="w-full h-full object-cover opacity-60" />
+                       <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent flex items-center justify-center">
+                          <div className={`text-center transform transition duration-1000 ${index === currentSlide ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"}`}>
+                             <h3 className="text-4xl md:text-6xl font-serif font-medium mb-4 italic tracking-tighter text-[#e6d0b5]">{project.title}</h3>
+                             <span className="px-6 py-2 border border-white/20 rounded-full text-[10px] font-bold uppercase tracking-widest text-white/80 bg-black/40 backdrop-blur-md">{project.category}</span>
+                          </div>
+                       </div>
                     </div>
-                  ))}
-                </div>
-
-                {/* Navigation Arrows */}
-                {projectImages.length > 1 && (
-                  <>
-                    <button
-                      onClick={() => setCurrentSlide((prev) => (prev - 1 + projectImages.length) % projectImages.length)}
-                      className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10 bg-[#9c7c5d] hover:bg-[#8b6b4a] text-white rounded-full p-2 sm:p-3 transition duration-300 opacity-0 group-hover:opacity-100"
-                    >
-                      <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
-                    </button>
-                    <button
-                      onClick={() => setCurrentSlide((prev) => (prev + 1) % projectImages.length)}
-                      className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10 bg-[#9c7c5d] hover:bg-[#8b6b4a] text-white rounded-full p-2 sm:p-3 transition duration-300 opacity-0 group-hover:opacity-100"
-                    >
-                      <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
-                    </button>
-                  </>
-                )}
-
-                {/* Dots Indicator */}
-                {projectImages.length > 1 && (
-                  <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10 flex gap-2 bg-black/40 px-4 py-2 rounded-full">
-                    {projectImages.map((_, index) => (
-                      <button
-                        key={index}
-                        onClick={() => setCurrentSlide(index)}
-                        className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition duration-300 ${
-                          index === currentSlide ? "bg-[#9c7c5d] scale-125" : "bg-white/50"
-                        }`}
-                      />
+                 ))}
+                 
+                 {/* Carousel Indicators */}
+                 <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 flex gap-4">
+                    {projectImages.map((_, idx) => (
+                       <button
+                          key={idx}
+                          onClick={() => setCurrentSlide(idx)}
+                          className={`h-0.5 transition-all duration-300 ${idx === currentSlide ? "bg-white w-12" : "bg-white/20 w-8"}`}
+                       />
                     ))}
-                  </div>
-                )}
+                 </div>
               </div>
-            )}
-          </div>
+           </div>
         </section>
-      )}
-
-      {(activeSection === "all" || activeSection === "services") && (
-        <section id="services" className="py-6 sm:py-8 lg:py-10 bg-gray-50 w-full">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-left mb-8 sm:mb-10">
-              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#5B4336] mb-4">
-                Our Services
-              </h2>
-              <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl">
-                We specialize in creating seamless, unforgettable events tailored to your vision. From corporate
-                gatherings and weddings to private celebrations and brand activations, our expert team ensures every
-                detail is flawlessly executed.
-              </p>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {(activeSection === "all" || activeSection === "projects") && (
-        <section id="projects" className="py-12 sm:py-16 lg:py-20">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-left mb-12 sm:mb-16">
-              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#5B4336] mb-4">
-                Our Projects
-              </h2>
-              <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl">
-                Take a look at some of our recent wedding projects and get inspired for your own special day
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-              {projectImages.map((project) => (
-                <div
-                  key={project.id}
-                  className="group rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition duration-300 transform hover:-translate-y-2"
-                >
-                  <div className="relative h-48 sm:h-56 lg:h-64">
-                    <img
-                      src={project.image || "/placeholder.svg"}
-                      alt={project.title}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-black opacity-10 group-hover:opacity-20 transition duration-300"></div>
-                  </div>
-
-                  <div className="p-4 sm:p-6 text-left">
-                    <h3 className="text-lg sm:text-xl font-semibold text-[#5B4336] mb-2">{project.title}</h3>
-                    <p className="text-gray-600 text-sm mb-4">{project.category}</p>
-                    <button className="bg-[#9c7c5d] text-white px-4 sm:px-6 py-2 rounded-full text-xs sm:text-sm hover:bg-[#8b6b4a] transition duration-300">
-                      View Gallery
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {activeSection === "all" && (
-        <section id="categories" className="py-12 sm:py-16 lg:py-20 bg-white">
-          <div className="w-full px-4 sm:px-6 lg:px-8">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#5B4336] mb-8 text-center">
-              Our Venues
-            </h2>
-            <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto text-center mb-8">
-Choose from our collection of stunning venues that will provide the perfect backdrop for your wedding. Book and earn vouchers for your vendor bookings!
-            </p>
-            {loading ? (
-              <div className="text-center text-gray-600">Loading venues...</div>
-            ) : venues.length === 0 ? (
-              <div className="text-center text-gray-600">No venues available.</div>
-            ) : (
-              <div className="overflow-hidden w-full">
-                <div className="animate-marquee-right flex">
-                  {/* First set of venues */}
-                  {venues.map((venue) => (
-                    <div
-                      key={venue.id}
-                      className="flex-shrink-0 mx-3 sm:mx-4 w-48 sm:w-56 md:w-64 cursor-pointer group"
-                      onClick={() => navigate(`/auditoriumdetails/${venue.id}`)}
-                    >
-                      <div className="relative h-32 sm:h-40 md:h-48 rounded-xl overflow-hidden mb-3 shadow-lg group-hover:shadow-xl transition-all duration-300 transform group-hover:scale-105">
-                        <img
-                          src={venue.images[0] || "/placeholder.svg"}
-                          alt={venue.name}
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
-                        <div className="absolute bottom-2 left-2 right-2">
-                          <h3 className="text-white text-sm sm:text-base font-semibold truncate">{venue.name}</h3>
-                          <p className="text-white/80 text-xs sm:text-sm flex items-center">
-                            <MapPin className="h-3 w-3 mr-1" />
-                            <span className="truncate">{venue.location}</span>
-                          </p>
-                        </div>
-                        {venue.offer && (
-                          <div className="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
-                            {venue.offer.discountValue}{venue.offer.discountType === "percentage" ? "%" : "₹"} OFF
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                  {/* Duplicate set for seamless loop */}
-                  {venues.map((venue) => (
-                    <div
-                      key={`${venue.id}-dup`}
-                      className="flex-shrink-0 mx-3 sm:mx-4 w-48 sm:w-56 md:w-64 cursor-pointer group"
-                      onClick={() => navigate(`/auditoriumdetails/${venue.id}`)}
-                    >
-                      <div className="relative h-32 sm:h-40 md:h-48 rounded-xl overflow-hidden mb-3 shadow-lg group-hover:shadow-xl transition-all duration-300 transform group-hover:scale-105">
-                        <img
-                          src={venue.images[0] || "/placeholder.svg"}
-                          alt={venue.name}
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
-                        <div className="absolute bottom-2 left-2 right-2">
-                          <h3 className="text-white text-sm sm:text-base font-semibold truncate">{venue.name}</h3>
-                          <p className="text-white/80 text-xs sm:text-sm flex items-center">
-                            <MapPin className="h-3 w-3 mr-1" />
-                            <span className="truncate">{venue.location}</span>
-                          </p>
-                        </div>
-                        {venue.offer && (
-                          <div className="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
-                            {venue.offer.discountValue}{venue.offer.discountType === "percentage" ? "%" : "₹"} OFF
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </section>
-      )}
-
-      {isModalOpen && selectedVoucher && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
-            <h2 className="text-xl font-bold mb-4 text-[#5B4336]">Terms and Conditions</h2>
-            <p className="mb-2 text-gray-700">
-              <strong>Voucher Code:</strong> {selectedVoucher.voucherCode}
-            </p>
-            <p className="mb-2 text-gray-700">
-              <strong>Discount:</strong> {selectedVoucher.discountValue}
-              {selectedVoucher.discountType === "percentage" ? "%" : "₹"}
-            </p>
-            <p className="mb-2 text-gray-700">
-              <strong>Valid From:</strong> {new Date(selectedVoucher.validFrom).toLocaleDateString()}
-            </p>
-            <p className="mb-2 text-gray-700">
-              <strong>Valid To:</strong> {new Date(selectedVoucher.validTo).toLocaleDateString()}
-            </p>
-            <p className="mb-2 text-gray-700">
-              <strong>Limit:</strong> {selectedVoucher.limit} uses
-            </p>
-            <p className="mb-2 text-gray-700">
-              <strong>Vendor Name:</strong> {selectedVoucher.audiName}
-            </p>
-            <p className="mb-2 text-gray-700">
-              <strong>Status:</strong> {selectedVoucher.isActive ? "Active" : "Inactive"}
-            </p>
-            <button
-              onClick={() => setIsModalOpen(false)}
-              className="mt-4 bg-[#9c7c5d] text-white px-4 py-2 rounded-md font-medium hover:bg-[#8b6b4a] transition duration-300 w-full sm:w-auto"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
-
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
       )}
       
-      {/* Full Width Footer */}
-      <div className="w-full">
-        <div className="mb-0">
-          <Footer />
+      <Footer />
+      {/* Terms & Conditions Modal */}
+      {isModalOpen && selectedVoucher && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4 animate-fade-in-up">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden transform transition-all scale-100">
+            <div className="bg-[#78533F] p-6 text-white relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-4 opacity-10">
+                <Sparkles className="w-24 h-24 text-white" />
+              </div>
+              <button 
+                onClick={() => setIsModalOpen(false)}
+                className="absolute top-4 right-4 p-2 bg-white/20 hover:bg-white/30 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5 text-white" />
+              </button>
+              <h3 className="text-2xl font-bold font-serif mb-1">Special Offer</h3>
+              <p className="text-white/90 text-sm">Save big on your dream venue!</p>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              <div className="text-center">
+                <div className="inline-block px-4 py-2 bg-[#ED695A]/10 text-[#ED695A] rounded-full text-sm font-bold border border-[#ED695A]/20 mb-3">
+                  CODE: {selectedVoucher.voucherCode}
+                </div>
+                <div className="text-4xl font-bold text-[#78533F] mb-1">
+                  {selectedVoucher.discountType === 'percentage' ? `${selectedVoucher.discountValue}%` : `₹${selectedVoucher.discountValue}`}
+                  <span className="text-lg font-normal text-gray-500 ml-1">OFF</span>
+                </div>
+                <p className="text-gray-500 text-sm">Valid for {selectedVoucher.audiName || "Selected Venue"}</p>
+              </div>
+
+              <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 space-y-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Valid From</span>
+                  <span className="font-medium text-gray-900">{new Date(selectedVoucher.validFrom).toLocaleDateString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Valid Until</span>
+                  <span className="font-medium text-gray-900">{new Date(selectedVoucher.validTo).toLocaleDateString()}</span>
+                </div>
+                {selectedVoucher.limit && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Usage Limit</span>
+                    <span className="font-medium text-gray-900">{selectedVoucher.limit} uses</span>
+                  </div>
+                )}
+              </div>
+              
+              <button 
+                onClick={() => setIsModalOpen(false)}
+                className="w-full py-3 bg-[#ED695A] hover:bg-[#d85849] text-white font-bold rounded-xl shadow-lg shadow-[#ED695A]/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+              >
+                Got it!
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }
 
-export default HomePage
+export default HomePage;

@@ -44,6 +44,7 @@ const AuditoriumRegistrationPage: React.FC = () => {
     logo: null as File | null,
     seal: null as File | null,
     events: [] as string[],
+    gstNumber: "",
   })
 
   const districts = [
@@ -150,6 +151,7 @@ const AuditoriumRegistrationPage: React.FC = () => {
       signupData.append("locations", JSON.stringify(formData.locations))
       signupData.append("address", formData.address)
       signupData.append("events", JSON.stringify(formData.events))
+      signupData.append("gstNumber", formData.gstNumber)
       if (formData.logo) signupData.append("logo", formData.logo)
       if (formData.seal) signupData.append("seal", formData.seal)
 
@@ -215,6 +217,12 @@ const AuditoriumRegistrationPage: React.FC = () => {
               placeholder="Enter phone number"
               value={formData.phone}
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+            />
+            <input
+              className={inputClass}
+              placeholder="Enter GST number (optional)"
+              value={formData.gstNumber}
+              onChange={(e) => setFormData({ ...formData, gstNumber: e.target.value })}
             />
           </div>
         )

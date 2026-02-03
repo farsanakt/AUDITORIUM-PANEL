@@ -19,6 +19,7 @@ const VendorRegistration: React.FC = () => {
     password: "",
     address: "",
     confirmPassword: "",
+    gstNumber: "",
   })
 
   // Fetch vendor types from backend
@@ -207,20 +208,36 @@ const VendorRegistration: React.FC = () => {
                   />
                 </div>
               </div>
-              <div className="space-y-1">
-                <label htmlFor="address" className="block text-[#78533F] font-medium text-sm">
-                  Address
-                </label>
-                <input
-                  type="text"
-                  id="address"
-                  name="address"
-                  className="w-full px-3 py-2 border border-[#b09d94] rounded-full focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200 text-sm"
-                  value={formData.address}
-                  onChange={handleChange}
-                  placeholder="Enter your address"
-                  required
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label htmlFor="address" className="block text-[#78533F] font-medium text-sm">
+                    Address
+                  </label>
+                  <input
+                    type="text"
+                    id="address"
+                    name="address"
+                    className="w-full px-3 py-2 border border-[#b09d94] rounded-full focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200 text-sm"
+                    value={formData.address}
+                    onChange={handleChange}
+                    placeholder="Enter your address"
+                    required
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label htmlFor="gstNumber" className="block text-[#78533F] font-medium text-sm">
+                    GST Number (optional)
+                  </label>
+                  <input
+                    type="text"
+                    id="gstNumber"
+                    name="gstNumber"
+                    className="w-full px-3 py-2 border border-[#b09d94] rounded-full focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200 text-sm"
+                    value={formData.gstNumber}
+                    onChange={handleChange}
+                    placeholder="Enter GST number"
+                  />
+                </div>
               </div>
 
               <div className="flex items-center">

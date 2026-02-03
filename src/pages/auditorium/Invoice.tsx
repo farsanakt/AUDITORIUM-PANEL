@@ -3,9 +3,9 @@ import Header from '../../component/user/Header';
 import Sidebar from '../../component/auditorium/Sidebar';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../redux/store';
-import { upComingEvents } from '../../api/userApi';
+import { fetchAllUsers, fetchAuditoriumUserdetails, upComingEvents } from '../../api/userApi';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 interface UserDetails {
   name: string;
@@ -35,14 +35,64 @@ interface Invoice {
   userDetails: UserDetails;
   bookingDetails: BookingDetails;
   paymentDetails: PaymentDetails;
-  userReferenceId?: string; // Now properly optional
+  userReferenceId?: string; 
 }
 
-const InvoiceFormat: React.FC<{ invoice: Invoice; onClose: () => void }> = ({ invoice, onClose }) => {
-  const [gstin, setGstin] = useState('');
+const getBase64 = (url: string): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(img, 0, 0);
+        resolve(canvas.toDataURL('image/png'));
+      } else {
+        reject(new Error('Failed to get canvas context'));
+      }
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+};
 
-  const downloadPDF = () => {
+const InvoiceFormat: React.FC<{ invoice: Invoice; onClose: () => void; auditoriumDetails: any }> = ({ invoice, onClose, auditoriumDetails }) => {
+  const [gstin, setGstin] = useState('');
+  const [supplierGstin, setSupplierGstin] = useState(auditoriumDetails?.gstNumber || '');
+
+  const downloadPDF = async () => {
     const doc = new jsPDF();
+
+    let logoBase64 = '';
+    let sealBase64 = '';
+    
+    if (auditoriumDetails?.logo) {
+      try {
+        logoBase64 = await getBase64(auditoriumDetails.logo);
+      } catch (error) {
+        console.error('Failed to load logo:', error);
+      }
+    }
+
+    if (auditoriumDetails?.seal) {
+      try {
+        sealBase64 = await getBase64(auditoriumDetails.seal);
+      } catch (error) {
+        console.error('Failed to load seal:', error);
+      }
+    }
+
+    if (logoBase64) {
+      const imgProps = doc.getImageProperties(logoBase64);
+      const pdfWidth = doc.internal.pageSize.getWidth();
+      const pdfHeight = doc.internal.pageSize.getHeight();
+      const imgWidth = pdfWidth * 0.6;
+      const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+      doc.addImage(logoBase64, 'PNG', (pdfWidth - imgWidth) / 2, (pdfHeight - imgHeight) / 2, imgWidth, imgHeight, '', 'NONE', 0.1);
+    }
 
     doc.setFontSize(14);
     doc.text('Invoice Summary', 105, 10, { align: 'center' });
@@ -66,7 +116,7 @@ const InvoiceFormat: React.FC<{ invoice: Invoice; onClose: () => void }> = ({ in
     const totalTax = cgstAmount + sgstAmount + igstAmount;
     const grandTotal = taxable + totalTax;
 
-    (doc as any).autoTable({
+    autoTable(doc, {
       startY: 60,
       head: [['Circuit ID', 'PO No / Date', 'Service Period', 'Description', 'Current Charges (₹)', 'CGST (₹)', 'SGST (₹)', 'IGST (₹)']],
       body: [
@@ -103,7 +153,7 @@ const InvoiceFormat: React.FC<{ invoice: Invoice; onClose: () => void }> = ({ in
 
     finalY += 10;
     doc.text('Tax Details', 14, finalY);
-    (doc as any).autoTable({
+    autoTable(doc, {
       startY: finalY + 5,
       head: [['Description', 'HSN', 'Taxable Value (₹)', 'Rate', 'Amount (₹)', 'Total (₹)']],
       body: [
@@ -122,6 +172,8 @@ const InvoiceFormat: React.FC<{ invoice: Invoice; onClose: () => void }> = ({ in
     doc.text(grandTotal.toFixed(2), 190, finalY, { align: 'right' });
 
     finalY += 10;
+    doc.text(`Supplier GSTIN: ${supplierGstin || 'N/A'}`, 14, finalY);
+    finalY += 5;
     doc.text(`Customer GSTIN: ${gstin || 'N/A'}`, 14, finalY);
     finalY += 5;
     doc.text(`Payment Status: ${invoice.paymentDetails.status}`, 14, finalY);
@@ -129,12 +181,21 @@ const InvoiceFormat: React.FC<{ invoice: Invoice; onClose: () => void }> = ({ in
     doc.text(`Balance Amount: ₹${invoice.paymentDetails.balanceAmount.toFixed(2)}`, 14, finalY + 10);
     doc.text(`Payment ID: ${invoice.paymentDetails.paymentId || 'N/A'}`, 14, finalY + 15);
 
-    // Show Booked By in PDF
     if (invoice.userReferenceId) {
       finalY += 10;
       doc.setTextColor(237, 105, 90);
       doc.text(`Booked By: ${invoice.userReferenceId}`, 14, finalY + 10);
       doc.setTextColor(0, 0, 0);
+    }
+
+    finalY += 20;
+    doc.text('This is a computer generated invoice not required seal and sign', 105, finalY, { align: 'center' });
+
+    if (sealBase64) {
+      const sealProps = doc.getImageProperties(sealBase64);
+      const sealWidth = 50;
+      const sealHeight = (sealProps.height * sealWidth) / sealProps.width;
+      doc.addImage(sealBase64, 'PNG', 140, finalY + 10, sealWidth, sealHeight);
     }
 
     doc.save(`invoice_${invoice.id}.pdf`);
@@ -161,7 +222,6 @@ const InvoiceFormat: React.FC<{ invoice: Invoice; onClose: () => void }> = ({ in
           )}
         </div>
 
-        {/* Rest of preview sections (unchanged) */}
         <div className="bg-gray-50 p-4 rounded-lg">
           <h3 className="font-semibold mb-2 text-sm">Charges</h3>
           <div className="overflow-x-auto">
@@ -195,7 +255,6 @@ const InvoiceFormat: React.FC<{ invoice: Invoice; onClose: () => void }> = ({ in
           <p className="mt-2 text-sm"><strong>Total Excluding Tax:</strong> ₹{invoice.paymentDetails.totalAmount.toFixed(2)}</p>
         </div>
 
-        {/* Tax & Payment Summary unchanged */}
         <div className="bg-gray-50 p-4 rounded-lg">
           <h3 className="font-semibold mb-2 text-sm">Tax Details</h3>
           <div className="overflow-x-auto">
@@ -258,6 +317,15 @@ const InvoiceFormat: React.FC<{ invoice: Invoice; onClose: () => void }> = ({ in
           )}
         </div>
 
+        {supplierGstin === '' && (
+          <input
+            type="text"
+            value={supplierGstin}
+            onChange={(e) => setSupplierGstin(e.target.value)}
+            placeholder="Enter Supplier GSTIN (e.g., 24ABCDE1234F1Z5)"
+            className="p-2 border rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-[#ED695A] text-sm"
+          />
+        )}
         <input
           type="text"
           value={gstin}
@@ -294,15 +362,21 @@ const InvoicePanel: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [showInvoice, setShowInvoice] = useState(false);
+  const [auditoriumDetails, setAuditoriumDetails] = useState<any>(null);
   const { currentUser } = useSelector((state: RootState) => state.auth);
   const bookingsPerPage = 6;
 
-  const fetchBookings = async () => {
+  const fetchData = async () => {
     if (!currentUser) return;
 
     try {
+      const userRes = await fetchAllUsers();
+      const allUsersData = userRes.data || [];
+
+      const respo = await fetchAuditoriumUserdetails(currentUser.id);
+      setAuditoriumDetails(respo.data);
+
       const response = await upComingEvents(currentUser.id);
-      console.log('Raw API Response:', response.data.events);
 
       if (!Array.isArray(response.data.events)) {
         setInvoices([]);
@@ -311,32 +385,44 @@ const InvoicePanel: React.FC = () => {
         return;
       }
 
-      const bookingsData: Invoice[] = response.data.events.map((booking: any) => ({
-        id: booking._id || 'N/A',
-        userDetails: {
-          name: booking.userName || 'Unknown User',
-          email: booking.userEmail || 'N/A',
-          phone: booking.userPhone || 'N/A',
-        },
-        bookingDetails: {
-          bookingId: booking._id || 'N/A',
-          date: booking.bookeddate
-            ? new Date(booking.bookeddate).toISOString().split('T')[0]
-            : 'N/A',
-          timeSlot: booking.timeSlot || 'N/A',
-          auditoriumName: booking.auditoriumName || 'N/A',
-          venueName: booking.venueName || 'N/A',
-          address: booking.address || 'N/A',
-        },
-        paymentDetails: {
-          totalAmount: parseFloat(booking.totalAmount) || 0,
-          paidAmount: parseFloat(booking.paidAmount) || 0,
-          balanceAmount: parseFloat(booking.balanceAmount) || 0,
-          status: booking.paymentStatus || 'Pending',
-          paymentId: booking.paymentId || 'N/A',
-        },
-        userReferenceId: booking.userReferenceId || undefined, // Only set if exists
-      }));
+      const bookingsData: Invoice[] = response.data.events.map((booking: any) => {
+        let name = booking.userName || 'Unknown User';
+        let phone = booking.userPhone || 'N/A';
+        let email = booking.userEmail || 'N/A';
+
+        const matchedUser = allUsersData.find((u: any) => u.email === email);
+        if (matchedUser) {
+          name = `${matchedUser.firstName || ''} ${matchedUser.lastName || ''}`.trim() || name;
+          phone = matchedUser.phone || phone;
+        }
+
+        return {
+          id: booking._id || 'N/A',
+          userDetails: {
+            name,
+            email,
+            phone,
+          },
+          bookingDetails: {
+            bookingId: booking._id || 'N/A',
+            date: booking.bookeddate
+              ? new Date(booking.bookeddate).toISOString().split('T')[0]
+              : 'N/A',
+            timeSlot: booking.timeSlot || 'N/A',
+            auditoriumName: booking.auditoriumName || 'N/A',
+            venueName: booking.venueName || 'N/A',
+            address: booking.address || 'N/A',
+          },
+          paymentDetails: {
+            totalAmount: parseFloat(booking.totalAmount) || 0,
+            paidAmount: parseFloat(booking.paidAmount) || 0,
+            balanceAmount: parseFloat(booking.balanceAmount) || 0,
+            status: booking.paymentStatus || 'Pending',
+            paymentId: booking.paymentId || 'N/A',
+          },
+          userReferenceId: booking.userReferenceId || undefined,
+        };
+      });
 
       bookingsData.sort((a, b) =>
         new Date(b.bookingDetails.date).getTime() - new Date(a.bookingDetails.date).getTime()
@@ -354,7 +440,7 @@ const InvoicePanel: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchBookings();
+    fetchData();
   }, [currentUser]);
 
   const handleSearch = () => {
@@ -392,42 +478,40 @@ const InvoicePanel: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#FDF8F1] flex flex-col">
       <Header />
-      <div className="flex flex-1">
-        <Sidebar />
-        <main className="flex-1 p-6">
-          <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-6">
-            <h1 className="text-2xl font-bold text-gray-800 mb-6">Auditorium Invoice Panel</h1>
+      <div className="flex flex-1 flex-col lg:flex-row">
+        <Sidebar className="w-full lg:w-auto" />
+        <main className="flex-1 p-4 sm:p-6">
+          <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-4 sm:p-6">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-800 mb-6">Auditorium Invoice Panel</h1>
 
-            {/* Search Section */}
             <div className="mb-6 p-4 bg-gray-100 rounded-lg">
               <div className="flex flex-col sm:flex-row gap-4">
                 <input
                   type="date"
                   value={searchDate}
                   onChange={(e) => setSearchDate(e.target.value)}
-                  className="p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ED695A]"
+                  className="p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ED695A] w-full sm:w-auto"
                 />
                 <input
                   type="text"
                   value={searchEmail}
                   onChange={(e) => setSearchEmail(e.target.value)}
-                  className="p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ED695A]"
+                  className="p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ED695A] w-full sm:w-auto"
                   placeholder="Search by Email"
                 />
-                <div className="flex gap-2">
-                  <button onClick={handleSearch} className="bg-[#ED695A] text-white px-4 py-2 rounded-lg hover:bg-[#d15a4e]">
+                <div className="flex gap-2 flex-col sm:flex-row">
+                  <button onClick={handleSearch} className="bg-[#ED695A] text-white px-4 py-2 rounded-lg hover:bg-[#d15a4e] w-full sm:w-auto">
                     Search
                   </button>
-                  <button onClick={handleReset} className="bg-gray-300 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-400">
+                  <button onClick={handleReset} className="bg-gray-300 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-400 w-full sm:w-auto">
                     Reset
                   </button>
                 </div>
               </div>
             </div>
 
-            {/* Invoice Table */}
             <div className="overflow-x-auto">
-              <table className="w-full table-auto">
+              <table className="w-full table-auto min-w-[800px]">
                 <thead>
                   <tr className="bg-gray-200 text-gray-600">
                     <th className="p-3 text-left">Sl. No</th>
@@ -476,9 +560,8 @@ const InvoicePanel: React.FC = () => {
               </table>
             </div>
 
-            {/* Pagination */}
             {totalPages > 1 && (
-              <div className="mt-6 flex justify-center gap-2">
+              <div className="mt-6 flex justify-center gap-2 flex-wrap">
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                   <button
                     key={page}
@@ -491,12 +574,11 @@ const InvoicePanel: React.FC = () => {
               </div>
             )}
 
-            {/* Modal */}
             {selectedInvoice && (
-              <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+              <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
                 <div className="bg-white rounded-xl w-full max-w-[90vw] sm:max-w-[600px] h-[80vh] sm:h-[600px] flex flex-col shadow-2xl">
                   {showInvoice ? (
-                    <InvoiceFormat invoice={selectedInvoice} onClose={() => { setSelectedInvoice(null); setShowInvoice(false); }} />
+                    <InvoiceFormat invoice={selectedInvoice} onClose={() => { setSelectedInvoice(null); setShowInvoice(false); }} auditoriumDetails={auditoriumDetails} />
                   ) : (
                     <>
                       <div className="p-4 border-b bg-gradient-to-r from-[#ED695A] to-[#F17C6E] text-white rounded-t-xl">
@@ -505,7 +587,7 @@ const InvoicePanel: React.FC = () => {
                       <div className="flex-1 overflow-y-auto p-4 space-y-4">
                         <div className="p-3 bg-gray-50 rounded-lg shadow-sm">
                           <h3 className="font-semibold text-gray-800 text-base mb-2">User Details</h3>
-                          <div className="grid grid-cols-2 gap-2 text-sm text-gray-700">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-gray-700">
                             <span className="font-medium">Name:</span><span>{selectedInvoice.userDetails.name}</span>
                             <span className="font-medium">Email:</span><span>{selectedInvoice.userDetails.email}</span>
                             <span className="font-medium">Phone:</span><span>{selectedInvoice.userDetails.phone || 'N/A'}</span>
@@ -514,7 +596,7 @@ const InvoicePanel: React.FC = () => {
 
                         <div className="p-3 bg-gray-50 rounded-lg shadow-sm">
                           <h3 className="font-semibold text-gray-800 text-base mb-2">Booking Details</h3>
-                          <div className="grid grid-cols-2 gap-2 text-sm text-gray-700">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-gray-700">
                             <span className="font-medium">Date:</span><span>{selectedInvoice.bookingDetails.date}</span>
                             <span className="font-medium">Time Slot:</span><span>{selectedInvoice.bookingDetails.timeSlot}</span>
                             <span className="font-medium">Auditorium:</span><span>{selectedInvoice.bookingDetails.auditoriumName || 'N/A'}</span>
@@ -525,7 +607,7 @@ const InvoicePanel: React.FC = () => {
 
                         <div className="p-3 bg-gray-50 rounded-lg shadow-sm">
                           <h3 className="font-semibold text-gray-800 text-base mb-2">Payment Details</h3>
-                          <div className="grid grid-cols-2 gap-2 text-sm text-gray-700">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-gray-700">
                             <span className="font-medium">Total Amount:</span><span>₹{selectedInvoice.paymentDetails.totalAmount}</span>
                             <span className="font-medium">Paid Amount:</span><span>₹{selectedInvoice.paymentDetails.paidAmount}</span>
                             <span className="font-medium">Balance:</span><span>₹{selectedInvoice.paymentDetails.balanceAmount}</span>
@@ -541,11 +623,11 @@ const InvoicePanel: React.FC = () => {
                         </div>
                       </div>
 
-                      <div className="p-4 border-t bg-gray-50 rounded-b-xl flex justify-between">
-                        <button onClick={() => setShowInvoice(true)} className="bg-[#ED695A] text-white px-4 py-2 rounded-lg hover:bg-[#d15a4e]">
+                      <div className="p-4 border-t bg-gray-50 rounded-b-xl flex justify-between flex-col sm:flex-row gap-2">
+                        <button onClick={() => setShowInvoice(true)} className="bg-[#ED695A] text-white px-4 py-2 rounded-lg hover:bg-[#d15a4e] w-full sm:w-auto">
                           View Invoice
                         </button>
-                        <button onClick={() => setSelectedInvoice(null)} className="bg-gray-300 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-400">
+                        <button onClick={() => setSelectedInvoice(null)} className="bg-gray-300 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-400 w-full sm:w-auto">
                           Close
                         </button>
                       </div>

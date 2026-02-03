@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { X, Edit, Trash } from 'lucide-react';
+import { X, Edit, Trash, ArrowLeft } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../redux/store';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
 import Header from '../../component/user/Header';
 import { createVoucher, updateVoucher, deleteVoucher, fetchVouchers } from '../../api/userApi';
+import { useNavigate } from 'react-router-dom';
 
 interface Voucher {
   _id: string;
@@ -43,6 +44,7 @@ const Voucher: React.FC = () => {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const fetchUserVouchers = async () => {
     if (!currentUser?.id) {
@@ -201,11 +203,15 @@ const Voucher: React.FC = () => {
         <p className="text-[#78533F] font-serif text-center">Loading vouchers...</p>
       ) : error ? (
         <p className="text-[#ED695A] font-serif text-center">{error}</p>
-      ) : vouchers.length === 0 ? (
-        <p className="text-center text-gray-600 font-serif">No vouchers found.</p>
       ) : (
         <div className="w-full max-w-4xl bg-white rounded-2xl shadow-2xl border border-[#b09d94] overflow-hidden my-8">
-          <div className="bg-white p-4 sm:p-6 border-b border-[#b09d94] flex justify-between items-center">
+          <div className="bg-white p-4 sm:p-6 border-b border-[#b09d94] flex items-center justify-between">
+            <button
+              onClick={() => navigate(-1)}
+              className="text-gray-600 hover:text-[#78533F]"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
             <h2 className="text-lg md:text-2xl font-bold text-[#78533F] font-serif">Your Vouchers</h2>
             <button
               onClick={() => {
@@ -229,58 +235,62 @@ const Voucher: React.FC = () => {
             </button>
           </div>
           <div className="p-4 sm:p-6">
-            <div className="space-y-4">
-              {vouchers.map((voucher) => (
-                <div
-                  key={voucher._id}
-                  className="flex flex-col sm:flex-row items-center justify-between p-4 bg-white border border-[#b09d94] rounded-xl hover:bg-[#FDF8F1] transition-colors duration-300"
-                >
-                  <div className="flex items-center space-x-4 w-full sm:w-auto">
-                    <div className="text-left">
-                      <p className="text-[#78533F] font-semibold font-serif">{voucher.voucherCode}</p>
-                      <p className="text-sm text-gray-600 font-serif">
-                        {voucher.discountType === 'percentage'
-                          ? `${voucher.discountValue}% Off`
-                          : `₹${voucher.discountValue.toLocaleString('en-IN')} Off`}
-                      </p>
-                      <p className="text-sm text-gray-600 font-serif">Limit: {voucher.limit}</p>
-                      <p className="text-sm text-gray-600 font-serif">Auditorium Name: {voucher.audiName}</p>
-                      <p className="text-sm text-gray-600 font-serif">
-                        Valid: {new Date(voucher.validFrom).toLocaleDateString()} -{' '}
-                        {new Date(voucher.validTo).toLocaleDateString()}
-                      </p>
-                      <p className="text-sm text-gray-600 font-serif">
-                        Status: {voucher.isActive ? 'Active' : 'Inactive'}
-                      </p>
-                      <p className="text-sm text-gray-600 font-serif">Terms and Conditions:</p>
-                      {voucher.termsAndConditions && voucher.termsAndConditions.length > 0 ? (
-                        <ul className="text-sm text-gray-600 font-serif list-disc pl-5">
-                          {voucher.termsAndConditions.map((term, index) => (
-                            <li key={index}>{term}</li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <p className="text-sm text-gray-600 font-serif pl-5">No terms specified</p>
-                      )}
+            {vouchers.length === 0 ? (
+              <p className="text-center text-gray-600 font-serif">No vouchers found.</p>
+            ) : (
+              <div className="space-y-4">
+                {vouchers.map((voucher) => (
+                  <div
+                    key={voucher._id}
+                    className="flex flex-col sm:flex-row items-center justify-between p-4 bg-white border border-[#b09d94] rounded-xl hover:bg-[#FDF8F1] transition-colors duration-300"
+                  >
+                    <div className="flex items-center space-x-4 w-full sm:w-auto">
+                      <div className="text-left">
+                        <p className="text-[#78533F] font-semibold font-serif">{voucher.voucherCode}</p>
+                        <p className="text-sm text-gray-600 font-serif">
+                          {voucher.discountType === 'percentage'
+                            ? `${voucher.discountValue}% Off`
+                            : `₹${voucher.discountValue.toLocaleString('en-IN')} Off`}
+                        </p>
+                        <p className="text-sm text-gray-600 font-serif">Limit: {voucher.limit}</p>
+                        <p className="text-sm text-gray-600 font-serif">Auditorium Name: {voucher.audiName}</p>
+                        <p className="text-sm text-gray-600 font-serif">
+                          Valid: {new Date(voucher.validFrom).toLocaleDateString()} -{' '}
+                          {new Date(voucher.validTo).toLocaleDateString()}
+                        </p>
+                        <p className="text-sm text-gray-600 font-serif">
+                          Status: {voucher.isActive ? 'Active' : 'Inactive'}
+                        </p>
+                        <p className="text-sm text-gray-600 font-serif">Terms and Conditions:</p>
+                        {voucher.termsAndConditions && voucher.termsAndConditions.length > 0 ? (
+                          <ul className="text-sm text-gray-600 font-serif list-disc pl-5">
+                            {voucher.termsAndConditions.map((term, index) => (
+                              <li key={index}>{term}</li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="text-sm text-gray-600 font-serif pl-5">No terms specified</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex space-x-2 mt-2 sm:mt-0">
+                      <button
+                        onClick={() => handleEdit(voucher)}
+                        className="bg-[#78533F] text-white font-semibold py-2 px-3 rounded-full shadow-md hover:bg-[#634331] transition-all duration-300"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(voucher._id, voucher.voucherCode)}
+                        className="bg-[#ED695A] text-white font-semibold py-2 px-3 rounded-full shadow-md hover:bg-[#d85c4e] transition-all duration-300"
+                      >
+                        <Trash className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
-                  <div className="flex space-x-2 mt-2 sm:mt-0">
-                    <button
-                      onClick={() => handleEdit(voucher)}
-                      className="bg-[#78533F] text-white font-semibold py-2 px-3 rounded-full shadow-md hover:bg-[#634331] transition-all duration-300"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(voucher._id, voucher.voucherCode)}
-                      className="bg-[#ED695A] text-white font-semibold py-2 px-3 rounded-full shadow-md hover:bg-[#d85c4e] transition-all duration-300"
-                    >
-                      <Trash className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

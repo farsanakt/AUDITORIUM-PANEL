@@ -8,7 +8,7 @@ import { fetchAllStaff, addStaff, updateStaff, deleteStaff } from '../../api/use
 import { useSelector } from 'react-redux';
 import { RootState } from '../../redux/store';
 
-type StaffRole = 'Admin' | 'Manager' | 'Staff';
+type StaffRole = 'Admin'  | 'Staff';
 type StaffStatus = 'active' | 'inactive';
 
 interface Staff {
@@ -174,7 +174,7 @@ const StaffManagementUI: React.FC = () => {
   const getRoleColor = (role: StaffRole) => {
     switch (role) {
       case 'Admin': return 'bg-[#ED695A]/20 text-[#ED695A]';
-      case 'Manager': return 'bg-[#78533F]/20 text-[#78533F]';
+      // case 'Manager': return 'bg-[#78533F]/20 text-[#78533F]';
       default: return 'bg-gray-200 text-gray-700';
     }
   };
@@ -344,7 +344,7 @@ const StaffManagementUI: React.FC = () => {
                     className="w-full px-4 py-2 border border-[#b09d94] rounded-full focus:ring-2 focus:ring-[#ED695A] outline-none"
                   >
                     <option value="Staff">Staff</option>
-                    <option value="Manager">Manager</option>
+                    {/* <option value="Manager">Manager</option> */}
                     <option value="Admin">Admin</option>
                   </select>
                 </div>
