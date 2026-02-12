@@ -138,6 +138,8 @@ const DashboardOverview = () => {
         paidAmount: event.paidAmount || "N/A",
         balanceAmount: event.balanceAmount || "N/A",
         address: event.address || "N/A",
+        bookingType: event.userReferenceId ? "Offline Booking" : "Online Payment",
+        eventType: event.eventType || "N/A",
       }))
       .sort((a, b) => new Date(a.rawDate || 0).getTime() - new Date(b.rawDate || 0).getTime());
   };
@@ -377,6 +379,9 @@ const DashboardOverview = () => {
                            <p className="text-sm text-gray-500 mt-0.5 flex items-center gap-2"> {/* Added client/user details */}
                              <Users className="w-3 h-3" /> Client: {event.client}
                            </p>
+                           <p className="text-sm text-gray-500 mt-0.5 flex items-center gap-2">
+                             <Award className="w-3 h-3" /> Type: {event.eventType}
+                           </p>
                            {selectedVenue === "All Venues" && event.venueId && (
                              <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
                                <MapPin className="w-3 h-3" />
@@ -391,6 +396,11 @@ const DashboardOverview = () => {
                            <p className="text-sm font-bold text-gray-900">₹{event.totalAmount}</p>
                            <p className="text-xs text-gray-500">Total Amount</p>
                         </div>
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold 
+                          ${event.bookingType === 'Online Payment' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}
+                        `}>
+                          {event.bookingType}
+                        </span>
                         <span className={`px-3 py-1 rounded-full text-xs font-semibold capitalize
                           ${event.status.toLowerCase() === 'approved' ? 'bg-green-100 text-green-700' : 
                             event.status.toLowerCase() === 'pending' ? 'bg-amber-100 text-amber-700' :
@@ -458,12 +468,16 @@ const DashboardOverview = () => {
                           <p className="text-xs text-gray-500 uppercase font-semibold">Time</p>
                           <p className="font-medium text-gray-800">{selectedEvent.timeSlot}</p>
                        </div>
+                       <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                          <p className="text-xs text-gray-500 uppercase font-semibold">Event Type</p>
+                          <p className="font-medium text-gray-800">{selectedEvent.eventType}</p>
+                       </div>
                     </div>
 
                     <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 space-y-3">
                        <div className="flex justify-between border-b border-gray-200 pb-2">
-                          <span className="text-gray-600 text-sm">Client</span>
-                          <span className="font-medium text-gray-900 text-sm">{selectedEvent.client}</span>
+                          <span className="text-gray-600 text-sm">Client Name</span>
+                          <span className="font-medium text-gray-900 text-sm">{selectedEvent.client.replace("@gmail.com", "")}</span>
                        </div>
                        <div className="flex justify-between border-b border-gray-200 pb-2">
                           <span className="text-gray-600 text-sm">Total</span>
