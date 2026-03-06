@@ -516,14 +516,14 @@ const AuditoriumDetails: React.FC = () => {
                 </div>
 
                 {/* Decoration and Food Policy */}
-                <div>
+                {/* <div>
                   <h4 className="font-semibold text-sm sm:text-base md:text-lg text-[#2A2929] mb-2 text-left">Decoration & Food</h4>
                   <ul className="list-disc list-inside space-y-1 text-left">
                     <li>Decoration: <span className="font-semibold">{auditorium.decorPolicy}</span></li>
                     <li>Food: <span className="font-semibold">{auditorium.foodPolicy}</span></li>
                     <li>Cancellation: <span className="font-semibold">{auditorium.cancellationPolicy}</span></li>
                   </ul>
-                </div>
+                </div> */}
 
                 {/* Pricing */}
                 <div>
@@ -559,8 +559,8 @@ const AuditoriumDetails: React.FC = () => {
                     <li>Stage Size: {auditorium.stageSize || "N/A"}</li>
                     <li>Events: {auditorium.events?.join(", ") || "N/A"}</li>
                     <li>Time Slots: {auditorium.timeSlots.map(slot => slot.label).join(", ")}</li>
-                    <li>Created At: {new Date(auditorium.createdAt || "").toLocaleDateString()}</li>
-                    <li>Updated At: {new Date(auditorium.updatedAt || "").toLocaleDateString()}</li>
+                    {/* <li>Created At: {new Date(auditorium.createdAt || "").toLocaleDateString()}</li>
+                    <li>Updated At: {new Date(auditorium.updatedAt || "").toLocaleDateString()}</li> */}
                   </ul>
                 </div>
               </div>

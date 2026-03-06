@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { ArrowLeft, Calendar, Check, CreditCard, Download, Landmark, Printer, Wallet, X, CheckCircle, User, MapPin, Phone, Mail, Home, Clock } from 'lucide-react'
 import { Button } from "../../component/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../../component/ui/card"
@@ -17,72 +17,98 @@ import logo from "../../assets/logo-removebg.png";
 
 export default function PaymentDetails() {
   const [paymentStatus, setPaymentStatus] = useState<"pending" | "success">("pending")
-  const [paymentType, setPaymentType] = useState<"advance" | "full">("advance")
+  const [paymentType, setPaymentType] = useState<"advance" | "full" | "custom">("advance")
   const [paymentMethod, setPaymentMethod] = useState<string>("credit")
   const [customer, setCustomer] = useState<any>(null)
   const [customerName, setCustomerName] = useState<string>("")
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [customAmount, setCustomAmount] = useState<string>("")
    const { currentUser } = useSelector((state: RootState) => state.auth);
 
   const location = useLocation()
   const bookingData = location.state
   const navigate = useNavigate()
 
+  const paymentDetails = useMemo(() => {
+    const fullAmount = parseInt(bookingData.totalAmount);
+    const advanceAmount = parseInt(bookingData.advanceAmount);
+    const customAmountVal = paymentType === "custom" ? parseInt(customAmount) || 0 : 0;
+    const baseAmount = paymentType === "advance" ? advanceAmount : paymentType === "full" ? fullAmount : customAmountVal;
+    const tax = baseAmount * 0.1;
+    const total = baseAmount + tax;
 
-const handlePayment = async () => {
-  setIsProcessing(true)
-  try {
+    return {
+      fullAmount,
+      advanceAmount,
+      customAmount: customAmountVal,
+      tax,
+      total,
+    };
+  }, [bookingData.totalAmount, bookingData.advanceAmount, paymentType, customAmount]);
 
+  const handlePayment = async () => {
+    setIsProcessing(true)
+    try {
+      const userReferenceId =
+        currentUser?.role === "auditorium"
+          ? currentUser.id
+          : currentUser?.role === "Staff"
+          ? currentUser.staffId
+          : null
 
-    const userReferenceId =
-      currentUser?.role === "auditorium"
-        ? currentUser.id
-        : currentUser?.role === "Staff"
-        ? currentUser.staffId
-        : null
+      let paidAmount: number;
+      let balanceAmount: number;
 
-    const paymentData = {
-      userEmail: bookingData.userEmail,
-      totalAmount: bookingData.totalAmount,
-      venueId: bookingData.venueId,
-      venueName: bookingData.venueName,
-      paidAmount:
-        paymentType === "advance"
-          ? bookingData.advanceAmount
-          : bookingData.totalAmount,
-      balanceAmount:
-        paymentType === "advance"
-          ? parseInt(bookingData.totalAmount) -
-            parseInt(bookingData.advanceAmount)
-          : 0,
-      bookedDate: bookingData.selectedDate,
-      timeSlot: bookingData.selectedTimeSlot,
-      address: bookingData.address,
-      paymentType: paymentType,
-      paymentMethod: paymentMethod,
-      phone: bookingData.userPhone,
-      communicationPrefer: bookingData.communicationType,
+      if (paymentType === "custom") {
+        paidAmount = parseInt(customAmount);
+        balanceAmount = parseInt(bookingData.totalAmount) - paidAmount;
+      } else {
+        paidAmount =
+          paymentType === "advance"
+            ? parseInt(bookingData.advanceAmount)
+            : parseInt(bookingData.totalAmount);
+        balanceAmount =
+          paymentType === "advance"
+            ? parseInt(bookingData.totalAmount) -
+              parseInt(bookingData.advanceAmount)
+            : 0;
+      }
 
-      // 👇 new field added
-      userReferenceId: userReferenceId,
-      customerName: customerName
+      const paymentData = {
+        userEmail: bookingData.userEmail,
+        totalAmount: bookingData.totalAmount,
+        venueId: bookingData.venueId,
+        venueName: bookingData.venueName,
+        paidAmount: paidAmount,
+        balanceAmount: balanceAmount,
+        bookedDate: bookingData.selectedDate,
+        timeSlot: bookingData.selectedTimeSlot,
+        address: bookingData.address,
+        paymentType: paymentType,
+        paymentMethod: paymentMethod,
+        phone: bookingData.userPhone,
+        communicationPrefer: bookingData.communicationType,
+
+        // 👇 new field added
+        userReferenceId: userReferenceId,
+        customerName: customerName
+      }
+      const respo = await fetchAuditoriumUserdetails(currentUser?.id);
+
+      const response = await createBooking(paymentData)
+
+      await new Promise((resolve) => setTimeout(resolve, 2000))
+
+      setPaymentStatus("success")
+      setShowSuccessModal(true)
+    } catch (error) {
+      console.error("Payment processing failed:", error)
+      alert("Payment processing failed. Please try again.")
+    } finally {
+      setIsProcessing(false)
     }
-    const respo = await fetchAuditoriumUserdetails(currentUser?.id);
-
-    const response = await createBooking(paymentData)
-
-    await new Promise((resolve) => setTimeout(resolve, 2000))
-
-    setPaymentStatus("success")
-    setShowSuccessModal(true)
-  } catch (error) {
-    console.error("Payment processing failed:", error)
-    alert("Payment processing failed. Please try again.")
-  } finally {
-    setIsProcessing(false)
   }
-}
 
 
   const customerDetails = async () => {
@@ -98,7 +124,7 @@ const handlePayment = async () => {
   useEffect(() => {
     customerDetails()
     console.log('gfgfgg',bookingData.communicationType
-)
+  )
   }, [])
 
   const handleGoBack = () => {
@@ -143,7 +169,7 @@ const handlePayment = async () => {
             <p><strong>Date:</strong> ${bookingData.selectedDate}</p>
             <p><strong>Time:</strong> ${bookingData.selectedTimeSlot}</p>
             <p><strong>Amount Paid:</strong> ₹${paymentDetails.total.toLocaleString()}</p>
-            <p><strong>Payment Type:</strong> ${paymentType === "advance" ? "Advance Payment" : "Full Payment"}</p>
+            <p><strong>Payment Type:</strong> ${paymentType === "advance" ? "Advance Payment" : paymentType === "full" ? "Full Payment" : "Custom Payment"}</p>
             <p><strong>Payment Method:</strong> ${paymentMethod.charAt(0).toUpperCase() + paymentMethod.slice(1)}</p>
             <p><strong>Customer Name:</strong> ${customerName}</p>
             <p><strong>Customer Email:</strong> ${bookingData.userEmail}</p>
@@ -168,16 +194,10 @@ const handlePayment = async () => {
     }
   };
 
-  const paymentDetails = {
-    fullAmount: parseInt(bookingData.totalAmount),
-    advanceAmount: parseInt(bookingData.advanceAmount),
-    tax: paymentType === "advance" ? parseInt(bookingData.advanceAmount) * 0.1 : parseInt(bookingData.totalAmount) * 0.1,
-    total: paymentType === "advance" ? 
-      parseInt(bookingData.advanceAmount) + (parseInt(bookingData.advanceAmount) * 0.1) :
-      parseInt(bookingData.totalAmount) + (parseInt(bookingData.totalAmount) * 0.1),
-  }
-
   const getPaymentAmount = () => {
+    if (paymentType === "custom") {
+      return parseInt(customAmount) || 0;
+    }
     return paymentType === "advance" ? paymentDetails.advanceAmount : paymentDetails.fullAmount
   }
 
@@ -326,22 +346,24 @@ const handlePayment = async () => {
                       <div className="space-y-2">
                         <label className="text-sm font-medium text-[#78533F]">Total Amount</label>
                         <div className="text-lg font-semibold text-gray-900">
-                          ₹{paymentDetails.fullAmount.toLocaleString()}
+                          ₹{(paymentType === "custom" ? getPaymentAmount() : paymentDetails.fullAmount).toLocaleString()}
                         </div>
                       </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-[#78533F]">Advance Amount</label>
-                        <div className="text-lg font-semibold text-gray-900">
-                          ₹{paymentDetails.advanceAmount.toLocaleString()}
+                      {paymentType !== "custom" && (
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-[#78533F]">Advance Amount</label>
+                          <div className="text-lg font-semibold text-gray-900">
+                            ₹{paymentDetails.advanceAmount.toLocaleString()}
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                     
                     <div className="border-t border-gray-200 pt-4">
                       <div className="space-y-2">
                         <div className="flex justify-between">
                           <span className="text-gray-600">
-                            {paymentType === "advance" ? "Advance Amount" : "Full Amount"}
+                            {paymentType === "advance" ? "Advance Amount" : paymentType === "full" ? "Full Amount" : "Custom Amount"}
                           </span>
                           <span className="font-medium">
                             ₹{getPaymentAmount().toLocaleString()}
@@ -450,6 +472,40 @@ const handlePayment = async () => {
                         </div>
                       </label>
                     </div>
+
+                    {/* Custom Amount Option */}
+                    <label className="flex items-center space-x-3 cursor-pointer p-3 border border-[#b09d94] rounded-lg hover:bg-gray-50 transition-all flex-1">
+                      <input
+                        type="radio"
+                        name="paymentType"
+                        value="custom"
+                        checked={paymentType === "custom"}
+                        onChange={() => setPaymentType("custom")}
+                        className="w-4 h-4 text-[#ED695A] focus:ring-[#ED695A]"
+                      />
+                      <div className="flex-1">
+                        <div className="font-medium text-[#78533F]">Pay Custom Amount</div>
+                        <div className="text-sm text-gray-600">Enter custom amount</div>
+                      </div>
+                    </label>
+
+                    {paymentType === "custom" && (
+                      <div className="space-y-2">
+                        <Label htmlFor="customAmount" className="text-sm font-medium text-[#78533F]">
+                          Custom Amount (₹)
+                        </Label>
+                        <Input
+                          id="customAmount"
+                          type="number"
+                          value={customAmount}
+                          onChange={(e) => setCustomAmount(e.target.value)}
+                          placeholder="Enter amount"
+                          min="1"
+                          max={bookingData.totalAmount}
+                          className="bg-gray-50 border-[#b09d94]"
+                        />
+                      </div>
+                    )}
                   </div>
 
                   {/* Payment Summary */}
@@ -468,7 +524,7 @@ const handlePayment = async () => {
                   {/* Confirm Payment Button */}
                   <Button
                     onClick={handlePayment}
-                    disabled={isProcessing}
+                    disabled={isProcessing || (paymentType === "custom" && (!customAmount || parseInt(customAmount) <= 0))}
                     className="w-full bg-[#ED695A] hover:bg-[#d85a4b] disabled:bg-gray-400 text-white font-medium text-lg py-3"
                   >
                     {isProcessing ? (
@@ -527,7 +583,7 @@ const handlePayment = async () => {
               
               <h3 className="text-xl font-semibold text-gray-900 mb-2">Payment Successful!</h3>
               <p className="text-gray-600 mb-6">
-                Your {paymentType === "advance" ? "advance" : "full"} payment has been processed successfully. 
+                Your {paymentType === "advance" ? "advance" : paymentType === "full" ? "full" : "custom"} payment has been processed successfully. 
                 Your booking is now confirmed.
               </p>
               
@@ -538,7 +594,7 @@ const handlePayment = async () => {
                   <p><span className="font-medium">Date:</span> {bookingData.selectedDate}</p>
                   <p><span className="font-medium">Time:</span> {bookingData.selectedTimeSlot}</p>
                   <p><span className="font-medium">Amount Paid:</span> ₹{paymentDetails.total.toLocaleString()}</p>
-                  <p><span className="font-medium">Payment Type:</span> {paymentType === "advance" ? "Advance Payment" : "Full Payment"}</p>
+                  <p><span className="font-medium">Payment Type:</span> {paymentType === "advance" ? "Advance Payment" : paymentType === "full" ? "Full Payment" : "Custom Payment"}</p>
                   <p><span className="font-medium">Payment Method:</span> {paymentMethod.charAt(0).toUpperCase() + paymentMethod.slice(1)}</p>
                   <p><span className="font-medium">Customer Name:</span> {customerName}</p>
                   <p><span className="font-medium">Customer Email:</span> {bookingData.userEmail}</p>

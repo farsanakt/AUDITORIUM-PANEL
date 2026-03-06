@@ -25,7 +25,7 @@ interface AuditoriumUser {
   municipality?: string;
   phone?: string;
   events?: string[];
-  locations?: string[];
+  locations?: any[]; // ← changed to any[] to support objects
 }
 
 interface EditState {
@@ -120,7 +120,15 @@ const AuditoriumProfile: React.FC = () => {
   const handleArrayChange = (field: string, index: number, value: string) => {
     const currentArray = formData[field] || userData[field as keyof AuditoriumUser] || [];
     const newArray = [...currentArray];
-    newArray[index] = value;
+
+    // If it's an object → update only the name field
+    if (typeof newArray[index] === "object" && newArray[index] !== null) {
+      newArray[index] = { ...newArray[index], name: value };
+    } else {
+      // If it's still string (legacy data) → replace it
+      newArray[index] = value;
+    }
+
     setFormData((prev) => ({
       ...prev,
       [field]: newArray,
@@ -129,7 +137,7 @@ const AuditoriumProfile: React.FC = () => {
 
   const addArrayItem = (field: string) => {
     const currentArray = formData[field] || userData[field as keyof AuditoriumUser] || [];
-    const newArray = [...currentArray, ""];
+    const newArray = [...currentArray, { name: "" }]; // start with empty name object
     setFormData((prev) => ({
       ...prev,
       [field]: newArray,
@@ -308,13 +316,14 @@ const AuditoriumProfile: React.FC = () => {
           <div>
             {isEditing ? (
               <div>
-                {(formData[field] || value || []).map((item: string, index: number) => (
+                {(value || []).map((item: any, index: number) => (
                   <div key={index} className="flex items-center space-x-2 mb-2">
                     <input
                       type="text"
-                      value={item}
+                      value={item?.name ?? item ?? ""}
                       onChange={(e) => handleArrayChange(field, index, e.target.value)}
                       className="flex-1 px-3 py-2 border border-[#b09d94] rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#ED695A] transition-all duration-200"
+                      placeholder="Enter location name"
                     />
                     <button
                       onClick={() => removeArrayItem(field, index)}
@@ -326,21 +335,25 @@ const AuditoriumProfile: React.FC = () => {
                 ))}
                 <button
                   onClick={() => addArrayItem(field)}
-                  className="text-[#ED695A] hover:text-[#d85c4e] hover:underline text-sm font-serif"
+                  className="text-[#ED695A] hover:text-[#d85c4e] hover:underline text-sm font-serif mt-1"
                 >
                   + Add {label.slice(0, -1)}
                 </button>
               </div>
             ) : (
               <div className="flex flex-wrap gap-2">
-                {(value || []).map((item: string, index: number) => (
-                  <span
-                    key={index}
-                    className="px-3 py-1 bg-[#ED695A]/20 text-[#ED695A] rounded-full text-sm font-serif"
-                  >
-                    {item}
-                  </span>
-                ))}
+                {(value || []).length === 0 ? (
+                  <span className="text-gray-500 italic text-sm">No locations added</span>
+                ) : (
+                  (value || []).map((item: any, index: number) => (
+                    <span
+                      key={index}
+                      className="px-3 py-1 bg-[#ED695A]/20 text-[#ED695A] rounded-full text-sm font-serif"
+                    >
+                      {item?.name || item?.toString?.() || "—"}
+                    </span>
+                  ))
+                )}
               </div>
             )}
           </div>
@@ -427,9 +440,9 @@ const AuditoriumProfile: React.FC = () => {
         {renderField("phone", "Phone Number")}
         {renderField("address", "Address")}
         {renderField("district", "District")}
-        {renderField("panchayat", "Panchayat")}
-        {renderField("corporation", "Corporation")}
-        {renderField("municipality", "Municipality")}
+        {/* {renderField("panchayat", "Panchayat")} */}
+        {/* {renderField("corporation", "Corporation")} */}
+        {/* {renderField("municipality", "Municipality")} */}
         {/* {renderField("isVerified", "Verified Status", "boolean")}
         {renderField("isOtp", "OTP Status", "boolean")}
         {renderField("isBlocked", "Blocked Status", "boolean")}

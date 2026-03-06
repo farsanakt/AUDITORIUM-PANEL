@@ -1,5 +1,4 @@
 "use client"
-
 import type React from "react"
 import { useState, useEffect } from "react"
 import { Search, MapPin, Trash, Edit, Plus, X, ChevronRight, ChevronDown, ImageIcon, Users } from "lucide-react"
@@ -16,19 +15,16 @@ import Swal from "sweetalert2"
 import Header from "../../component/user/Header"
 import Sidebar from "../../component/auditorium/Sidebar"
 import { useSelector } from "react-redux"
-
 interface Tariff {
   wedding: string
   reception: string
 }
-
 interface TimeSlot {
   id: string
   label: string
   startTime: string
   endTime: string
 }
-
 interface Venue {
   _id: string
   name: string
@@ -63,8 +59,8 @@ interface Venue {
   acCompleteAmount?: string
   nonAcAdvanceAmount?: string
   nonAcCompleteAmount?: string
+  isPriceNegotiationNeeded?: boolean
 }
-
 interface RootState {
   auth: {
     currentUser: {
@@ -74,7 +70,6 @@ interface RootState {
     }
   }
 }
-
 interface UserData {
   address: string
   panchayat: string
@@ -87,13 +82,11 @@ interface UserData {
   events?: string[]
   amenities?: string[]
 }
-
 const fixedTimeSlots: TimeSlot[] = [
   { id: "morning", label: "Morning", startTime: "06:00", endTime: "12:00" },
   { id: "afternoon", label: "Afternoon", startTime: "12:00", endTime: "18:00" },
   { id: "evening", label: "Evening", startTime: "18:00", endTime: "23:00" },
 ]
-
 export default function VenueManagement() {
   const [selectedImages, setSelectedImages] = useState<File[]>([])
   const [editImages, setEditImages] = useState<File[]>([])
@@ -104,15 +97,12 @@ export default function VenueManagement() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [venueTypeFilter, setVenueTypeFilter] = useState("all")
-
   const [isAcTypeModalOpen, setIsAcTypeModalOpen] = useState(false)
   const [isEditAcTypeModalOpen, setIsEditAcTypeModalOpen] = useState(false)
   const [acTypeSelection, setAcTypeSelection] = useState<string>("")
-
   const [availableLocations, setAvailableLocations] = useState<string[]>([])
   const [availableAmenities, setAvailableAmenities] = useState<string[]>([])
   const [availableEvents, setAvailableEvents] = useState<string[]>([])
-
   const [newVenue, setNewVenue] = useState<Partial<Venue>>({
     name: "",
     address: "",
@@ -146,17 +136,14 @@ export default function VenueManagement() {
     acCompleteAmount: "",
     nonAcAdvanceAmount: "",
     nonAcCompleteAmount: "",
+    isPriceNegotiationNeeded: false,
   })
-
   const [customTimeSlot, setCustomTimeSlot] = useState({ label: "", startTime: "", endTime: "" })
   const [customTimeSlotEdit, setCustomTimeSlotEdit] = useState({ label: "", startTime: "", endTime: "" })
-
   const [userData, setUserData] = useState<UserData | null>(null)
   const [locationLabel, setLocationLabel] = useState("Panchayat")
   const [errors, setErrors] = useState<{ [key: string]: string }>({})
-
   const { currentUser } = useSelector((state: RootState) => state.auth)
-
   const fetchBackendItems = async () => {
     try {
       const response = await getItems("all")
@@ -169,7 +156,6 @@ export default function VenueManagement() {
       toast.error("Failed to load options.")
     }
   }
-
   const fetchVenues = async (): Promise<void> => {
     try {
       const response = await existingAllVenues(currentUser.id)
@@ -179,7 +165,6 @@ export default function VenueManagement() {
       toast.error("Failed to load venues.")
     }
   }
-
   const fetchUserData = async (): Promise<void> => {
     try {
       const response = await fetchAuditoriumUserdetails(currentUser.id)
@@ -197,7 +182,6 @@ export default function VenueManagement() {
         amenities: response.data.amenities || [],
       }
       setUserData(data)
-
       let defaultLocation = ""
       let label = "Panchayat"
       if (data.municipality && data.municipality !== "") {
@@ -211,7 +195,6 @@ export default function VenueManagement() {
         label = "Panchayat"
       }
       setLocationLabel(label)
-
       setNewVenue((prev) => ({
         ...prev,
         address: data.address,
@@ -228,19 +211,16 @@ export default function VenueManagement() {
       toast.error("Failed to load user data.")
     }
   }
-
   useEffect(() => {
     fetchBackendItems()
     fetchVenues()
     fetchUserData()
   }, [currentUser.id])
-
   useEffect(() => {
     if (availableEvents.length > 0 && newVenue.events?.length === 0) {
       setNewVenue((prev) => ({ ...prev, events: [availableEvents[0]] }))
     }
   }, [availableEvents])
-
   const mergeUserDefaults = (venue: Partial<Venue>, user: UserData): Partial<Venue> => ({
     ...venue,
     address: user.address || venue.address || "",
@@ -251,19 +231,15 @@ export default function VenueManagement() {
     events: venue.events?.length ? venue.events : user.events || [],
     amenities: venue.amenities?.length ? venue.amenities : user.amenities || [],
   })
-
   const toggleVenueExpand = (id: string): void => {
     setExpandedVenue(expandedVenue === id ? null : id)
   }
-
   const selectVenue = (venue: Venue): void => {
     let label = "Panchayat"
     if (userData?.municipality) label = "Municipality"
     else if (userData?.corporation) label = "Corporation"
     setLocationLabel(label)
-
     const merged = mergeUserDefaults(venue, userData!)
-
     setSelectedVenue({
       ...merged,
       _id: venue._id,
@@ -273,13 +249,12 @@ export default function VenueManagement() {
       acCompleteAmount: venue.acCompleteAmount || "", // Updated field name
       nonAcAdvanceAmount: venue.nonAcAdvanceAmount || "", // Updated field name
       nonAcCompleteAmount: venue.nonAcCompleteAmount || "", // Updated field name
+      isPriceNegotiationNeeded: venue.isPriceNegotiationNeeded || false,
     } as Venue)
-
     setEditImages([])
     setAcTypeSelection(venue.acType || "AC")
     setIsEditModalOpen(true)
   }
-
   const deleteVenue = async (id: string, name: string): Promise<void> => {
     const result = await Swal.fire({
       title: "Are you sure?",
@@ -301,10 +276,8 @@ export default function VenueManagement() {
       }
     }
   }
-
   const resetAddModal = (): void => {
     if (!userData) return
-
     const defaults = mergeUserDefaults(
       {
         name: "",
@@ -331,10 +304,10 @@ export default function VenueManagement() {
         acCompleteAmount: "", // Updated field name
         nonAcAdvanceAmount: "", // Updated field name
         nonAcCompleteAmount: "", // Updated field name
+        isPriceNegotiationNeeded: false,
       },
       userData,
     )
-
     setNewVenue({
       ...defaults,
       images: [],
@@ -344,7 +317,6 @@ export default function VenueManagement() {
       decorPolicy: "",
       cancellationPolicy: "",
     })
-
     setCustomTimeSlot({ label: "", startTime: "", endTime: "" })
     setSelectedImages([])
     setErrors({})
@@ -352,7 +324,6 @@ export default function VenueManagement() {
     setAcTypeSelection("")
     setIsAcTypeModalOpen(false)
   }
-
   const validateAdd = () => {
     const tempErrors: { [key: string]: string } = {}
     if (!newVenue.name) tempErrors.name = "Required"
@@ -364,13 +335,11 @@ export default function VenueManagement() {
     if (!newVenue.diningCapacity || newVenue.diningCapacity <= 0) tempErrors.diningCapacity = "Positive number"
     if (!newVenue.events?.length) tempErrors.events = "Select at least one"
     if (selectedImages.length < 4) tempErrors.images = "At least 4 images"
-
-
     if (newVenue.acType === "AC") {
       if (!newVenue.acAdvanceAmount || Number(newVenue.acAdvanceAmount) <= 0)
-        tempErrors.acAdvanceAmount = "Positive number" 
+        tempErrors.acAdvanceAmount = "Positive number"
       if (!newVenue.acCompleteAmount || Number(newVenue.acCompleteAmount) <= 0)
-        tempErrors.acCompleteAmount = "Positive number" 
+        tempErrors.acCompleteAmount = "Positive number"
     } else if (newVenue.acType === "Non-AC") {
       if (!newVenue.nonAcAdvanceAmount || Number(newVenue.nonAcAdvanceAmount) <= 0)
         tempErrors.nonAcAdvanceAmount = "Positive number" // Updated field name
@@ -386,11 +355,9 @@ export default function VenueManagement() {
       if (!newVenue.nonAcCompleteAmount || Number(newVenue.nonAcCompleteAmount) <= 0)
         tempErrors.nonAcCompleteAmount = "Positive number" // Updated field name
     }
-
     setErrors(tempErrors)
     return Object.keys(tempErrors).length === 0
   }
-
   const validateEdit = () => {
     if (!selectedVenue) return false
     const tempErrors: { [key: string]: string } = {}
@@ -405,7 +372,6 @@ export default function VenueManagement() {
       tempErrors.diningCapacity = "Positive number"
     if (!selectedVenue.events?.length) tempErrors.events = "Select at least one"
     if (selectedVenue.images.length + editImages.length < 4) tempErrors.images = "At least 4 images"
-
     // Validate payment fields based on AC type
     if (selectedVenue.acType === "AC") {
       if (!selectedVenue.acAdvanceAmount || Number(selectedVenue.acAdvanceAmount) <= 0)
@@ -427,15 +393,12 @@ export default function VenueManagement() {
       if (!selectedVenue.nonAcCompleteAmount || Number(selectedVenue.nonAcCompleteAmount) <= 0)
         tempErrors.nonAcCompleteAmount = "Positive number" // Updated field name
     }
-
     setErrors(tempErrors)
     return Object.keys(tempErrors).length === 0
   }
-
 const handleAddVenue = async (): Promise<void> => {
   try {
     const formData = new FormData();
-
     Object.entries(newVenue).forEach(([key, value]) => {
       if (
         ["amenities", "timeSlots", "events", "tariff"].includes(key)
@@ -445,20 +408,15 @@ const handleAddVenue = async (): Promise<void> => {
         formData.append(key, String(value));
       }
     });
-
-   
+  
     if (userData?.locations) {
       formData.append("locations", JSON.stringify(userData.locations));
     }
-
     formData.append("audiUserId", currentUser.id);
-
     selectedImages.forEach(file => {
       formData.append("images", file);
     });
-
     const response = await addVenueAPI(formData);
-
     if (response) {
       toast.success("Venue added!");
       resetAddModal();
@@ -468,41 +426,30 @@ const handleAddVenue = async (): Promise<void> => {
     toast.error("Failed to add venue.");
   }
 };
-
-
- const handleUpdateVenue = async (): Promise<void> => {
+const handleUpdateVenue = async (): Promise<void> => {
   if (!selectedVenue ) return
-
   try {
     const formData = new FormData()
-
     Object.entries(selectedVenue).forEach(([key, value]) => {
       if (["_id", "locations", "images"].includes(key)) return
-
       if (["tariff", "amenities", "timeSlots", "events"].includes(key)) {
         formData.append(key, JSON.stringify(value))
       } else if (value !== null && value !== undefined) {
         formData.append(key, String(value))
       }
     })
-
     // ✅ APPEND LOCATIONS ONLY ONCE
     if (selectedVenue.locations) {
       formData.append("locations", JSON.stringify(selectedVenue.locations))
     }
-
     formData.append("audiUserId", currentUser.id)
-
     // new images
     editImages.forEach(file => formData.append("images", file))
-
     // existing images
     selectedVenue.images.forEach(img =>
       formData.append("existingImages", img)
     )
-
     const response = await updateVenues(formData, selectedVenue._id)
-
     if (response.data.success) {
       toast.success("Venue updated!")
       setIsEditModalOpen(false)
@@ -515,8 +462,6 @@ const handleAddVenue = async (): Promise<void> => {
     toast.error("Failed to update venue.")
   }
 }
-
-
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
     isNewVenue = false,
@@ -537,40 +482,32 @@ const handleAddVenue = async (): Promise<void> => {
     if (isNewVenue) setNewVenue(updateState)
     else if (selectedVenue) setSelectedVenue(updateState(selectedVenue))
   }
-
   const handleAmenityToggle = (amenity: string, isNew = true): void => {
     const toggle = (arr: string[]) => (arr.includes(amenity) ? arr.filter((a) => a !== amenity) : [...arr, amenity])
     if (isNew) setNewVenue((prev) => ({ ...prev, amenities: toggle(prev.amenities || []) }))
     else if (selectedVenue) setSelectedVenue((prev) => (prev ? { ...prev, amenities: toggle(prev.amenities) } : null))
   }
-
   const handleEventToggle = (event: string, isNew = true): void => {
     const toggle = (arr: string[]) => (arr.includes(event) ? arr.filter((e) => e !== event) : [...arr, event])
     if (isNew) setNewVenue((prev) => ({ ...prev, events: toggle(prev.events || []) }))
     else if (selectedVenue) setSelectedVenue((prev) => (prev ? { ...prev, events: toggle(prev.events) } : null))
   }
-
   const handleTimeSlotToggle = (slot: TimeSlot, isNew = true): void => {
     const toggle = (arr: TimeSlot[]) =>
       arr.some((s) => s.id === slot.id) ? arr.filter((s) => s.id !== slot.id) : [...arr, slot]
     if (isNew) setNewVenue((prev) => ({ ...prev, timeSlots: toggle(prev.timeSlots || []) }))
     else if (selectedVenue) setSelectedVenue((prev) => (prev ? { ...prev, timeSlots: toggle(prev.timeSlots) } : null))
   }
-
   const addCustomTimeSlot = (isNew = true): void => {
     const slot = isNew ? customTimeSlot : customTimeSlotEdit
-
     if (!slot.label || !slot.startTime || !slot.endTime) return
-
     const generatedId = `custom-${slot.label.toLowerCase().trim().replace(/\s+/g, "-")}-${Date.now()}`
-
     const newSlot: TimeSlot = {
       id: generatedId,
       label: slot.label,
       startTime: slot.startTime,
       endTime: slot.endTime,
     }
-
     if (isNew) {
       setNewVenue((prev) => ({
         ...prev,
@@ -582,7 +519,6 @@ const handleAddVenue = async (): Promise<void> => {
       setCustomTimeSlotEdit({ label: "", startTime: "", endTime: "" })
     }
   }
-
   const removeCustomTimeSlot = (id: string, isNew = true): void => {
     if (isNew) setNewVenue((prev) => ({ ...prev, timeSlots: prev.timeSlots?.filter((s) => s.id !== id) || [] }))
     else if (selectedVenue)
@@ -590,43 +526,35 @@ const handleAddVenue = async (): Promise<void> => {
         prev ? { ...prev, timeSlots: prev.timeSlots?.filter((s) => s.id !== id) || [] } : null,
       )
   }
-
   const removeImage = (index: number, isNew = true): void => {
     if (isNew) setSelectedImages((prev) => prev.filter((_, i) => i !== index))
     else setEditImages((prev) => prev.filter((_, i) => i !== index))
   }
-
   const removeExistingImage = (index: number): void => {
     if (selectedVenue) {
       setSelectedVenue({ ...selectedVenue, images: selectedVenue.images.filter((_, i) => i !== index) })
     }
   }
-
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>): void => {
     const files = Array.from(e.target.files || [])
     setSelectedImages((prev) => [...prev, ...files].slice(0, 10))
   }
-
   const handleEditImageUpload = (e: React.ChangeEvent<HTMLInputElement>): void => {
     const files = Array.from(e.target.files || [])
     setEditImages((prev) => [...prev, ...files])
   }
-
   const filteredVenues = venues.filter(
     (venue) =>
       (venue.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         venue.address.toLowerCase().includes(searchTerm.toLowerCase())) &&
       (venueTypeFilter === "all" || venue.acType === venueTypeFilter),
   )
-
   const handleOpenAddModal = () => {
     setAcTypeSelection("")
     setNewVenue((prev) => ({ ...prev, acType: "AC" }))
     setIsAddModalOpen(true)
   }
-
   // REMOVED handleAcTypeConfirm function - no longer needed with integrated selection
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex flex-col">
       <style jsx global>{`
@@ -636,7 +564,6 @@ const handleAddVenue = async (): Promise<void> => {
         .scrollbar-custom::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
         .scrollbar-custom::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
       `}</style>
-
       <Header />
       <div className="flex flex-1 flex-col lg:flex-row">
         <Sidebar />
@@ -655,7 +582,6 @@ const handleAddVenue = async (): Promise<void> => {
               </button>
             </div>
           </div>
-
           {/* Venues List */}
           <div className="bg-white rounded-xl shadow-sm border border-orange-100">
             <div className="p-4 lg:p-6 border-b border-gray-100">
@@ -685,7 +611,6 @@ const handleAddVenue = async (): Promise<void> => {
                 </div>
               </div>
             </div>
-
             <div className="divide-y divide-gray-100">
               {filteredVenues.length === 0 ? (
                 <div className="py-12 text-center">
@@ -797,14 +722,11 @@ const handleAddVenue = async (): Promise<void> => {
           </div>
         </main>
       </div>
-
       {/* ====================== AC TYPE SELECTION MODAL FOR ADD ====================== */}
       {/* REMOVED AC TYPE SELECTION MODALS */}
       {/* AC type selection is now integrated into the form itself */}
-
       {/* ====================== AC TYPE SELECTION MODAL FOR EDIT ====================== */}
       {/* REMOVED AC TYPE SELECTION MODALS */}
-
       {/* ====================== ADD MODAL ====================== */}
       {isAddModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -829,7 +751,6 @@ const handleAddVenue = async (): Promise<void> => {
                   />
                   {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
                 </div>
-
                 <div>
                   <label className="block font-semibold mb-1">{locationLabel} (Current Location) *</label>
                   <input
@@ -838,7 +759,6 @@ const handleAddVenue = async (): Promise<void> => {
                     readOnly
                   />
                 </div>
-
                 <div className="sm:col-span-2">
                   <label className="block font-semibold mb-1">Address *</label>
                   <textarea
@@ -901,7 +821,6 @@ const handleAddVenue = async (): Promise<void> => {
                     readOnly
                   />
                 </div>
-
                 {/* ----- Events ----- */}
                 <div className="sm:col-span-2">
                   <label className="block font-semibold mb-1">Events *</label>
@@ -920,7 +839,6 @@ const handleAddVenue = async (): Promise<void> => {
                   </div>
                   {errors.events && <p className="text-red-500 text-xs mt-1">{errors.events}</p>}
                 </div>
-
                 {/* ----- Amenities ----- */}
                 <div className="sm:col-span-2">
                   <label className="block font-semibold mb-1">Amenities</label>
@@ -938,7 +856,6 @@ const handleAddVenue = async (): Promise<void> => {
                     ))}
                   </div>
                 </div>
-
                 {/* ----- Time Slots ----- */}
                 <div className="sm:col-span-2">
                   <label className="block font-semibold mb-1">Time Slots</label>
@@ -1011,7 +928,6 @@ const handleAddVenue = async (): Promise<void> => {
                     </div>
                   </div>
                 </div>
-
                 {/* ----- Capacity ----- */}
                 <div>
                   <label className="block font-semibold mb-1">Seating Capacity *</label>
@@ -1055,7 +971,6 @@ const handleAddVenue = async (): Promise<void> => {
                     className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
                   />
                 </div>
-
                 {/* ADDED AC Type selection as part of the form */}
                 <div className="sm:col-span-2">
                   <label className="block font-semibold mb-3">Select Venue Type *</label>
@@ -1095,7 +1010,6 @@ const handleAddVenue = async (): Promise<void> => {
                     </button>
                   </div>
                 </div>
-
                 {/* Payment Fields Based on AC Type */}
                 {newVenue.acType === "AC" && (
                   <>
@@ -1125,7 +1039,6 @@ const handleAddVenue = async (): Promise<void> => {
                     </div>
                   </>
                 )}
-
                 {newVenue.acType === "Non-AC" && (
                   <>
                     <div>
@@ -1156,7 +1069,6 @@ const handleAddVenue = async (): Promise<void> => {
                     </div>
                   </>
                 )}
-
                 {newVenue.acType === "Both" && (
                   <>
                     <div>
@@ -1211,7 +1123,6 @@ const handleAddVenue = async (): Promise<void> => {
                     </div>
                   </>
                 )}
-
                 <div>
                   <label className="block font-semibold mb-1">Wedding Tariff</label>
                   <input
@@ -1230,7 +1141,18 @@ const handleAddVenue = async (): Promise<void> => {
                     className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
                   />
                 </div>
-
+                {/* ----- Price Negotiation Checkbox ----- */}
+                <div className="sm:col-span-2">
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={newVenue.isPriceNegotiationNeeded || false}
+                      onChange={(e) => setNewVenue({ ...newVenue, isPriceNegotiationNeeded: e.target.checked })}
+                      className="rounded text-orange-500"
+                    />
+                    <span className="text-sm font-semibold">Is price negotiation needed?</span>
+                  </label>
+                </div>
                 {/* ----- Policies ----- */}
                 <div className="sm:col-span-2">
                   <label className="block font-semibold mb-1">Food Policy</label>
@@ -1262,7 +1184,6 @@ const handleAddVenue = async (): Promise<void> => {
                     className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
                   />
                 </div>
-
                 {/* ----- Terms & Conditions ----- */}
                 <div className="sm:col-span-2">
                   <label className="block font-semibold mb-1">Terms & Conditions</label>
@@ -1275,7 +1196,6 @@ const handleAddVenue = async (): Promise<void> => {
                     placeholder="Enter terms..."
                   />
                 </div>
-
                 {/* ----- Extra Fields ----- */}
                 <div>
                   <label className="block font-semibold mb-1">Stage Size</label>
@@ -1305,20 +1225,16 @@ const handleAddVenue = async (): Promise<void> => {
                     className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
                   />
                 </div>
-
                 {/* ----- Images ----- */}
                 <div className="sm:col-span-2">
                   <label className="block font-semibold mb-2">Upload Images (min 4) *</label>
-
                   <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-400 rounded-lg cursor-pointer hover:border-gray-600 transition">
                     <div className="flex flex-col items-center justify-center text-gray-500">
                       <p className="text-sm font-medium">Click to upload images</p>
                       <p className="text-xs mt-1">PNG, JPG, JPEG (Multiple allowed)</p>
                     </div>
-
                     <input type="file" multiple accept="image/*" onChange={handleImageUpload} className="hidden" />
                   </label>
-
                   <div className="flex flex-wrap gap-2 mt-3">
                     {selectedImages.map((file, i) => (
                       <div key={i} className="w-20 h-20 border rounded overflow-hidden relative">
@@ -1336,7 +1252,6 @@ const handleAddVenue = async (): Promise<void> => {
                       </div>
                     ))}
                   </div>
-
                   {errors.images && <p className="text-red-500 text-xs mt-1">{errors.images}</p>}
                 </div>
               </div>
@@ -1355,7 +1270,6 @@ const handleAddVenue = async (): Promise<void> => {
           </div>
         </div>
       )}
-
       {/* ====================== EDIT MODAL ====================== */}
       {isEditModalOpen && selectedVenue && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -1386,7 +1300,6 @@ const handleAddVenue = async (): Promise<void> => {
                   />
                   {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
                 </div>
-
                 <div>
                   <label className="block font-semibold mb-1">{locationLabel} (Current Location) *</label>
                   <input
@@ -1395,7 +1308,6 @@ const handleAddVenue = async (): Promise<void> => {
                     readOnly
                   />
                 </div>
-
                 <div className="sm:col-span-2">
                   <label className="block font-semibold mb-1">Address *</label>
                   <textarea
@@ -1458,7 +1370,6 @@ const handleAddVenue = async (): Promise<void> => {
                     readOnly
                   />
                 </div>
-
                 {/* ----- Events ----- */}
                 <div className="sm:col-span-2">
                   <label className="block font-semibold mb-1">Events *</label>
@@ -1477,7 +1388,6 @@ const handleAddVenue = async (): Promise<void> => {
                   </div>
                   {errors.events && <p className="text-red-500 text-xs mt-1">{errors.events}</p>}
                 </div>
-
                 {/* ----- Amenities ----- */}
                 <div className="sm:col-span-2">
                   <label className="block font-semibold mb-1">Amenities</label>
@@ -1495,7 +1405,6 @@ const handleAddVenue = async (): Promise<void> => {
                     ))}
                   </div>
                 </div>
-
                 {/* ----- Time Slots ----- */}
                 <div className="sm:col-span-2">
                   <label className="block font-semibold mb-1">Time Slots</label>
@@ -1568,7 +1477,6 @@ const handleAddVenue = async (): Promise<void> => {
                     </div>
                   </div>
                 </div>
-
                 {/* ----- Capacity ----- */}
                 <div>
                   <label className="block font-semibold mb-1">Seating Capacity *</label>
@@ -1612,7 +1520,6 @@ const handleAddVenue = async (): Promise<void> => {
                     className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
                   />
                 </div>
-
                 {selectedVenue.acType === "AC" && (
                   <>
                     <div>
@@ -1641,7 +1548,6 @@ const handleAddVenue = async (): Promise<void> => {
                     </div>
                   </>
                 )}
-
                 {selectedVenue.acType === "Non-AC" && (
                   <>
                     <div>
@@ -1672,7 +1578,6 @@ const handleAddVenue = async (): Promise<void> => {
                     </div>
                   </>
                 )}
-
                 {selectedVenue.acType === "Both" && (
                   <>
                     <div>
@@ -1727,7 +1632,6 @@ const handleAddVenue = async (): Promise<void> => {
                     </div>
                   </>
                 )}
-
                 <div>
                   <label className="block font-semibold mb-1">Wedding Tariff</label>
                   <input
@@ -1746,7 +1650,18 @@ const handleAddVenue = async (): Promise<void> => {
                     className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
                   />
                 </div>
-
+                {/* ----- Price Negotiation Checkbox ----- */}
+                <div className="sm:col-span-2">
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedVenue.isPriceNegotiationNeeded || false}
+                      onChange={(e) => setSelectedVenue({ ...selectedVenue, isPriceNegotiationNeeded: e.target.checked })}
+                      className="rounded text-orange-500"
+                    />
+                    <span className="text-sm font-semibold">Is price negotiation needed?</span>
+                  </label>
+                </div>
                 {/* ----- Policies ----- */}
                 <div className="sm:col-span-2">
                   <label className="block font-semibold mb-1">Food Policy</label>
@@ -1778,7 +1693,6 @@ const handleAddVenue = async (): Promise<void> => {
                     className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
                   />
                 </div>
-
                 {/* ----- Terms & Conditions ----- */}
                 <div className="sm:col-span-2">
                   <label className="block font-semibold mb-1">Terms & Conditions</label>
@@ -1791,7 +1705,6 @@ const handleAddVenue = async (): Promise<void> => {
                     placeholder="Enter terms..."
                   />
                 </div>
-
                 {/* ----- Extra Fields ----- */}
                 <div>
                   <label className="block font-semibold mb-1">Stage Size</label>
@@ -1821,7 +1734,6 @@ const handleAddVenue = async (): Promise<void> => {
                     className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
                   />
                 </div>
-
                 {/* ----- Current Images ----- */}
                 <div className="sm:col-span-2">
                   <label className="block font-semibold mb-1">Current Images</label>
@@ -1839,17 +1751,13 @@ const handleAddVenue = async (): Promise<void> => {
                     ))}
                   </div>
                 </div>
-
                 {/* ----- Add More Images ----- */}
                 <div className="sm:col-span-2">
                   <label className="block font-semibold mb-1">Add More Images</label>
-
                   <label className="flex items-center justify-center w-full h-32 border-2 border-dashed border-gray-400 rounded-lg cursor-pointer hover:border-gray-600 transition">
                     <span className="text-sm text-gray-500">Click to choose images</span>
-
                     <input type="file" multiple accept="image/*" onChange={handleEditImageUpload} className="hidden" />
                   </label>
-
                   <div className="flex flex-wrap gap-2 mt-2">
                     {editImages.map((file, i) => (
                       <div key={i} className="w-20 h-20 border rounded overflow-hidden relative">
@@ -1867,7 +1775,6 @@ const handleAddVenue = async (): Promise<void> => {
                       </div>
                     ))}
                   </div>
-
                   {errors.images && <p className="text-red-500 text-xs mt-1">{errors.images}</p>}
                 </div>
               </div>

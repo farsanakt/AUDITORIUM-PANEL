@@ -30,6 +30,7 @@ interface Auditorium {
   advamnt?: string;
   offer?: Offer;
   isVerified?: boolean; // For filtering
+  isPriceNegotiationNeeded?: boolean;
 }
 
 const VenuePage: React.FC = () => {
@@ -85,6 +86,7 @@ const VenuePage: React.FC = () => {
                 advAmnt: item.acAdvanceAmount || item.nonAcAdvanceAmount || item.advAmnt || item.advamnt || "0",
                 offer: matchingOffer,
                 isVerified: item.isVerified,
+                isPriceNegotiationNeeded: item.isPriceNegotiationNeeded,
               };
             })
         : [];
@@ -326,7 +328,12 @@ const VenuePage: React.FC = () => {
                         <td className="py-2 px-3 sm:px-4">{auditorium.acType}</td>
                         <td className="py-2 px-3 sm:px-4">{auditorium.seatingCapacity}</td>
                         <td className="py-2 px-3 sm:px-4">
-                          {getFormattedPrice(auditorium.totalamount, auditorium.offer, true)}
+                          <div className="flex items-center">
+                            {getFormattedPrice(auditorium.totalamount, auditorium.offer, true)}
+                            {auditorium.isPriceNegotiationNeeded && (
+                              <span className="text-blue-600 text-xs font-medium ml-2"> (Negotiable)</span>
+                            )}
+                          </div>
                         </td>
                         <td className="py-2 px-3 sm:px-4">
                           {getFormattedPrice(auditorium.advAmnt)}
