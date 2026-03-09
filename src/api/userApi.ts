@@ -104,6 +104,13 @@ export const createVendorInquiry=async(data:any)=>{
 
 }
 
+export const updateBookingAmount=async(id:string,totalamount:string)=>{
+
+return await api.put(`/updatebooking/${id}`,totalamount)
+
+
+}
+
 export const createVendorReview=async(data:any)=>{
 
 

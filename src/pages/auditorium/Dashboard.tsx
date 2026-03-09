@@ -2,9 +2,8 @@ import { useEffect, useState, useMemo, useRef } from "react";
 import Header from "../../component/user/Header";
 import { useSelector } from "react-redux";
 import type { RootState } from "../../redux/store";
-import { existingAllVenues, existingUserSubscription, fetchAuditoriumUserdetails, upComingEvents } from "../../api/userApi";
-import { X, Calendar, DollarSign, Users, Award, Clock, MapPin, ChevronRight, TrendingUp, Info } from "lucide-react";
-
+import { existingAllVenues, existingUserSubscription, fetchAuditoriumUserdetails, upComingEvents, updateBookingAmount } from "../../api/userApi";
+import { X, Calendar, DollarSign, Users, Award, Clock, MapPin, ChevronRight, TrendingUp, Info, Edit3 } from "lucide-react";
 // Helper Functions
 const formatDate = (dateString: string) => {
   if (!dateString) return "Unknown Date";
@@ -20,7 +19,6 @@ const formatDate = (dateString: string) => {
     return "Unknown Date";
   }
 };
-
 const isTodayOrFuture = (dateString: string) => {
   if (!dateString) return false;
   try {
@@ -33,7 +31,6 @@ const isTodayOrFuture = (dateString: string) => {
     return false;
   }
 };
-
 const DashboardOverview = () => {
   const [activeSection, setActiveSection] = useState<string>("upcoming");
   const [selectedVenue, setSelectedVenue] = useState<string>("All Venues");
@@ -46,10 +43,9 @@ const DashboardOverview = () => {
   const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
   const [isVerified, setIsVerified] = useState<boolean>(false);
   const [subscriptions, setSubscriptions] = useState<any[]>([]);
-
+  const [editedAmount, setEditedAmount] = useState<string>("");
   const { currentUser } = useSelector((state: RootState) => state.auth);
   const hasFetchedSubscriptions = useRef(false);
-
   // API Calls
   const fetchAllVenues = async () => {
     try {
@@ -64,7 +60,6 @@ const DashboardOverview = () => {
       }
     } catch (error) {}
   };
-
   const fetchAllUserSubscriptions = async () => {
     if (hasFetchedSubscriptions.current) return;
     hasFetchedSubscriptions.current = true;
@@ -75,7 +70,6 @@ const DashboardOverview = () => {
       setSubscriptions([]);
     }
   };
-
   const fetchUserData = async (): Promise<void> => {
     try {
       const response = await fetchAuditoriumUserdetails(currentUser?.id);
@@ -86,7 +80,6 @@ const DashboardOverview = () => {
       }
     } catch (error) {}
   };
-
   const fetchAllUpcomingEvents = async () => {
     try {
       if (currentUser) {
@@ -101,49 +94,62 @@ const DashboardOverview = () => {
       setUpcomingEvents([]);
     }
   };
-
+  const handleUpdateAmount = async () => {
+    if (!selectedEvent || !editedAmount || editedAmount === selectedEvent.totalAmount) return;
+    try {
+      await updateBookingAmount(selectedEvent.id, { totalAmount: parseFloat(editedAmount) });
+      await fetchAllUpcomingEvents(); // Refetch to update the list
+      setShowModal(false);
+      setSelectedEvent(null);
+      setEditedAmount("");
+    } catch (error) {
+      console.error("Failed to update booking amount:", error);
+      // Optionally show error toast/notification here
+    }
+  };
   useEffect(() => {
     fetchUserData();
     fetchAllVenues();
     fetchAllUpcomingEvents();
     fetchAllUserSubscriptions();
   }, [currentUser]);
-
   // Derived Data
   const allVenues = [
     ...(venues.length > 1 ? [{ id: "All Venues", name: "All Venues" }] : []),
     ...venues.map((venue) => ({ id: venue._id, name: venue.name })),
   ];
-
   const getFilteredEvents = () => {
-    const rawEvents = selectedVenue === "All Venues" 
-      ? upcomingEvents 
+    const rawEvents = selectedVenue === "All Venues"
+      ? upcomingEvents
       : upcomingEvents.filter(e => (e.venueId || e.venue_id) === selectedVenue);
-
     return rawEvents
       .filter((event) => {
         const eventDate = event.bookeddate || event.eventDate || event.date;
         return isTodayOrFuture(eventDate);
       })
-      .map((event, index) => ({
-        id: event._id || `fallback-${index}`,
-        name: event.eventName || event.name || event.venueName || `Event ${index + 1}`,
-        client: event.userEmail || event.clientEmail || event.client || "Unknown Client",
-        date: formatDate(event.bookeddate || event.eventDate || event.date),
-        status: event.status ? event.status.charAt(0).toUpperCase() + event.status.slice(1) : "Unknown",
-        venueId: event.venueId || event.venue_id || null,
-        rawDate: event.bookeddate || event.eventDate || event.date,
-        timeSlot: event.timeSlot || "N/A",
-        totalAmount: event.totalAmount || "N/A",
-        paidAmount: event.paidAmount || "N/A",
-        balanceAmount: event.balanceAmount || "N/A",
-        address: event.address || "N/A",
-        bookingType: event.userReferenceId ? "Offline Booking" : "Online Payment",
-        eventType: event.eventType || "N/A",
-      }))
+      .map((event, index) => {
+        const venueId = event.venueId || event.venue_id;
+        const venue = venues.find(v => v._id === venueId);
+        return {
+          id: event._id || `fallback-${index}`,
+          name: event.eventName || event.name || event.venueName || `Event ${index + 1}`,
+          client: event.userEmail || event.clientEmail || event.client || "Unknown Client",
+          date: formatDate(event.bookeddate || event.eventDate || event.date),
+          status: event.status ? event.status.charAt(0).toUpperCase() + event.status.slice(1) : "Unknown",
+          venueId: venueId,
+          rawDate: event.bookeddate || event.eventDate || event.date,
+          timeSlot: event.timeSlot || "N/A",
+          totalAmount: event.totalAmount || "N/A",
+          paidAmount: event.paidAmount || "N/A",
+          balanceAmount: event.balanceAmount || "N/A",
+          address: event.address || "N/A",
+          bookingType: event.userReferenceId ? "Offline Booking" : "Online Payment",
+          eventType: event.eventType || "N/A",
+          isPriceNegotiationNeeded: venue?.isPriceNegotiationNeeded || false,
+        };
+      })
       .sort((a, b) => new Date(a.rawDate || 0).getTime() - new Date(b.rawDate || 0).getTime());
   };
-
   const currentVenueData = useMemo(() => {
     const filteredEvents = getFilteredEvents();
     return {
@@ -153,18 +159,14 @@ const DashboardOverview = () => {
       upcomingEvents: filteredEvents,
     };
   }, [selectedVenue, upcomingEvents, venues]);
-
   const eventsToDisplay = showAllEvents ? currentVenueData.upcomingEvents : currentVenueData.upcomingEvents.slice(0, 4);
   const hasMoreEvents = currentVenueData.upcomingEvents.length > 4;
-
   useEffect(() => {
     setShowAllEvents(false);
   }, [selectedVenue]);
-
   const currentUserSubscriptions = useMemo(() => {
     return subscriptions.filter(sub => sub.user?.email === currentUser?.email);
   }, [subscriptions, currentUser]);
-
   const calculateDaysLeft = (endDate: string) => {
     if (!endDate) return 0;
     const end = new Date(endDate);
@@ -172,23 +174,30 @@ const DashboardOverview = () => {
     const diff = end.getTime() - now.getTime();
     return Math.max(0, Math.ceil(diff / (1000 * 3600 * 24)));
   };
-
   const handleEventClick = (event: any) => {
     setSelectedEvent(event);
+    setEditedAmount(event.totalAmount?.toString() || "");
     setShowModal(true);
   };
-
   const closeModal = () => {
     setShowModal(false);
     setSelectedEvent(null);
+    setEditedAmount("");
   };
-
+  const isEditable = selectedEvent && selectedEvent.isPriceNegotiationNeeded && selectedEvent.bookingType === "Online Payment" && 
+    (selectedEvent.paidAmount !== "N/A" && parseFloat(selectedEvent.paidAmount) > 0) && 
+    (selectedEvent.balanceAmount !== "N/A" && parseFloat(selectedEvent.balanceAmount) > 0);
+  const shouldShowEditButton = (event: any) => {
+    return event.isPriceNegotiationNeeded && event.bookingType === "Online Payment" && 
+      (event.paidAmount !== "N/A" && parseFloat(event.paidAmount) > 0) && 
+      (event.balanceAmount !== "N/A" && parseFloat(event.balanceAmount) > 0);
+  };
   return (
     <div className="flex flex-col min-h-screen bg-gray-50/50">
       <Header />
       <div className="flex flex-1">
         <main className="flex-1 p-4 py-8 w-full max-w-7xl mx-auto sm:px-6 lg:px-8 animate-fade-in-up">
-          
+         
           {/* Top Section: Welcome & Subscription */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <div className="md:col-span-2 space-y-2">
@@ -209,7 +218,7 @@ const DashboardOverview = () => {
                 Here's what's happening with your venues today. manage your bookings and track your performance.
               </p>
             </div>
-            
+           
             {/* Subscription Card */}
             <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
               <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
@@ -243,14 +252,13 @@ const DashboardOverview = () => {
               )}
             </div>
           </div>
-
           {/* Filtering & Venue Selection */}
           <div className="flex flex-col sm:flex-row justify-between items-center mb-8 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
              <div className="flex items-center space-x-2 text-[#78533F] font-medium mb-3 sm:mb-0">
                 <span className="bg-[#78533F] bg-opacity-10 p-2 rounded-lg"><Calendar className="w-5 h-5 text-[#78533F]" /></span>
                 <span>Dashboard Overview</span>
              </div>
-             
+            
              <div className="flex items-center space-x-3 w-full sm:w-auto">
                 <label htmlFor="venue-select" className="text-sm font-medium text-gray-600 whitespace-nowrap">
                    Select Venue:
@@ -270,7 +278,6 @@ const DashboardOverview = () => {
                 </div>
              </div>
           </div>
-
           {/* Stats Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
             {/* Total Bookings */}
@@ -291,7 +298,6 @@ const DashboardOverview = () => {
               </div>
               <p className="text-xs text-gray-400">vs previous month</p>
             </div>
-
             {/* Monthly Earnings */}
             <div className="bg-white p-6 rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-50 group">
               <div className="flex justify-between items-start mb-4">
@@ -310,7 +316,6 @@ const DashboardOverview = () => {
               </div>
               <p className="text-xs text-gray-400">vs previous month</p>
             </div>
-
             {/* Yearly Revenue */}
             <div className="bg-white p-6 rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-50 group">
               <div className="flex justify-between items-start mb-4">
@@ -329,7 +334,6 @@ const DashboardOverview = () => {
               </div>
               <p className="text-xs text-gray-400">vs previous year</p>
             </div>
-
             {/* Upcoming Events Counter */}
             <div className="bg-white p-6 rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-50 group">
               <div className="flex justify-between items-start mb-4">
@@ -346,23 +350,21 @@ const DashboardOverview = () => {
               <p className="text-xs text-gray-400">{selectedVenue === 'All Venues' ? 'Across all venues' : 'For this venue'}</p>
             </div>
           </div>
-
           {/* Events List Section */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/30">
                 <h3 className="font-bold text-lg text-[#78533F]">Upcoming Bookings</h3>
-                <button 
+                <button
                   onClick={() => setShowAllEvents(!showAllEvents)}
                   className="text-sm text-[#ED695A] hover:text-[#c45346] font-medium transition-colors"
                 >
                   {showAllEvents ? 'Show Less' : 'View All'}
                 </button>
              </div>
-
              <div className="divide-y divide-gray-100">
                {eventsToDisplay.length > 0 ? (
                  eventsToDisplay.map((event) => (
-                   <div 
+                   <div
                      key={event.id}
                      onClick={() => handleEventClick(event)}
                      className="p-4 sm:p-6 hover:bg-gray-50 transition-colors cursor-pointer group flex flex-col sm:flex-row sm:items-center justify-between gap-4"
@@ -390,24 +392,36 @@ const DashboardOverview = () => {
                            )}
                         </div>
                      </div>
-                     
+                    
                      <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto mt-2 sm:mt-0">
                         <div className="text-right">
                            <p className="text-sm font-bold text-gray-900">₹{event.totalAmount}</p>
                            <p className="text-xs text-gray-500">Total Amount</p>
                         </div>
-                        <span className={`px-3 py-1 rounded-full text-xs font-semibold 
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold
                           ${event.bookingType === 'Online Payment' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}
                         `}>
                           {event.bookingType}
                         </span>
                         <span className={`px-3 py-1 rounded-full text-xs font-semibold capitalize
-                          ${event.status.toLowerCase() === 'approved' ? 'bg-green-100 text-green-700' : 
+                          ${event.status.toLowerCase() === 'approved' ? 'bg-green-100 text-green-700' :
                             event.status.toLowerCase() === 'pending' ? 'bg-amber-100 text-amber-700' :
                             event.status.toLowerCase() === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'}
                         `}>
                           {event.status}
                         </span>
+                        {shouldShowEditButton(event) && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEventClick(event);
+                            }}
+                            className="p-1 text-blue-500 hover:text-blue-700 transition-colors rounded-full hover:bg-blue-50"
+                            title="Edit Amount"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </button>
+                        )}
                         <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-[#ED695A] transition-colors" />
                      </div>
                    </div>
@@ -422,10 +436,10 @@ const DashboardOverview = () => {
                  </div>
                )}
              </div>
-             
+            
              {hasMoreEvents && (
                <div className="p-4 bg-gray-50/50 text-center border-t border-gray-100">
-                  <button 
+                  <button
                     onClick={() => setShowAllEvents(!showAllEvents)}
                     className="inline-flex items-center justify-center px-6 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-[#ED695A] hover:bg-[#d85849] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#ED695A] transition-colors shadow-sm hover:shadow"
                   >
@@ -434,17 +448,16 @@ const DashboardOverview = () => {
                </div>
              )}
           </div>
-
           {/* Event Detail Modal */}
           {showModal && selectedEvent && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-              <div 
-                className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" 
+              <div
+                className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
                 onClick={closeModal}
               ></div>
               <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-fade-in-up">
                  <div className="bg-[#78533F] p-6 text-white relative">
-                    <button 
+                    <button
                       onClick={closeModal}
                       className="absolute top-4 right-4 p-2 bg-white/20 hover:bg-white/30 rounded-full transition-colors"
                     >
@@ -455,7 +468,7 @@ const DashboardOverview = () => {
                       <Calendar className="w-4 h-4" /> {selectedEvent.date}
                     </p>
                  </div>
-                 
+                
                  <div className="p-6 space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                        <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
@@ -473,7 +486,6 @@ const DashboardOverview = () => {
                           <p className="font-medium text-gray-800">{selectedEvent.eventType}</p>
                        </div>
                     </div>
-
                     <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 space-y-3">
                        <div className="flex justify-between border-b border-gray-200 pb-2">
                           <span className="text-gray-600 text-sm">Client Name</span>
@@ -492,7 +504,6 @@ const DashboardOverview = () => {
                           <span className="font-medium text-red-600 text-sm">₹{selectedEvent.balanceAmount}</span>
                        </div>
                     </div>
-
                     <div className="flex items-start gap-3 p-3 bg-blue-50 text-blue-800 rounded-xl text-sm">
                        <MapPin className="w-5 h-5 shrink-0 mt-0.5" />
                        <div>
@@ -500,8 +511,33 @@ const DashboardOverview = () => {
                           {selectedEvent.address}
                        </div>
                     </div>
-                    
-                    <button 
+                   
+                    {isEditable && (
+                      <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-200 space-y-3">
+                        <h4 className="font-semibold text-yellow-800 flex items-center gap-2">
+                          <Edit3 className="w-4 h-4" />
+                          Edit Total Amount (Price Negotiation)
+                        </h4>
+                        <div className="flex gap-2">
+                          <input
+                            type="number"
+                            value={editedAmount}
+                            onChange={(e) => setEditedAmount(e.target.value)}
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                            placeholder="Enter new total amount"
+                          />
+                          <button
+                            onClick={handleUpdateAmount}
+                            className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white font-semibold rounded-lg transition-colors"
+                          >
+                            Update
+                          </button>
+                        </div>
+                        <p className="text-xs text-yellow-700">Only available for online bookings with price negotiation needed.</p>
+                      </div>
+                    )}
+                   
+                    <button
                       onClick={closeModal}
                       className="w-full py-3 bg-[#ED695A] hover:bg-[#d85849] text-white font-semibold rounded-xl transition-all shadow-md hover:shadow-lg mt-2"
                     >
@@ -511,11 +547,9 @@ const DashboardOverview = () => {
               </div>
             </div>
           )}
-
         </main>
       </div>
     </div>
   );
 };
-
 export default DashboardOverview;
