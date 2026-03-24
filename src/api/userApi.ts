@@ -120,11 +120,21 @@ export const createVendorReview=async(data:any)=>{
 
 export const verifyPswrd=async(id:string,password:string)=>{
 
+  console.log('hioppppp',id,password)
+
   const response=await api.post(`/verify-password/${id}`,{password})
 
   return response
 
+
+
+
 }
+
+
+export const secureUpdate = (id: string, data: any) => {
+  return api.patch(`/profile/${id}/secure-update`, data);
+};
 
 export const updateEmaill=async(id:string,email:string)=>{
 

@@ -16,6 +16,7 @@ interface DashboardStats {
   totalVouchers: number;
   totalBookings: number;
   totalStaff:number;
+  totalAudiBkngs:number
 }
 
 interface RecentActivity {
@@ -39,7 +40,8 @@ const fallbackStats: DashboardStats = {
   totalEnquiries: 0,
   totalVouchers: 0,
   totalBookings: 0,
-  totalStaff:0
+  totalStaff:0,
+  totalAudiBkngs:0
 };
 
 const AdminDashboard: React.FC = () => {
@@ -56,7 +58,7 @@ const AdminDashboard: React.FC = () => {
     try {
       setIsLoading(true);
       const response = await findCount();
-      console.log('API Response:', response);
+      console.log('API Response:', response.data);
       const backendData = response.data?.data || {};
       const dashboardStats: DashboardStats = {
         totalUsers: Number(backendData.totalUsers) || 0,
@@ -66,7 +68,8 @@ const AdminDashboard: React.FC = () => {
         totalEnquiries: Number(backendData.totalEnquiries) || 0,
         totalVouchers: Number(backendData.totalVouchers) || 0,
         totalBookings: Number(backendData.totalBookings) || 0,
-        totalStaff:Number(backendData.totalstaff) || 0
+        totalStaff:Number(backendData.totalstaff) || 0,
+        totalAudiBkngs:Number(backendData.totalAudiBkngs)
       };
       setStats(dashboardStats);
     } catch (error: unknown) {
@@ -88,7 +91,7 @@ const AdminDashboard: React.FC = () => {
   // Define navigation items with access control
   const navItems = [
     { path: '/admin/allaudilist', label: 'All Auditoriums', icon: Building, count: stats.totalAuditoriums || 0, roles: ['superadmin', 'venuemanager'] },
-    { path: '/admin/allauditoriumbookings', label: 'All Auditorium Bookings', icon: Calendar, count: stats.totalBookings || 0, roles: ['superadmin', 'venuemanager'] },
+    { path: '/admin/allauditoriumbookings', label: 'All Auditorium Bookings', icon: Calendar, count: stats.totalAudiBkngs || 0, roles: ['superadmin', 'venuemanager'] },
     { path: '/admin/allvendors', label: 'All Vendors', icon: Users, count: stats.totalVendors || 0, roles: ['superadmin', 'vendormanager'] },
     { path: '/admin/alladminenquiry', label: 'All Vendor Enquiries', icon: Mail, count: stats.totalEnquiries || 0, roles: ['superadmin', 'vendormanager'] },
     { path: '/admin/allusers', label: 'All Customers', icon: Users, count: stats.totalUsers || 0, roles: ['superadmin'] },
