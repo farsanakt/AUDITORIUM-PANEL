@@ -38,20 +38,15 @@ interface Auditorium {
   timeSlots: any[];
   audiUserId: string;
   tariff: { wedding: string; reception: string };
-  totalamount: string;
-  advAmnt?: string;
-  advamnt?: string;
+  bookingAmount?: string; // ✅ Single booking amount
   offer?: Offer;
   youtubeLink?: string;
   termsAndConditions?: string[]; // e.g., ["cfff,ddd"]
-  acAdvanceAmount?: string;
-  acCompleteAmount?: string;
-  nonAcAdvanceAmount?: string;
-  nonAcCompleteAmount?: string;
   guestroom?: string;
   stageSize?: string;
   events?: string[];
   isVerified?: boolean;
+  district?: string;
   createdAt?: string;
   updatedAt?: string;
   __v?: number;
@@ -164,8 +159,7 @@ const AuditoriumDetails: React.FC = () => {
 
       const auditoriumData = {
         ...venueResponse.data,
-        advAmnt: venueResponse.data.acAdvanceAmount || venueResponse.data.nonAcAdvanceAmount || venueResponse.data.advAmnt || venueResponse.data.advamnt,
-        totalamount: venueResponse.data.acCompleteAmount || venueResponse.data.nonAcCompleteAmount || venueResponse.data.tariff?.wedding || venueResponse.data.tariff?.reception || "0",
+        bookingAmount: venueResponse.data.bookingAmount || "", // ✅ Only the booking amount is used for pricing
         locations: venueResponse.data.locations?.map((loc: any) => loc.name) || [],
         offer: matchingOffer,
         termsAndConditions: venueResponse.data.termsAndConditions || [],
@@ -213,40 +207,14 @@ const AuditoriumDetails: React.FC = () => {
     navigate(`/bookings/${id}?date=${encodeURIComponent(date)}&event=${encodeURIComponent(event)}`);
   };
 
-  const getFormattedPrice = (amount: string | undefined, offer?: Offer, isTotalAmount: boolean = false) => {
-    console.log(`Formatting price:`, { amount, offer, isTotalAmount });
+  const getFormattedPrice = (amount: string | undefined) => {
     if (!amount || isNaN(parseFloat(amount))) {
-      console.warn(`Invalid price format: ${amount}`);
       return <span>Price not available</span>;
     }
 
-    const originalPrice = parseFloat(amount);
-    if (!offer || !isTotalAmount) {
-      return <span>₹{originalPrice.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>;
-    }
-
-    let discountedPrice: number;
-    if (offer.discountType === "percentage") {
-      discountedPrice = originalPrice * (1 - offer.discountValue / 100);
-    } else {
-      discountedPrice = originalPrice - offer.discountValue;
-    }
-
-    return (
-      <div className="flex flex-col">
-        <div>
-          <span className="line-through text-gray-500 mr-2">
-            ₹{originalPrice.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </span>
-          <span className="text-green-600">
-            ₹{discountedPrice.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </span>
-        </div>
-        <span className="text-xs text-green-600">
-          ({offer.discountValue}{offer.discountType === "percentage" ? "%" : "₹"} off with {offer.offerCode})
-        </span>
-      </div>
-    );
+    const price = parseFloat(amount);
+    // ✅ Only the plain booking amount is shown — the offer percentage appears as a badge on the image, not as a discounted price
+    return <span>₹{price.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>;
   };
 
   if (loading) {
@@ -530,25 +498,8 @@ const AuditoriumDetails: React.FC = () => {
                   <h4 className="font-semibold text-sm sm:text-base md:text-lg text-[#2A2929] mb-2 text-left">Pricing</h4>
                   <ul className="list-disc list-inside space-y-1 text-left">
                     <li>
-                      Total Amount: {getFormattedPrice(auditorium.totalamount, auditorium.offer, true)}
+                      Booking Amount: {getFormattedPrice(auditorium.bookingAmount)}
                     </li>
-                    <li>
-                      Advance Amount: {getFormattedPrice(auditorium.advAmnt, undefined, false)}
-                    </li>
-                    <li>
-                      AC Advance: {getFormattedPrice(auditorium.acAdvanceAmount, undefined, false)}
-                    </li>
-                    <li>
-                      AC Complete: {getFormattedPrice(auditorium.acCompleteAmount, auditorium.offer, true)}
-                    </li>
-                    <li>
-                      Non-AC Advance: {getFormattedPrice(auditorium.nonAcAdvanceAmount, undefined, false)}
-                    </li>
-                    <li>
-                      Non-AC Complete: {getFormattedPrice(auditorium.nonAcCompleteAmount, auditorium.offer, true)}
-                    </li>
-                    <li>Tariff Wedding: {getFormattedPrice(auditorium.tariff?.wedding, undefined, false)}</li>
-                    <li>Tariff Reception: {getFormattedPrice(auditorium.tariff?.reception, undefined, false)}</li>
                   </ul>
                 </div>
 

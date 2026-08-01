@@ -131,6 +131,13 @@ export const verifyPswrd=async(id:string,password:string)=>{
 
 }
 
+export const cancelUserBooking=async(bookingId:string,email:string)=>{
+  console.log('po')
+const response = await api.post(`/bookingscancel/${bookingId}`, { email });
+    return response;
+
+}
+
 
 export const secureUpdate = (id: string, data: any) => {
   return api.patch(`/profile/${id}/secure-update`, data);

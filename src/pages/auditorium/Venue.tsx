@@ -44,8 +44,7 @@ interface Venue {
   tariff: Tariff
   cancellationPolicy: string
   stageSize: string
-  advAmnt: string
-  totalamount: string
+  bookingAmount: string
   amenities: string[]
   foodPolicy: string
   decorPolicy: string
@@ -55,10 +54,6 @@ interface Venue {
   youtubeLink?: string
   guestRooms?: number
   termsAndConditions?: string
-  acAdvanceAmount?: string
-  acCompleteAmount?: string
-  nonAcAdvanceAmount?: string
-  nonAcCompleteAmount?: string
   isPriceNegotiationNeeded?: boolean
 }
 interface RootState {
@@ -125,17 +120,12 @@ export default function VenueManagement() {
     images: [],
     altPhone: "",
     timeSlots: [],
-    totalamount: "",
-    advAmnt: "",
+    bookingAmount: "",
     events: [],
     youtubeLink: "",
     guestRooms: 0,
     district: "",
     termsAndConditions: "",
-    acAdvanceAmount: "",
-    acCompleteAmount: "",
-    nonAcAdvanceAmount: "",
-    nonAcCompleteAmount: "",
     isPriceNegotiationNeeded: false,
   })
   const [customTimeSlot, setCustomTimeSlot] = useState({ label: "", startTime: "", endTime: "" })
@@ -245,10 +235,7 @@ export default function VenueManagement() {
       _id: venue._id,
       timeSlots: venue.timeSlots || [],
       termsAndConditions: venue.termsAndConditions || "",
-      acAdvanceAmount: venue.acAdvanceAmount || "", // Updated field name
-      acCompleteAmount: venue.acCompleteAmount || "", // Updated field name
-      nonAcAdvanceAmount: venue.nonAcAdvanceAmount || "", // Updated field name
-      nonAcCompleteAmount: venue.nonAcCompleteAmount || "", // Updated field name
+      bookingAmount: venue.bookingAmount || "", // Single booking amount field
       isPriceNegotiationNeeded: venue.isPriceNegotiationNeeded || false,
     } as Venue)
     setEditImages([])
@@ -292,18 +279,13 @@ export default function VenueManagement() {
         parkingSlots: 0,
         changingRooms: 0,
         tariff: { wedding: "", reception: "" },
-        totalamount: "",
-        advAmnt: "",
+        bookingAmount: "",
         stageSize: "",
         guestRooms: 0,
         youtubeLink: "",
         termsAndConditions: "",
         events: userData.events || [],
         amenities: userData.amenities || [],
-        acAdvanceAmount: "", // Updated field name
-        acCompleteAmount: "", // Updated field name
-        nonAcAdvanceAmount: "", // Updated field name
-        nonAcCompleteAmount: "", // Updated field name
         isPriceNegotiationNeeded: false,
       },
       userData,
@@ -335,26 +317,9 @@ export default function VenueManagement() {
     if (!newVenue.diningCapacity || newVenue.diningCapacity <= 0) tempErrors.diningCapacity = "Positive number"
     if (!newVenue.events?.length) tempErrors.events = "Select at least one"
     if (selectedImages.length < 4) tempErrors.images = "At least 4 images"
-    if (newVenue.acType === "AC") {
-      if (!newVenue.acAdvanceAmount || Number(newVenue.acAdvanceAmount) <= 0)
-        tempErrors.acAdvanceAmount = "Positive number"
-      if (!newVenue.acCompleteAmount || Number(newVenue.acCompleteAmount) <= 0)
-        tempErrors.acCompleteAmount = "Positive number"
-    } else if (newVenue.acType === "Non-AC") {
-      if (!newVenue.nonAcAdvanceAmount || Number(newVenue.nonAcAdvanceAmount) <= 0)
-        tempErrors.nonAcAdvanceAmount = "Positive number" // Updated field name
-      if (!newVenue.nonAcCompleteAmount || Number(newVenue.nonAcCompleteAmount) <= 0)
-        tempErrors.nonAcCompleteAmount = "Positive number" // Updated field name
-    } else if (newVenue.acType === "Both") {
-      if (!newVenue.acAdvanceAmount || Number(newVenue.acAdvanceAmount) <= 0)
-        tempErrors.acAdvanceAmount = "Positive number" // Updated field name
-      if (!newVenue.acCompleteAmount || Number(newVenue.acCompleteAmount) <= 0)
-        tempErrors.acCompleteAmount = "Positive number" // Updated field name
-      if (!newVenue.nonAcAdvanceAmount || Number(newVenue.nonAcAdvanceAmount) <= 0)
-        tempErrors.nonAcAdvanceAmount = "Positive number" // Updated field name
-      if (!newVenue.nonAcCompleteAmount || Number(newVenue.nonAcCompleteAmount) <= 0)
-        tempErrors.nonAcCompleteAmount = "Positive number" // Updated field name
-    }
+    // Single booking amount validation (same for all venue types)
+    if (!newVenue.bookingAmount || Number(newVenue.bookingAmount) <= 0)
+      tempErrors.bookingAmount = "Positive number"
     setErrors(tempErrors)
     return Object.keys(tempErrors).length === 0
   }
@@ -372,27 +337,9 @@ export default function VenueManagement() {
       tempErrors.diningCapacity = "Positive number"
     if (!selectedVenue.events?.length) tempErrors.events = "Select at least one"
     if (selectedVenue.images.length + editImages.length < 4) tempErrors.images = "At least 4 images"
-    // Validate payment fields based on AC type
-    if (selectedVenue.acType === "AC") {
-      if (!selectedVenue.acAdvanceAmount || Number(selectedVenue.acAdvanceAmount) <= 0)
-        tempErrors.acAdvanceAmount = "Positive number" // Updated field name
-      if (!selectedVenue.acCompleteAmount || Number(selectedVenue.acCompleteAmount) <= 0)
-        tempErrors.acCompleteAmount = "Positive number" // Updated field name
-    } else if (selectedVenue.acType === "Non-AC") {
-      if (!selectedVenue.nonAcAdvanceAmount || Number(selectedVenue.nonAcAdvanceAmount) <= 0)
-        tempErrors.nonAcAdvanceAmount = "Positive number" // Updated field name
-      if (!selectedVenue.nonAcCompleteAmount || Number(selectedVenue.nonAcCompleteAmount) <= 0)
-        tempErrors.nonAcCompleteAmount = "Positive number" // Updated field name
-    } else if (selectedVenue.acType === "Both") {
-      if (!selectedVenue.acAdvanceAmount || Number(selectedVenue.acAdvanceAmount) <= 0)
-        tempErrors.acAdvanceAmount = "Positive number" // Updated field name
-      if (!selectedVenue.acCompleteAmount || Number(selectedVenue.acCompleteAmount) <= 0)
-        tempErrors.acCompleteAmount = "Positive number" // Updated field name
-      if (!selectedVenue.nonAcAdvanceAmount || Number(selectedVenue.nonAcAdvanceAmount) <= 0)
-        tempErrors.nonAcAdvanceAmount = "Positive number" // Updated field name
-      if (!selectedVenue.nonAcCompleteAmount || Number(selectedVenue.nonAcCompleteAmount) <= 0)
-        tempErrors.nonAcCompleteAmount = "Positive number" // Updated field name
-    }
+    // Single booking amount validation (same for all venue types)
+    if (!selectedVenue.bookingAmount || Number(selectedVenue.bookingAmount) <= 0)
+      tempErrors.bookingAmount = "Positive number"
     setErrors(tempErrors)
     return Object.keys(tempErrors).length === 0
   }
@@ -554,7 +501,6 @@ const handleUpdateVenue = async (): Promise<void> => {
     setNewVenue((prev) => ({ ...prev, acType: "AC" }))
     setIsAddModalOpen(true)
   }
-  // REMOVED handleAcTypeConfirm function - no longer needed with integrated selection
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex flex-col">
       <style jsx global>{`
@@ -703,6 +649,10 @@ const handleUpdateVenue = async (): Promise<void> => {
                             <strong>Parking:</strong> <span className="text-gray-700">{venue.parkingSlots}</span>
                           </div>
                           <div>
+                            <strong>Booking Amount:</strong>{" "}
+                            <span className="text-gray-700">{venue.bookingAmount}</span>
+                          </div>
+                          <div>
                             <strong>{locationLabel}:</strong> <span className="text-gray-700">{venue.panchayat}</span>
                           </div>
                           <div>
@@ -722,11 +672,6 @@ const handleUpdateVenue = async (): Promise<void> => {
           </div>
         </main>
       </div>
-      {/* ====================== AC TYPE SELECTION MODAL FOR ADD ====================== */}
-      {/* REMOVED AC TYPE SELECTION MODALS */}
-      {/* AC type selection is now integrated into the form itself */}
-      {/* ====================== AC TYPE SELECTION MODAL FOR EDIT ====================== */}
-      {/* REMOVED AC TYPE SELECTION MODALS */}
       {/* ====================== ADD MODAL ====================== */}
       {isAddModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -971,7 +916,7 @@ const handleUpdateVenue = async (): Promise<void> => {
                     className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
                   />
                 </div>
-                {/* ADDED AC Type selection as part of the form */}
+                {/* ----- Venue Type ----- */}
                 <div className="sm:col-span-2">
                   <label className="block font-semibold mb-3">Select Venue Type *</label>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -1010,119 +955,19 @@ const handleUpdateVenue = async (): Promise<void> => {
                     </button>
                   </div>
                 </div>
-                {/* Payment Fields Based on AC Type */}
-                {newVenue.acType === "AC" && (
-                  <>
-                    <div>
-                      <label className="block font-semibold mb-1">AC Advance Amount *</label>
-                      <input
-                        name="acAdvanceAmount"
-                        type="number"
-                        value={newVenue.acAdvanceAmount}
-                        onChange={(e) => handleInputChange(e, true)}
-                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
-                      />
-                      {errors.acAdvanceAmount && <p className="text-red-500 text-xs mt-1">{errors.acAdvanceAmount}</p>}
-                    </div>
-                    <div>
-                      <label className="block font-semibold mb-1">AC Complete Amount *</label>
-                      <input
-                        name="acCompleteAmount"
-                        type="number"
-                        value={newVenue.acCompleteAmount}
-                        onChange={(e) => handleInputChange(e, true)}
-                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
-                      />
-                      {errors.acCompleteAmount && (
-                        <p className="text-red-500 text-xs mt-1">{errors.acCompleteAmount}</p>
-                      )}
-                    </div>
-                  </>
-                )}
-                {newVenue.acType === "Non-AC" && (
-                  <>
-                    <div>
-                      <label className="block font-semibold mb-1">Non-AC Advance Amount *</label>
-                      <input
-                        name="nonAcAdvanceAmount"
-                        type="number"
-                        value={newVenue.nonAcAdvanceAmount}
-                        onChange={(e) => handleInputChange(e, true)}
-                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
-                      />
-                      {errors.nonAcAdvanceAmount && (
-                        <p className="text-red-500 text-xs mt-1">{errors.nonAcAdvanceAmount}</p>
-                      )}
-                    </div>
-                    <div>
-                      <label className="block font-semibold mb-1">Non-AC Complete Amount *</label>
-                      <input
-                        name="nonAcCompleteAmount"
-                        type="number"
-                        value={newVenue.nonAcCompleteAmount}
-                        onChange={(e) => handleInputChange(e, true)}
-                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
-                      />
-                      {errors.nonAcCompleteAmount && (
-                        <p className="text-red-500 text-xs mt-1">{errors.nonAcCompleteAmount}</p>
-                      )}
-                    </div>
-                  </>
-                )}
-                {newVenue.acType === "Both" && (
-                  <>
-                    <div>
-                      <label className="block font-semibold mb-1">AC Advance Amount *</label>
-                      <input
-                        name="acAdvanceAmount"
-                        type="number"
-                        value={newVenue.acAdvanceAmount}
-                        onChange={(e) => handleInputChange(e, true)}
-                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
-                      />
-                      {errors.acAdvanceAmount && <p className="text-red-500 text-xs mt-1">{errors.acAdvanceAmount}</p>}
-                    </div>
-                    <div>
-                      <label className="block font-semibold mb-1">AC Complete Amount *</label>
-                      <input
-                        name="acCompleteAmount"
-                        type="number"
-                        value={newVenue.acCompleteAmount}
-                        onChange={(e) => handleInputChange(e, true)}
-                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
-                      />
-                      {errors.acCompleteAmount && (
-                        <p className="text-red-500 text-xs mt-1">{errors.acCompleteAmount}</p>
-                      )}
-                    </div>
-                    <div>
-                      <label className="block font-semibold mb-1">Non-AC Advance Amount *</label>
-                      <input
-                        name="nonAcAdvanceAmount"
-                        type="number"
-                        value={newVenue.nonAcAdvanceAmount}
-                        onChange={(e) => handleInputChange(e, true)}
-                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
-                      />
-                      {errors.nonAcAdvanceAmount && (
-                        <p className="text-red-500 text-xs mt-1">{errors.nonAcAdvanceAmount}</p>
-                      )}
-                    </div>
-                    <div>
-                      <label className="block font-semibold mb-1">Non-AC Complete Amount *</label>
-                      <input
-                        name="nonAcCompleteAmount"
-                        type="number"
-                        value={newVenue.nonAcCompleteAmount}
-                        onChange={(e) => handleInputChange(e, true)}
-                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
-                      />
-                      {errors.nonAcCompleteAmount && (
-                        <p className="text-red-500 text-xs mt-1">{errors.nonAcCompleteAmount}</p>
-                      )}
-                    </div>
-                  </>
-                )}
+                {/* ----- Single Booking Amount (replaces AC/Non-AC advance & complete amounts) ----- */}
+                <div className="sm:col-span-2">
+                  <label className="block font-semibold mb-1">Booking Amount *</label>
+                  <input
+                    name="bookingAmount"
+                    type="number"
+                    value={newVenue.bookingAmount}
+                    onChange={(e) => handleInputChange(e, true)}
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
+                    placeholder="Enter booking amount"
+                  />
+                  {errors.bookingAmount && <p className="text-red-500 text-xs mt-1">{errors.bookingAmount}</p>}
+                </div>
                 <div>
                   <label className="block font-semibold mb-1">Wedding Tariff</label>
                   <input
@@ -1520,118 +1365,19 @@ const handleUpdateVenue = async (): Promise<void> => {
                     className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
                   />
                 </div>
-                {selectedVenue.acType === "AC" && (
-                  <>
-                    <div>
-                      <label className="block font-semibold mb-1">AC Advance Amount *</label>
-                      <input
-                        name="acAdvanceAmount"
-                        type="number"
-                        value={selectedVenue.acAdvanceAmount}
-                        onChange={(e) => handleInputChange(e, false)}
-                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
-                      />
-                      {errors.acAdvanceAmount && <p className="text-red-500 text-xs mt-1">{errors.acAdvanceAmount}</p>}
-                    </div>
-                    <div>
-                      <label className="block font-semibold mb-1">AC Complete Amount *</label>
-                      <input
-                        name="acCompleteAmount"
-                        type="number"
-                        value={selectedVenue.acCompleteAmount}
-                        onChange={(e) => handleInputChange(e, false)}
-                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
-                      />
-                      {errors.acCompleteAmount && (
-                        <p className="text-red-500 text-xs mt-1">{errors.acCompleteAmount}</p>
-                      )}
-                    </div>
-                  </>
-                )}
-                {selectedVenue.acType === "Non-AC" && (
-                  <>
-                    <div>
-                      <label className="block font-semibold mb-1">Non-AC Advance Amount *</label>
-                      <input
-                        name="nonAcAdvanceAmount"
-                        type="number"
-                        value={selectedVenue.nonAcAdvanceAmount}
-                        onChange={(e) => handleInputChange(e, false)}
-                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
-                      />
-                      {errors.nonAcAdvanceAmount && (
-                        <p className="text-red-500 text-xs mt-1">{errors.nonAcAdvanceAmount}</p>
-                      )}
-                    </div>
-                    <div>
-                      <label className="block font-semibold mb-1">Non-AC Complete Amount *</label>
-                      <input
-                        name="nonAcCompleteAmount"
-                        type="number"
-                        value={selectedVenue.nonAcCompleteAmount}
-                        onChange={(e) => handleInputChange(e, false)}
-                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
-                      />
-                      {errors.nonAcCompleteAmount && (
-                        <p className="text-red-500 text-xs mt-1">{errors.nonAcCompleteAmount}</p>
-                      )}
-                    </div>
-                  </>
-                )}
-                {selectedVenue.acType === "Both" && (
-                  <>
-                    <div>
-                      <label className="block font-semibold mb-1">AC Advance Amount *</label>
-                      <input
-                        name="acAdvanceAmount"
-                        type="number"
-                        value={selectedVenue.acAdvanceAmount}
-                        onChange={(e) => handleInputChange(e, false)}
-                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
-                      />
-                      {errors.acAdvanceAmount && <p className="text-red-500 text-xs mt-1">{errors.acAdvanceAmount}</p>}
-                    </div>
-                    <div>
-                      <label className="block font-semibold mb-1">AC Complete Amount *</label>
-                      <input
-                        name="acCompleteAmount"
-                        type="number"
-                        value={selectedVenue.acCompleteAmount}
-                        onChange={(e) => handleInputChange(e, false)}
-                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
-                      />
-                      {errors.acCompleteAmount && (
-                        <p className="text-red-500 text-xs mt-1">{errors.acCompleteAmount}</p>
-                      )}
-                    </div>
-                    <div>
-                      <label className="block font-semibold mb-1">Non-AC Advance Amount *</label>
-                      <input
-                        name="nonAcAdvanceAmount"
-                        type="number"
-                        value={selectedVenue.nonAcAdvanceAmount}
-                        onChange={(e) => handleInputChange(e, false)}
-                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
-                      />
-                      {errors.nonAcAdvanceAmount && (
-                        <p className="text-red-500 text-xs mt-1">{errors.nonAcAdvanceAmount}</p>
-                      )}
-                    </div>
-                    <div>
-                      <label className="block font-semibold mb-1">Non-AC Complete Amount *</label>
-                      <input
-                        name="nonAcCompleteAmount"
-                        type="number"
-                        value={selectedVenue.nonAcCompleteAmount}
-                        onChange={(e) => handleInputChange(e, false)}
-                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
-                      />
-                      {errors.nonAcCompleteAmount && (
-                        <p className="text-red-500 text-xs mt-1">{errors.nonAcCompleteAmount}</p>
-                      )}
-                    </div>
-                  </>
-                )}
+                {/* ----- Single Booking Amount (replaces AC/Non-AC advance & complete amounts) ----- */}
+                <div className="sm:col-span-2">
+                  <label className="block font-semibold mb-1">Booking Amount *</label>
+                  <input
+                    name="bookingAmount"
+                    type="number"
+                    value={selectedVenue.bookingAmount}
+                    onChange={(e) => handleInputChange(e, false)}
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
+                    placeholder="Enter booking amount"
+                  />
+                  {errors.bookingAmount && <p className="text-red-500 text-xs mt-1">{errors.bookingAmount}</p>}
+                </div>
                 <div>
                   <label className="block font-semibold mb-1">Wedding Tariff</label>
                   <input

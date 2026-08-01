@@ -12,6 +12,9 @@ import {
   Gift,
   Copy,
   Check,
+  MessageCircle,
+  Phone,
+  PhoneCall,
 } from "lucide-react"
 import { useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { singleVenueDetails, createBooking, existingBkngs, fetchAllExistingOffer, fetchAllExistingVouchers } from "../../api/userApi"
@@ -84,10 +87,8 @@ interface BookingFormData {
   bookingDate: string
   timeSlot: string
   totalAmount: string
-  advanceAmount: string
   venueId: string
   address: string
-  paymentType: "full" | "advance"
   paidAmount: string
   balanceAmount: string
   exactBookingTime?: string
@@ -106,20 +107,15 @@ interface TimeSlot {
 interface Venue {
   name: string
   address: string
+  phone?: string
   acType: string
   timeSlots: TimeSlot[]
   tariff: { [key: string]: string }
   bookedDates?: string[]
   eventTypes?: string[]
   audiUserId?: string
-  totalamount?: string
-  advAmnt?: string
-  advamnt?: string
+  bookingAmount?: string // ✅ Single booking amount
   offer?: Offer
-  acAdvanceAmount?: string
-  acCompleteAmount?: string
-  nonAcAdvanceAmount?: string
-  nonAcCompleteAmount?: string
 }
 
 interface Booking {
@@ -175,22 +171,20 @@ const Bookings: React.FC = () => {
   const [appliedOffer, setAppliedOffer] = useState<Offer | null>(null)
   const [showOffers, setShowOffers] = useState(false)
   const [copiedCode, setCopiedCode] = useState<string | null>(null)
-  const [originalAmounts, setOriginalAmounts] = useState({
-    total: "",
-    advance: "",
-  })
+  const [originalBookingAmount, setOriginalBookingAmount] = useState("")
+  const [showCallbackModal, setShowCallbackModal] = useState(false)
+  const [callbackPhone, setCallbackPhone] = useState("")
+  const [callbackSubmitted, setCallbackSubmitted] = useState(false)
   const [formData, setFormData] = useState<BookingFormData>({
     userEmail: "",
     venueName: "",
     bookingDate: selectedDate ? formatDateForBackend(selectedDate) : "",
     timeSlot: "",
     totalAmount: "",
-    advanceAmount: "",
     venueId: id || "",
     address: "",
-    paymentType: "advance",
     paidAmount: "",
-    balanceAmount: "",
+    balanceAmount: "0",
     exactBookingTime: "",
     couponCode: "",
     voucherCode: "",
@@ -226,7 +220,7 @@ const Bookings: React.FC = () => {
     return `₹${num.toFixed(0)}`
   }
 
-  const getFormattedPrice = (amount: string | undefined, isTotalAmount: boolean = false) => {
+  const getFormattedPrice = (amount: string | undefined, isBookingAmount: boolean = false) => {
     if (!amount || isNaN(Number.parseFloat(amount))) {
       return <span>Price not available</span>
     }
@@ -234,11 +228,11 @@ const Bookings: React.FC = () => {
     const price = Number.parseFloat(amount)
     const formattedPrice = `₹${price.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
-    if (!isTotalAmount || !appliedOffer) {
+    if (!isBookingAmount || !appliedOffer) {
       return <span>{formattedPrice}</span>
     }
 
-    const originalPrice = Number.parseFloat(originalAmounts.total || amount)
+    const originalPrice = Number.parseFloat(originalBookingAmount || amount)
     const originalFormatted = `₹${originalPrice.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
     return (
@@ -284,13 +278,9 @@ const Bookings: React.FC = () => {
       setFormData((prev) => ({
         ...prev,
         couponCode: "",
-        totalAmount: originalAmounts.total,
-        advanceAmount: originalAmounts.advance,
-        paidAmount: prev.paymentType === "full" ? originalAmounts.total : originalAmounts.advance,
-        balanceAmount:
-          prev.paymentType === "full"
-            ? "0"
-            : (Number.parseFloat(originalAmounts.total) - Number.parseFloat(originalAmounts.advance)).toString(),
+        totalAmount: originalBookingAmount,
+        paidAmount: originalBookingAmount,
+        balanceAmount: "0",
       }))
       setCouponCode("")
       return
@@ -298,23 +288,19 @@ const Bookings: React.FC = () => {
 
     if (offerToApply) {
       // Apply offer
-      if (offerToApply.minAmount && Number.parseFloat(originalAmounts.total) < offerToApply.minAmount) {
+      if (offerToApply.minAmount && Number.parseFloat(originalBookingAmount) < offerToApply.minAmount) {
         setCouponError(`Minimum order amount should be ₹${offerToApply.minAmount}`)
         return
       }
-      const discountedTotal = calculateDiscountedAmount(originalAmounts.total, offerToApply)
+      const discountedTotal = calculateDiscountedAmount(originalBookingAmount, offerToApply)
       setAppliedOffer(offerToApply)
       setCouponCode(offerToApply.offerCode)
       setFormData((prev) => ({
         ...prev,
         couponCode: offerToApply.offerCode,
         totalAmount: discountedTotal.toString(),
-        advanceAmount: originalAmounts.advance, // Keep advance amount unchanged
-        paidAmount: prev.paymentType === "full" ? discountedTotal.toString() : originalAmounts.advance,
-        balanceAmount:
-          prev.paymentType === "full"
-            ? "0"
-            : (discountedTotal - Number.parseFloat(originalAmounts.advance)).toString(),
+        paidAmount: discountedTotal.toString(),
+        balanceAmount: "0",
       }))
     } else {
       // Manual code entry
@@ -351,14 +337,10 @@ const Bookings: React.FC = () => {
         const venueData = venueResponse.data
         const eventTypes = venueData.events || [];
 
+        // ✅ Single booking amount — same for AC and Non-AC
+        const bookingAmount = venueData.bookingAmount || ""
 
-        const originalTotal = venueData.acCompleteAmount || venueData.nonAcCompleteAmount || venueData.totalamount || ""
-        const originalAdvance = venueData.acAdvanceAmount || venueData.nonAcAdvanceAmount || venueData.advAmnt || venueData.advamnt || ""
-
-        setOriginalAmounts({
-          total: originalTotal,
-          advance: originalAdvance,
-        })
+        setOriginalBookingAmount(bookingAmount)
 
         setVenue({
           ...venueData,
@@ -379,14 +361,10 @@ const Bookings: React.FC = () => {
           ...prev,
           userEmail: currentUser?.email || "",
           venueName: venueData.name || "",
-          totalAmount: originalTotal,
-          advanceAmount: originalAdvance,
+          totalAmount: bookingAmount,
           venueId: id || "",
-          paidAmount: originalAdvance,
-          balanceAmount:
-            originalTotal && originalAdvance
-              ? (Number.parseFloat(originalTotal) - Number.parseFloat(originalAdvance)).toString()
-              : "",
+          paidAmount: bookingAmount,
+          balanceAmount: "0",
         }))
 
         // Set default acOption based on acType
@@ -442,46 +420,25 @@ const Bookings: React.FC = () => {
     }
   }, [selectedDate])
 
+  // ✅ Booking amount is the same for AC and Non-AC — only the applied coupon changes it
   useEffect(() => {
-    if (venue && acOption) {
-      let total = venue.totalamount || ""
-      let advance = venue.advAmnt || venue.advamnt || ""
-      const acTypeLower = venue.acType.toLowerCase()
-      if (acTypeLower === "both") {
-        if (acOption === "AC") {
-          total = venue.acCompleteAmount || total
-          advance = venue.acAdvanceAmount || advance
-        } else if (acOption === "Non-AC") {
-          total = venue.nonAcCompleteAmount || total
-          advance = venue.nonAcAdvanceAmount || advance
-        }
-      } else if (acTypeLower === "ac") {
-        total = venue.acCompleteAmount || total
-        advance = venue.acAdvanceAmount || advance
-      } else if (acTypeLower === "non-ac") {
-        total = venue.nonAcCompleteAmount || total
-        advance = venue.nonAcAdvanceAmount || advance
-      }
+    if (venue) {
+      const base = venue.bookingAmount || originalBookingAmount || ""
+      setOriginalBookingAmount(base)
 
-      setOriginalAmounts({
-        total,
-        advance,
-      })
-
-      let finalTotal = total
-      if (appliedOffer) {
-        finalTotal = calculateDiscountedAmount(total, appliedOffer).toString()
+      let finalTotal = base
+      if (appliedOffer && base) {
+        finalTotal = calculateDiscountedAmount(base, appliedOffer).toString()
       }
 
       setFormData((prev) => ({
         ...prev,
         totalAmount: finalTotal,
-        advanceAmount: advance,
-        paidAmount: prev.paymentType === "full" ? finalTotal : advance,
-        balanceAmount: prev.paymentType === "full" ? "0" : (Number.parseFloat(finalTotal) - Number.parseFloat(advance)).toString(),
+        paidAmount: finalTotal,
+        balanceAmount: "0",
       }))
     }
-  }, [acOption, venue, appliedOffer])
+  }, [venue, appliedOffer])
 
   const generateCalendarDays = () => {
     const daysInMonth = getDaysInMonth(currentDate)
@@ -669,19 +626,6 @@ const Bookings: React.FC = () => {
     }))
   }
 
-  const handlePaymentTypeChange = (type: "full" | "advance") => {
-    setFormData((prev) => {
-      const total = Number.parseFloat(prev.totalAmount || "0")
-      const advance = Number.parseFloat(originalAmounts.advance || "0")
-      return {
-        ...prev,
-        paymentType: type,
-        paidAmount: type === "full" ? prev.totalAmount : originalAmounts.advance,
-        balanceAmount: type === "full" ? "0" : (total - advance).toString(),
-      }
-    })
-  }
-
   const handleFormSubmit = async () => {
     if (!formData.userEmail || !formData.address) {
       alert("Please fill in all required fields")
@@ -716,7 +660,7 @@ const Bookings: React.FC = () => {
       const bookingData = {
         venueName: formData.venueName,
         venueId: formData.venueId,
-        totalAmount: formData.totalAmount,
+        totalAmount: formData.totalAmount, // ✅ Booking amount
         paidAmount: formData.paidAmount,
         balanceAmount: formData.balanceAmount,
         userEmail: formData.userEmail,
@@ -725,10 +669,10 @@ const Bookings: React.FC = () => {
         address: formData.address,
         exactBookingTime: formData.exactBookingTime,
         eventType: eventType,
+        acOption: acOption,
         couponCode: formData.couponCode,
         voucherCode: voucherCode,
-        originalTotalAmount: originalAmounts.total,
-        originalAdvanceAmount: originalAmounts.advance,
+        originalTotalAmount: originalBookingAmount,
         discountApplied: appliedOffer
           ? {
               code: appliedOffer.offerCode,
@@ -761,14 +705,25 @@ const Bookings: React.FC = () => {
     setFormData((prev) => ({
       ...prev,
       couponCode: "",
-      totalAmount: originalAmounts.total,
-      advanceAmount: originalAmounts.advance,
-      paidAmount: prev.paymentType === "full" ? originalAmounts.total : originalAmounts.advance,
-      balanceAmount:
-        prev.paymentType === "full"
-          ? "0"
-          : (Number.parseFloat(originalAmounts.total) - Number.parseFloat(originalAmounts.advance)).toString(),
+      totalAmount: originalBookingAmount,
+      paidAmount: originalBookingAmount,
+      balanceAmount: "0",
     }))
+  }
+
+  const handleCallbackSubmit = () => {
+    if (!callbackPhone || callbackPhone.trim().length < 10) {
+      alert("Please enter a valid phone number")
+      return
+    }
+    // TODO: Hook this to your backend API to save the callback request
+    console.log("Callback requested for:", callbackPhone, "venue:", venue?.name)
+    setCallbackSubmitted(true)
+    setTimeout(() => {
+      setShowCallbackModal(false)
+      setCallbackSubmitted(false)
+      setCallbackPhone("")
+    }, 2500)
   }
 
   if (loading) {
@@ -843,12 +798,15 @@ const Bookings: React.FC = () => {
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <div>
-                    <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-[#78533F]">
+                    <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold font-serif tracking-tight text-[#78533F]">
                       {venue?.name || "Venue"}
                     </h1>
-                    <p className="text-xs sm:text-sm md:text-base text-[#3C3A39] flex items-center gap-1">
+                    <p className="text-xs sm:text-sm md:text-base text-[#3C3A39] flex items-center gap-1 mt-1">
                       <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-[#9c7c5d]" />
                       {venue?.address || "Location"}
+                    </p>
+                    <p className="text-xs sm:text-sm text-[#9c7c5d] font-semibold mt-1 uppercase tracking-wider">
+                      Booking Amount: {formatPriceShort(originalBookingAmount)}
                     </p>
                   </div>
                 </div>
@@ -869,7 +827,7 @@ const Bookings: React.FC = () => {
             </div>
             <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 lg:gap-8 lg:items-stretch">
               <div className="flex flex-col space-y-4 sm:space-y-6 flex-1">
-                <h3 className="text-base sm:text-lg md:text-xl font-semibold text-[#78533F]">Availability Calendar</h3>
+                <h3 className="text-base sm:text-lg md:text-xl font-semibold font-serif text-[#78533F]">Availability Calendar</h3>
                 <div className="bg-white rounded-2xl shadow-lg border-2 border-[#b09d94] overflow-hidden flex-1">
                   <div className="bg-[#ED695A] text-white p-2 sm:p-3 flex items-center justify-between">
                     <button
@@ -924,7 +882,7 @@ const Bookings: React.FC = () => {
                         <span>{dateObj.day || ""}</span>
                         {dateObj.day && dateObj.isCurrentMonth && (
                           <span className="text-[9px] sm:text-[10px] text-gray-600 mt-0.5">
-                            {formatPriceShort(originalAmounts.total)}
+                            {formatPriceShort(originalBookingAmount)}
                           </span>
                         )}
                         {dateObj.isCurrentMonth && dateObj.date && getDateStatus(dateObj.date) !== "past" && (
@@ -952,48 +910,81 @@ const Bookings: React.FC = () => {
                     </div>
                   </div>
                 </div>
+                {/* ✅ Contact actions — bottom right of the calendar */}
+                <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
+                  <button
+                    onClick={() => navigate(`/chat/${venue?.audiUserId || ""}`)}
+                    className="flex items-center gap-2 bg-white border-2 border-[#b09d94] text-[#78533F] hover:bg-[#78533F] hover:text-white hover:border-[#78533F] py-2 px-4 rounded-full font-medium transition-all shadow-sm hover:shadow-md text-xs sm:text-sm"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    Chat with Us
+                  </button>
+                  <a
+                    href={venue?.phone ? `tel:${venue.phone}` : "#"}
+                    className="flex items-center gap-2 bg-white border-2 border-[#b09d94] text-[#78533F] hover:bg-[#9c7c5d] hover:text-white hover:border-[#9c7c5d] py-2 px-4 rounded-full font-medium transition-all shadow-sm hover:shadow-md text-xs sm:text-sm"
+                  >
+                    <Phone className="w-4 h-4" />
+                    Call Now
+                  </a>
+                  <button
+                    onClick={() => setShowCallbackModal(true)}
+                    className="flex items-center gap-2 bg-[#ED695A] border-2 border-[#ED695A] text-white hover:bg-[#d85c4e] hover:border-[#d85c4e] py-2 px-4 rounded-full font-medium transition-all shadow-sm hover:shadow-md text-xs sm:text-sm"
+                  >
+                    <PhoneCall className="w-4 h-4" />
+                    Request Call Back
+                  </button>
+                </div>
               </div>
               <div className="flex flex-col space-y-4 sm:space-y-6 flex-1">
-                <h3 className="text-base sm:text-lg md:text-xl font-semibold text-[#78533F]">Booking Options</h3>
+                <h3 className="text-base sm:text-lg md:text-xl font-semibold font-serif text-[#78533F]">Booking Options</h3>
                 <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 border-2 border-[#b09d94] flex-1">
                   <div className="space-y-4 sm:space-y-6">
+                    {/* ✅ Booking amount summary — one price for AC and Non-AC */}
+                    <div className="bg-[#FDF8F1] rounded-xl border-2 border-[#b09d94] p-3 sm:p-4 flex items-center justify-between">
+                      <span className="text-xs sm:text-sm font-semibold text-[#78533F] uppercase tracking-wider">Booking Amount</span>
+                      <span className="text-base sm:text-lg font-bold text-[#5B4336]">
+                        {getFormattedPrice(originalBookingAmount)}
+                      </span>
+                    </div>
                     <div>
                       <label className="block text-xs sm:text-sm font-semibold text-[#78533F] flex items-center mb-2">
                         <span className="mr-2">❄️</span>AC Option
                       </label>
                       {venue?.acType.toLowerCase() === "both" ? (
-                        <div className="space-y-2">
-                          <label className="flex items-start gap-2 p-2 border-2 border-[#b09d94] rounded-xl cursor-pointer hover:bg-[#FDF8F1] transition-all">
+                        <div className="grid grid-cols-2 gap-2">
+                          <label
+                            className={`flex items-center justify-center gap-2 p-3 border-2 rounded-xl cursor-pointer transition-all font-medium text-xs sm:text-sm ${
+                              acOption === "AC"
+                                ? "border-[#ED695A] bg-[#ED695A]/10 text-[#ED695A]"
+                                : "border-[#b09d94] text-[#3C3A39] hover:bg-[#FDF8F1]"
+                            }`}
+                          >
                             <input
                               type="radio"
                               name="acOption"
                               value="AC"
                               checked={acOption === "AC"}
                               onChange={(e) => setAcOption(e.target.value)}
-                              className="mt-1 text-[#ED695A] focus:ring-[#ED695A]"
+                              className="text-[#ED695A] focus:ring-[#ED695A]"
                             />
-                            <div>
-                              <span className="font-medium text-[#3C3A39]">AC</span>
-                              <p className="text-xs text-[#78533F]">
-                                Total: {venue.acCompleteAmount ? formatPriceShort(venue.acCompleteAmount) : "N/A"} | Advance: {venue.acAdvanceAmount ? formatPriceShort(venue.acAdvanceAmount) : "N/A"}
-                              </p>
-                            </div>
+                            AC
                           </label>
-                          <label className="flex items-start gap-2 p-2 border-2 border-[#b09d94] rounded-xl cursor-pointer hover:bg-[#FDF8F1] transition-all">
+                          <label
+                            className={`flex items-center justify-center gap-2 p-3 border-2 rounded-xl cursor-pointer transition-all font-medium text-xs sm:text-sm ${
+                              acOption === "Non-AC"
+                                ? "border-[#ED695A] bg-[#ED695A]/10 text-[#ED695A]"
+                                : "border-[#b09d94] text-[#3C3A39] hover:bg-[#FDF8F1]"
+                            }`}
+                          >
                             <input
                               type="radio"
                               name="acOption"
                               value="Non-AC"
                               checked={acOption === "Non-AC"}
                               onChange={(e) => setAcOption(e.target.value)}
-                              className="mt-1 text-[#ED695A] focus:ring-[#ED695A]"
+                              className="text-[#ED695A] focus:ring-[#ED695A]"
                             />
-                            <div>
-                              <span className="font-medium text-[#3C3A39]">Non-AC</span>
-                              <p className="text-xs text-[#78533F]">
-                                Total: {venue.nonAcCompleteAmount ? formatPriceShort(venue.nonAcCompleteAmount) : "N/A"} | Advance: {venue.nonAcAdvanceAmount ? formatPriceShort(venue.nonAcAdvanceAmount) : "N/A"}
-                              </p>
-                            </div>
+                            Non-AC
                           </label>
                         </div>
                       ) : (
@@ -1078,6 +1069,51 @@ const Bookings: React.FC = () => {
                 </div>
               </div>
             </div>
+            {/* ✅ Request Call Back modal */}
+            {showCallbackModal && (
+              <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+                <div className="bg-[#FDF8F1] rounded-2xl shadow-2xl max-w-sm w-full border-2 border-[#b09d94] p-5 sm:p-6">
+                  {callbackSubmitted ? (
+                    <div className="text-center py-6">
+                      <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
+                      <h3 className="text-lg font-bold text-[#78533F] font-serif">Request Received!</h3>
+                      <p className="text-xs sm:text-sm text-[#3C3A39] mt-1">Our team will call you back shortly.</p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex items-center justify-between mb-4 border-b-2 border-[#b09d94] pb-3">
+                        <h3 className="text-base sm:text-lg font-bold text-[#78533F] font-serif flex items-center gap-2">
+                          <PhoneCall className="w-5 h-5 text-[#ED695A]" />
+                          Request a Call Back
+                        </h3>
+                        <button
+                          onClick={() => setShowCallbackModal(false)}
+                          className="p-1.5 hover:bg-white rounded-full transition-all"
+                        >
+                          <X className="w-5 h-5 text-[#3C3A39]" />
+                        </button>
+                      </div>
+                      <p className="text-xs sm:text-sm text-[#3C3A39] mb-3">
+                        Share your number and the {venue?.name || "venue"} team will reach out to you.
+                      </p>
+                      <input
+                        type="tel"
+                        value={callbackPhone}
+                        onChange={(e) => setCallbackPhone(e.target.value)}
+                        placeholder="Enter your phone number"
+                        className="w-full p-2.5 sm:p-3 border-2 border-[#b09d94] text-[#3C3A39] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ED695A] focus:border-transparent transition-all text-xs sm:text-sm mb-4"
+                      />
+                      <button
+                        onClick={handleCallbackSubmit}
+                        className="w-full bg-[#ED695A] hover:bg-[#d85c4e] text-white py-2.5 sm:py-3 rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl text-xs sm:text-sm"
+                      >
+                        Submit Request
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
             {showModal && (
               <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-2 sm:p-4 backdrop-blur-sm">
                 <div className="bg-[#FDF8F1] rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border-2 border-[#b09d94]">
@@ -1085,7 +1121,7 @@ const Bookings: React.FC = () => {
                     <div className="p-4 sm:p-6 lg:p-8">
                       <div className="flex items-center justify-between mb-4 sm:mb-6 border-b-2 border-[#b09d94] pb-4">
                         <div className="text-center flex-1">
-                          <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-[#78533F]">📅 Booking Form</h2>
+                          <h2 className="text-lg sm:text-xl md:text-2xl font-bold font-serif text-[#78533F]">📅 Booking Form</h2>
                           <p className="text-xs sm:text-sm text-[#3C3A39]">Please fill in your booking details</p>
                         </div>
                         <button
@@ -1227,18 +1263,10 @@ const Bookings: React.FC = () => {
                         )}
                         <div>
                           <label className="block text-xs sm:text-sm font-semibold text-[#78533F] flex items-center mb-2">
-                            <span className="mr-2">💰</span>Total Amount
+                            <span className="mr-2">💰</span>Booking Amount
                           </label>
                           <div className="w-full p-2 sm:p-3 border-2 border-[#b09d94] text-[#3C3A39] rounded-xl bg-[#f5f5f5] text-xs sm:text-sm">
                             {getFormattedPrice(formData.totalAmount, true)}
-                          </div>
-                        </div>
-                        <div>
-                          <label className="block text-xs sm:text-sm font-semibold text-[#78533F] flex items-center mb-2">
-                            <span className="mr-2">💸</span>Advance Amount
-                          </label>
-                          <div className="w-full p-2 sm:p-3 border-2 border-[#b09d94] text-[#3C3A39] rounded-xl bg-[#f5f5f5] text-xs sm:text-sm">
-                            {getFormattedPrice(formData.advanceAmount, false)}
                           </div>
                         </div>
                         <button
@@ -1254,7 +1282,7 @@ const Bookings: React.FC = () => {
                     <div className="p-4 sm:p-6 lg:p-8">
                       <div className="flex items-center justify-between mb-4 sm:mb-6 border-b-2 border-[#b09d94] pb-4">
                         <div className="text-center flex-1">
-                          <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-[#78533F]">💳 Payment</h2>
+                          <h2 className="text-lg sm:text-xl md:text-2xl font-bold font-serif text-[#78533F]">💳 Payment</h2>
                           <p className="text-xs sm:text-sm text-[#3C3A39]">Select your payment method</p>
                         </div>
                         <button
@@ -1271,50 +1299,15 @@ const Bookings: React.FC = () => {
                           <p className="text-xs sm:text-sm text-[#78533F] font-medium">
                             Time: {venue?.timeSlots.find((slot) => slot.id === formData.timeSlot)?.label || formData.timeSlot}
                           </p>
+                          <p className="text-xs sm:text-sm text-[#78533F] font-medium">AC Option: {acOption}</p>
                           <p className="text-xs sm:text-sm text-[#78533F] font-medium">
-                            Total Amount: {getFormattedPrice(formData.totalAmount, true)}
-                          </p>
-                          <p className="text-xs sm:text-sm text-[#78533F] font-medium">
-                            Advance Amount: {getFormattedPrice(formData.advanceAmount, false)}
+                            Booking Amount: {getFormattedPrice(formData.totalAmount, true)}
                           </p>
                           {appliedOffer && (
                             <p className="text-xs sm:text-sm text-[#78533F] font-medium">
                               Coupon Applied: {appliedOffer.offerCode}
                             </p>
                           )}
-                        </div>
-                        <div>
-                          <label className="block text-xs sm:text-sm font-semibold text-[#78533F] flex items-center mb-2">
-                            <span className="mr-2">💰</span>Payment Type
-                          </label>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                            <label className="flex items-center gap-2 p-3 sm:p-4 rounded-xl border-2 border-[#b09d94] cursor-pointer hover:bg-[#FDF8F1] transition-all transform hover:scale-105">
-                              <input
-                                type="radio"
-                                name="paymentType"
-                                value="full"
-                                checked={formData.paymentType === "full"}
-                                onChange={() => handlePaymentTypeChange("full")}
-                                className="text-[#ED695A] focus:ring-[#ED695A]"
-                              />
-                              <span className="text-xs sm:text-sm text-[#3C3A39]">
-                                Full Payment ({getFormattedPrice(formData.totalAmount, true)})
-                              </span>
-                            </label>
-                            <label className="flex items-center gap-2 p-3 sm:p-4 rounded-xl border-2 border-[#b09d94] cursor-pointer hover:bg-[#FDF8F1] transition-all transform hover:scale-105">
-                              <input
-                                type="radio"
-                                name="paymentType"
-                                value="advance"
-                                checked={formData.paymentType === "advance"}
-                                onChange={() => handlePaymentTypeChange("advance")}
-                                className="text-[#ED695A] focus:ring-[#ED695A]"
-                              />
-                              <span className="text-xs sm:text-sm text-[#3C3A39]">
-                                Advance Payment ({getFormattedPrice(formData.advanceAmount, false)})
-                              </span>
-                            </label>
-                          </div>
                         </div>
                         <div>
                           <label className="block text-xs sm:text-sm font-semibold text-[#78533F] flex items-center mb-2">
@@ -1355,7 +1348,7 @@ const Bookings: React.FC = () => {
                     <div className="p-4 sm:p-6 lg:p-8">
                       <div className="flex items-center justify-between mb-4 sm:mb-6 border-b-2 border-[#b09d94] pb-4">
                         <div className="text-center flex-1">
-                          <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-[#78533F]">
+                          <h2 className="text-lg sm:text-xl md:text-2xl font-bold font-serif text-[#78533F]">
                             🎉 Booking Confirmed!
                           </h2>
                           <p className="text-xs sm:text-sm text-[#3C3A39]">
@@ -1411,13 +1404,10 @@ const Bookings: React.FC = () => {
                           <p className="text-xs sm:text-sm text-[#78533F] font-medium">AC Option: {acOption}</p>
                           <p className="text-xs sm:text-sm text-[#78533F] font-medium">Address: {formData.address}</p>
                           <p className="text-xs sm:text-sm text-[#78533F] font-medium">
-                            Total Amount: {getFormattedPrice(formData.totalAmount, true)}
+                            Booking Amount: {getFormattedPrice(formData.totalAmount, true)}
                           </p>
                           <p className="text-xs sm:text-sm text-[#78533F] font-medium">
-                            Paid Amount: {getFormattedPrice(formData.paidAmount, false)}
-                          </p>
-                          <p className="text-xs sm:text-sm text-[#78533F] font-medium">
-                            Balance Amount: {getFormattedPrice(formData.balanceAmount, false)}
+                            Paid Amount: {getFormattedPrice(formData.paidAmount)}
                           </p>
                           <p className="text-xs sm:text-sm text-[#78533F] font-medium">
                             Payment Method: {selectedPaymentMethod}

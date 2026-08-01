@@ -215,7 +215,7 @@ const HomePage: React.FC = () => {
             name: venue.name || venue.venueName || "Unknown Venue",
             location: venue.address || "Unknown Location",
             images: venue.images && Array.isArray(venue.images) && venue.images.length > 0 ? venue.images : ["/placeholder.svg?height=200&width=300"],
-            price: venue.totalamount || venue.tariff?.wedding || "Price not available",
+            price: venue.bookingAmount || "Price not available", // ✅ Only booking amount is shown (no advance amount / total amount)
             rating: venue.rating || 4.5,
             review: venue.review || "Great venue with excellent amenities!",
             audiUserId: venue.audiUserId || "",
@@ -384,25 +384,10 @@ const HomePage: React.FC = () => {
     const originalPrice = Number.parseFloat(venue.price)
     if (isNaN(originalPrice)) return <span className="text-gray-500 italic text-sm">{venue.price}</span>
 
-    let discountedPrice = originalPrice
-    if (venue.offer) {
-      if (venue.offer.discountType === "percentage") {
-        discountedPrice *= 1 - venue.offer.discountValue / 100
-      } else {
-        discountedPrice -= venue.offer.discountValue
-      }
-    }
-
+    // ✅ Only the booking price is shown — the offer percentage appears as a badge on the image, not as a discounted price here
     return (
       <div className="flex flex-col">
-        {venue.offer ? (
-          <div className="flex items-center gap-2">
-            <span className="line-through text-gray-400 text-xs">₹{originalPrice.toFixed(0)}</span>
-            <span className="text-emerald-700 font-bold text-base">₹{discountedPrice.toFixed(0)}</span>
-          </div>
-        ) : (
-          <span className="text-gray-800 font-bold text-base">₹{originalPrice.toFixed(0)}</span>
-        )}
+        <span className="text-gray-800 font-bold text-base">₹{originalPrice.toFixed(0)}</span>
       </div>
     )
   }
@@ -652,7 +637,7 @@ const HomePage: React.FC = () => {
                        </p>
                        <div className="border-t border-gray-100 pt-3 flex justify-between items-center text-sm">
                           <div>
-                              <span className="text-gray-400 text-xs uppercase block">Starts from</span>
+                              <span className="text-gray-400 text-xs uppercase block">Booking starting from</span>
                               {getFormattedPrice(venue)}
                               {venue.voucher && (
                                 <button
