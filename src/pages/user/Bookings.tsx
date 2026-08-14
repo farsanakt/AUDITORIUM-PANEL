@@ -15,6 +15,7 @@ import {
   MessageCircle,
   Phone,
   PhoneCall,
+  Clock,
 } from "lucide-react"
 import { useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { singleVenueDetails, createBooking, existingBkngs, fetchAllExistingOffer, fetchAllExistingVouchers } from "../../api/userApi"
@@ -122,6 +123,7 @@ interface Booking {
   bookeddate: string
   timeSlot: string
   status: string
+  approvalStatus?: "requested" | "accepted" | "rejected" // ✅ waiting list status
 }
 
 const Bookings: React.FC = () => {
@@ -476,16 +478,27 @@ const Bookings: React.FC = () => {
     return days
   }
 
+  // ✅ Rejected requests free the slot again; requested = waiting, accepted (or legacy) = booked
   const getTimeSlotStatus = (date: Date) => {
     const dateString = formatDateForBackend(date)
-    const bookedSlots = bookings
-      .filter((booking) => booking.bookeddate === dateString && booking.status !== "cancelled")
+    const dateBookings = bookings.filter(
+      (booking) =>
+        booking.bookeddate === dateString &&
+        booking.status !== "cancelled" &&
+        booking.approvalStatus !== "rejected",
+    )
+    const bookedSlots = dateBookings
+      .filter((booking) => !booking.approvalStatus || booking.approvalStatus === "accepted")
+      .map((booking) => booking.timeSlot)
+    const waitingSlots = dateBookings
+      .filter((booking) => booking.approvalStatus === "requested")
       .map((booking) => booking.timeSlot)
 
     return (
       venue?.timeSlots?.map((slot) => ({
         ...slot,
         isBooked: bookedSlots.includes(slot.id),
+        isWaiting: waitingSlots.includes(slot.id),
       })) || []
     )
   }
@@ -496,17 +509,27 @@ const Bookings: React.FC = () => {
     today.setHours(0, 0, 0, 0)
     const isPast = date < today
     const dateString = formatDateForBackend(date)
-    const bookedSlots = bookings.filter(
-      (booking) => booking.bookeddate === dateString && booking.status !== "cancelled",
+    const activeBookings = bookings.filter(
+      (booking) =>
+        booking.bookeddate === dateString &&
+        booking.status !== "cancelled" &&
+        booking.approvalStatus !== "rejected",
     )
 
     if (isPast) return "past"
 
     const totalSlots = venue?.timeSlots?.length || 0
-    const bookedSlotsCount = bookedSlots.length
+    const acceptedCount = activeBookings.filter(
+      (booking) => !booking.approvalStatus || booking.approvalStatus === "accepted",
+    ).length
+    const waitingCount = activeBookings.filter((booking) => booking.approvalStatus === "requested").length
+    const totalTaken = acceptedCount + waitingCount
 
-    if (bookedSlotsCount === 0) return "available"
-    if (bookedSlotsCount >= totalSlots) return "booked"
+    if (totalTaken === 0) return "available"
+    if (totalTaken >= totalSlots) {
+      // ✅ fully taken — show waiting colour if any slot is still only requested
+      return waitingCount > 0 ? "waiting" : "booked"
+    }
     return "partial"
   }
 
@@ -526,6 +549,9 @@ const Bookings: React.FC = () => {
     }
     if (status === "booked") {
       return `${baseClass} bg-red-500 text-white cursor-not-allowed`
+    }
+    if (status === "waiting") {
+      return `${baseClass} bg-orange-400 text-white cursor-not-allowed`
     }
     if (status === "partial") {
       return isSelected
@@ -548,10 +574,12 @@ const Bookings: React.FC = () => {
           slots.map((slot) => (
             <div key={slot.id} className="flex items-center gap-2">
               <div
-                className={`w-3 h-3 sm:w-4 sm:h-4 rounded-full ${slot.isBooked ? "bg-red-500" : "bg-green-500"}`}
+                className={`w-3 h-3 sm:w-4 sm:h-4 rounded-full ${
+                  slot.isBooked ? "bg-red-500" : slot.isWaiting ? "bg-orange-400" : "bg-green-500"
+                }`}
               ></div>
-              <p className={slot.isBooked ? "text-red-600" : "text-green-600"}>
-                {slot.label}: {slot.isBooked ? "Booked" : "Available"}
+              <p className={slot.isBooked ? "text-red-600" : slot.isWaiting ? "text-orange-500" : "text-green-600"}>
+                {slot.label}: {slot.isBooked ? "Booked" : slot.isWaiting ? "Waiting" : "Available"}
               </p>
             </div>
           ))
@@ -562,11 +590,16 @@ const Bookings: React.FC = () => {
     )
   }
 
+  // ✅ Requested (waiting) slots are also blocked until accepted/rejected
   const isSlotBooked = (date: Date | null, slotId: string) => {
     if (!date) return false
     const dateString = formatDateForBackend(date)
     return bookings.some(
-      (booking) => booking.bookeddate === dateString && booking.timeSlot === slotId && booking.status !== "cancelled",
+      (booking) =>
+        booking.bookeddate === dateString &&
+        booking.timeSlot === slotId &&
+        booking.status !== "cancelled" &&
+        booking.approvalStatus !== "rejected",
     )
   }
 
@@ -608,7 +641,7 @@ const Bookings: React.FC = () => {
       return
     }
     if (isSlotBooked(selectedDate, venueTime)) {
-      alert("This time slot is already booked. Please select another slot.")
+      alert("This time slot is already booked or in the waiting list. Please select another slot.")
       return
     }
     setShowModal(true)
@@ -645,7 +678,7 @@ const Bookings: React.FC = () => {
       return
     }
     if (isSlotBooked(selectedDate, formData.timeSlot)) {
-      alert("This time slot is already booked. Please select another slot.")
+      alert("This time slot is already booked or in the waiting list. Please select another slot.")
       return
     }
     try {
@@ -673,6 +706,7 @@ const Bookings: React.FC = () => {
         couponCode: formData.couponCode,
         voucherCode: voucherCode,
         originalTotalAmount: originalBookingAmount,
+        approvalStatus: "requested", // ✅ booking goes to waiting list
         discountApplied: appliedOffer
           ? {
               code: appliedOffer.offerCode,
@@ -682,9 +716,9 @@ const Bookings: React.FC = () => {
           : null,
       }
 
-      console.log("Booking data sent to backend:", JSON.stringify(bookingData, null, 2))
+      console.log("Booking request data sent to backend:", JSON.stringify(bookingData, null, 2))
       const response = await createBooking(bookingData)
-      console.log("Booking response:", JSON.stringify(response, null, 2))
+      console.log("Booking request response:", JSON.stringify(response, null, 2))
       await fetchExistingBookings()
       setCurrentPage("success")
     } catch (error) {
@@ -891,7 +925,7 @@ const Bookings: React.FC = () => {
                       </div>
                     ))}
                   </div>
-                  <div className="p-2 border-t-2 border-[#b09d94] grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                  <div className="p-2 border-t-2 border-[#b09d94] grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs">
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 bg-green-100 border border-green-400 rounded-full"></div>
                       <span className="text-[#3C3A39]">Available</span>
@@ -899,6 +933,10 @@ const Bookings: React.FC = () => {
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
                       <span className="text-[#3C3A39]">Partial</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-orange-400 rounded-full"></div>
+                      <span className="text-[#3C3A39]">Waiting</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 bg-red-500 rounded-full"></div>
@@ -911,6 +949,7 @@ const Bookings: React.FC = () => {
                   </div>
                 </div>
                 {/* ✅ Contact actions — bottom right of the calendar */}
+                
                 <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
                   <button
                     onClick={() => navigate(`/chat/${venue?.audiUserId || ""}`)}
@@ -934,6 +973,10 @@ const Bookings: React.FC = () => {
                     Request Call Back
                   </button>
                 </div>
+
+
+
+
               </div>
               <div className="flex flex-col space-y-4 sm:space-y-6 flex-1">
                 <h3 className="text-base sm:text-lg md:text-xl font-semibold font-serif text-[#78533F]">Booking Options</h3>
@@ -1020,10 +1063,10 @@ const Bookings: React.FC = () => {
                             <option
                               key={index}
                               value={slot.id}
-                              disabled={slot.isBooked}
-                              className={slot.isBooked ? "text-red-500" : "text-green-500"}
+                              disabled={slot.isBooked || slot.isWaiting}
+                              className={slot.isBooked || slot.isWaiting ? "text-red-500" : "text-green-500"}
                             >
-                              {slot.label} {slot.isBooked ? "(Booked)" : "(Available)"}
+                              {slot.label} {slot.isBooked ? "(Booked)" : slot.isWaiting ? "(Waiting)" : "(Available)"}
                             </option>
                           ))
                         ) : (
@@ -1053,7 +1096,7 @@ const Bookings: React.FC = () => {
                       className="w-full mt-4 sm:mt-6 bg-[#ED695A] hover:bg-[#d85c4e] text-white py-2 sm:py-3 px-4 sm:px-6 rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm"
                       disabled={!venue}
                     >
-                      Confirm your Booking!
+                      Request Booking!
                     </button>
                   </div>
                   {selectedDate && (
@@ -1062,7 +1105,7 @@ const Bookings: React.FC = () => {
                         Selected Date: {selectedDate.toLocaleDateString()}
                       </p>
                       <p className="text-xs sm:text-sm text-[#78533F] font-medium">
-                        Available Slots: {getTimeSlotStatus(selectedDate).filter((slot) => !slot.isBooked).length}
+                        Available Slots: {getTimeSlotStatus(selectedDate).filter((slot) => !slot.isBooked && !slot.isWaiting).length}
                       </p>
                     </div>
                   )}
@@ -1349,10 +1392,10 @@ const Bookings: React.FC = () => {
                       <div className="flex items-center justify-between mb-4 sm:mb-6 border-b-2 border-[#b09d94] pb-4">
                         <div className="text-center flex-1">
                           <h2 className="text-lg sm:text-xl md:text-2xl font-bold font-serif text-[#78533F]">
-                            🎉 Booking Confirmed!
+                            ⏳ Booking Request Sent!
                           </h2>
                           <p className="text-xs sm:text-sm text-[#3C3A39]">
-                            Your booking has been successfully completed
+                            Your booking request has been added to the waiting list
                           </p>
                         </div>
                         <button
@@ -1366,6 +1409,17 @@ const Bookings: React.FC = () => {
                         </button>
                       </div>
                       <div className="space-y-4 sm:space-y-6 text-center">
+                        {/* ✅ Waiting list message */}
+                        <div className="bg-orange-50 p-3 sm:p-4 rounded-xl border-2 border-orange-200">
+                          <p className="text-sm sm:text-base text-orange-600 font-semibold flex items-center justify-center gap-2">
+                            <Clock className="w-5 h-5" />
+                            You are in the waiting list
+                          </p>
+                          <p className="text-xs sm:text-sm text-[#78533F] font-medium mt-1">
+                            The venue team will review your request and accept or reject it. You will be notified by
+                            email once it is processed.
+                          </p>
+                        </div>
                         {vouchers.length > 0 && (
                           <div className="bg-blue-50 p-3 sm:p-4 rounded-xl border-2 border-blue-200">
                             <p className="text-sm sm:text-base text-blue-600 font-semibold flex items-center justify-center gap-2">
@@ -1398,7 +1452,7 @@ const Bookings: React.FC = () => {
                             Time Slot: {formData.timeSlot}
                           </p>
                           <p className="text-xs sm:text-sm text-[#78533F] font-medium">
-                            Booking Time: {formData.exactBookingTime}
+                            Request Time: {formData.exactBookingTime}
                           </p>
                           <p className="text-xs sm:text-sm text-[#78533F] font-medium">Event Type: {eventType}</p>
                           <p className="text-xs sm:text-sm text-[#78533F] font-medium">AC Option: {acOption}</p>
@@ -1417,6 +1471,9 @@ const Bookings: React.FC = () => {
                               Coupon Applied: {appliedOffer.offerCode}
                             </p>
                           )}
+                          <p className="text-xs sm:text-sm text-[#78533F] font-medium">
+                            Request Status: <span className="text-orange-500 font-semibold">Waiting for Approval</span>
+                          </p>
                           <p className="text-xs sm:text-sm text-[#78533F] font-medium">
                             Reference ID: {Math.random().toString(36).substr(2, 9).toUpperCase()}
                           </p>

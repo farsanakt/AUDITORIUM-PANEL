@@ -353,6 +353,9 @@ export const existingAllVendors =async(id:string)=>{
 
 }
 
+export const updateBookingApproval = async (bookingId: string, action: string, actionBy: string) => {
+  return await api.patch(`/bookings/${bookingId}/approval`, { action, actionBy });
+};
 
 
 export const createBooking=async(formData:any)=>{
